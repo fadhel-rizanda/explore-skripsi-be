@@ -13,7 +13,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->redirectTo(function (Request $request) {
+            return null;
+        });
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException $e, Request $request) {
@@ -37,6 +39,17 @@ return Application::configure(basePath: dirname(__DIR__))
                 [],
                 JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT
             );
+        });
+
+        $exceptions->render(function (\Illuminate\Auth\AuthenticationException $e, Request $request) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                return response()->json([
+                    'error' => true,
+                    'status' => 401,
+                    'message' => $e->getMessage() ?: 'Unauthenticated.',
+                    'data' => [],
+                ], 401);
+            }
         });
 
         $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\HttpException $e, Request $request) {
