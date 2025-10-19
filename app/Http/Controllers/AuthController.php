@@ -2,9 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ChangePasswordRequest;
+use App\Http\Requests\ForgotPasswordRequest;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
+use App\Http\Requests\ResetPasswordRequest;
 use App\Models\User;
+use App\Notifications\ResetPasswordNotification;
 use App\Traits\ResponseAPI;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -13,6 +17,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Request;
+use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
 
 class AuthController extends BaseController
@@ -164,7 +169,7 @@ class AuthController extends BaseController
                     'name' => $socialUser->getName(),
                     'email' => $socialUser->getEmail(),
                     'password' => Hash::make(uniqid()), // Random password
-                    'email_verified_at' => Carbon::now(),
+                    'email_verified_at' => now(),
                     'provider' => $provider,
                     'provider_id' => $socialUser->getId(),
                     'avatar' => $socialUser->getAvatar(),
@@ -204,6 +209,98 @@ class AuthController extends BaseController
                 'trace' => $ex->getTraceAsString(),
             ]);
             return $this->sendError('OAuth authentication failed', 500);
+        }
+    }
+
+    public function forgotPassword(ForgotPasswordRequest $request)
+    {
+        try {
+            $user = User::where('email', $request->email)->first();
+            if (!$user) {
+                return $this->sendError('Email not found', 404);
+            }
+            $token = Str::random(64);
+            DB::table('password_reset_tokens')->where('email', $user->email)->delete();
+            DB::table('password_reset_tokens')->updateOrInsert(
+                ['email' => $user->email],
+                [
+                    'token' => Hash::make($token),
+                    'created_at' => now()
+                ]
+            );
+            $user->notify(new ResetPasswordNotification($token, $user->email));
+            return $this->sendSuccess('Password reset link sent to your email', null, 200);
+        } catch (\Exception $ex) {
+            Log::error('Forgot password error: ', [
+                'email' => $request->email,
+                'message' => $ex->getMessage(),
+                'trace' => $ex->getTraceAsString(),
+            ]);
+            return $this->sendError('Failed to send reset link', 500);
+        }
+    }
+
+    public function resetPassword(ResetPasswordRequest $request)
+    {
+        DB::beginTransaction();
+        try {
+            $tokenRecord = DB::table('password_reset_tokens')->where('email', $request->email)->first();
+            if (!$tokenRecord || !Hash::check($request->token, $tokenRecord->token)) {
+                return $this->sendError('Invalid or expired token', 400);
+            }
+            $tokenAge = now()->diffinMinutes($tokenRecord->created_at);
+
+            $expireTime = config('auth.passwords.users.expire');
+            if ($tokenAge > $expireTime) {
+                DB::table('password_reset_tokens')
+                    ->where('email', $request->email)
+                    ->delete();
+                return $this->sendError('Token has expired', 400);
+            }
+
+            $user = User::where('email', $request->email)->first();
+            $user->password = Hash::make($request->password);
+            $user->save();
+
+            DB::table('password_reset_tokens')
+                ->where('email', $request->email)
+                ->delete();
+
+            DB::commit();
+            return $this->sendSuccess('Password has been reset successfully', null, 200);
+        } catch (\Exception $ex) {
+            DB::rollBack();
+            Log::error('Reset password error: ', [
+                'email' => $request->email,
+                'message' => $ex->getMessage(),
+                'trace' => $ex->getTraceAsString(),
+            ]);
+            return $this->sendError('Failed to reset password', 500);
+        }
+    }
+
+    public function changePassword(ChangePasswordRequest $request)
+    {
+        try {
+            $user = auth('api')->user();
+
+            if (!Hash::check($request->current_password, $user->password)) {
+                return $this->sendError('Current password is incorrect', 400);
+            }
+
+            $user->password = Hash::make($request->new_password);
+            $user->save();
+
+            // Logout user from all devices
+             auth('api')->logout();
+
+            return $this->sendSuccess('Password changed successfully', null, 200);
+        } catch (\Exception $ex) {
+            Log::error('Change password error: ', [
+                'user_id' => auth('api')->id(),
+                'message' => $ex->getMessage(),
+            ]);
+            return $this->sendError('Failed to change password', 500);
         }
     }
 }
