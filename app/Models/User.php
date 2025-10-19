@@ -32,6 +32,7 @@ class User extends Authenticatable implements JWTSubject
         'avatar',
         'email_verified_at',
         'remember_token',
+        'token_version',
     ];
 
     /**
@@ -42,6 +43,7 @@ class User extends Authenticatable implements JWTSubject
     protected $hidden = [
         'password',
         'remember_token',
+        'token_version',
     ];
 
     /**
@@ -54,6 +56,7 @@ class User extends Authenticatable implements JWTSubject
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'token_version' => 'integer',
         ];
     }
 
@@ -75,6 +78,8 @@ class User extends Authenticatable implements JWTSubject
 
     public function getJWTCustomClaims()
     {
-        return [];
+        return [
+            'token_version' => $this->token_version ?? 0,
+        ];
     }
 }
