@@ -22,6 +22,7 @@ return new class extends Migration
             $table->string('provider')->nullable();
             $table->string('provider_id')->nullable();
             $table->string('avatar')->nullable();
+            $table->integer('token_version')->default(0)->after('password');
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
