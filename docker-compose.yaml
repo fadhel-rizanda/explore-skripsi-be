@@ -10,6 +10,7 @@ services:
     working_dir: /var/www/html
     volumes:
       - ./:/var/www/html
+      - /var/www/html/vendor
     ports:
       - "8000:8000"
     environment:
@@ -23,7 +24,7 @@ services:
       - db
     networks:
       - laravel
-    command: sh -c "composer install && cp .env.docker .env && php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8000"
+    command: sh -c "if [ ! -f .env ]; then cp .env.docker .env && php artisan key:generate; fi && composer install && php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8000"
 
   db:
     image: postgres:15-alpine
@@ -35,7 +36,7 @@ services:
       - POSTGRES_PASSWORD=${DB_PASSWORD:-secret}
       - PGDATA=/var/lib/postgresql/data/pgdata
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data/pgdata
     ports:
       - "5432:5432"
     networks:
