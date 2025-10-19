@@ -119,13 +119,19 @@ class AuthController extends BaseController
     public function logout()
     {
         try {
-            auth('api')->logout();
-            return $this->sendSuccess('Successfully logged out', null, 200);
+            $user = auth('api')->user();
+
+            Log::info($user->all());
+            // logout from all devices
+            $user->token_version = ($user->token_version ?? 0) + 1;
+            $user->save();
+            return $this->sendSuccess('Successfully logged out from all devices', null, 200);
         } catch (\Exception $ex) {
-            Log::error('Logout error: ', [
+            Log::error('Logout all devices error: ', [
+                'user_id' => auth('api')->id(),
                 'message' => $ex->getMessage(),
             ]);
-            return $this->sendError('Logout failed', 500);
+            return $this->sendError('Failed to logout from all devices', 500);
         }
     }
 
@@ -216,19 +222,17 @@ class AuthController extends BaseController
     {
         try {
             $user = User::where('email', $request->email)->first();
-            if (!$user) {
-                return $this->sendError('Email not found', 404);
+            if ($user) {
+                $token = Str::random(64);
+                DB::table('password_reset_tokens')->updateOrInsert(
+                    ['email' => $user->email],
+                    [
+                        'token' => Hash::make($token),
+                        'created_at' => now()
+                    ]
+                );
+                $user->notify(new ResetPasswordNotification($token, $user->email));
             }
-            $token = Str::random(64);
-            DB::table('password_reset_tokens')->where('email', $user->email)->delete();
-            DB::table('password_reset_tokens')->updateOrInsert(
-                ['email' => $user->email],
-                [
-                    'token' => Hash::make($token),
-                    'created_at' => now()
-                ]
-            );
-            $user->notify(new ResetPasswordNotification($token, $user->email));
             return $this->sendSuccess('Password reset link sent to your email', null, 200);
         } catch (\Exception $ex) {
             Log::error('Forgot password error: ', [
@@ -259,6 +263,9 @@ class AuthController extends BaseController
             }
 
             $user = User::where('email', $request->email)->first();
+            if (!$user) {
+                return $this->sendError('User not found', 404);
+            }
             $user->password = Hash::make($request->password);
             $user->save();
 
@@ -289,10 +296,9 @@ class AuthController extends BaseController
             }
 
             $user->password = Hash::make($request->new_password);
+            // logout from all devices
+            $user->token_version = ($user->token_version ?? 0) + 1;
             $user->save();
-
-            // Logout user from all devices
-             auth('api')->logout();
 
             return $this->sendSuccess('Password changed successfully', null, 200);
         } catch (\Exception $ex) {
