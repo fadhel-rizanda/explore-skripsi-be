@@ -3,9 +3,8 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
+use App\Models\Permission;
+use App\Models\Role;
 
 class RolePermissionSeeder extends Seeder
 {
@@ -20,16 +19,15 @@ class RolePermissionSeeder extends Seeder
         foreach ($roles as $roleName) {
             if (!Role::where('name', $roleName)->exists()) {
                 Role::create([
-                    'id' => Str::uuid(), // UUID
                     'name' => $roleName,
                     'guard_name' => 'api',
                 ]);
             }
         }
 
-        $admin = Role::findByName('ADMIN');
-        $adopter = Role::findByName('ADOPTER');
-        $provider = Role::findByName('PROVIDER');
+        $admin = Role::findByName('ADMIN', 'api');
+        $adopter = Role::findByName('ADOPTER', 'api');
+        $provider = Role::findByName('PROVIDER', 'api');
 
         // ----- CREATE PERMISSIONS -----
         $permissions = [
@@ -69,7 +67,6 @@ class RolePermissionSeeder extends Seeder
         foreach ($permissions as $permission) {
             if (!Permission::where('name', $permission)->exists()) {
                 Permission::create([
-                    'id' => Str::uuid(), // UUID
                     'name' => $permission,
                     'guard_name' => 'api',
                 ]);
