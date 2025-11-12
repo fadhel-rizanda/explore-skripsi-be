@@ -1,0 +1,13 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Role extends \Spatie\Permission\Models\Role
+{
+    protected $keyType = 'string';
+    public $incrementing = false;
+
+    protected $table = 'roles_2';
+}
