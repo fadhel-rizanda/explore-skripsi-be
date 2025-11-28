@@ -17,6 +17,7 @@ class generatePresignedUrlRequest extends FormRequest
             'filename' => 'required|string',
             'content_type' => 'required|string',
             'file_size' => 'required|integer|max:10485760', // Max 10MB
+            'is_public' => 'nullable|boolean',
         ];
     }
 }
