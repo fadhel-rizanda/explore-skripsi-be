@@ -55,7 +55,9 @@ class UploadController extends Controller
         // Generate path
         $uniqueFileName = Str::uuid() . '.' . $extension;
         $uuid = Str::uuid();
-        $path = 'adoptions/' . $uuid . '/' . $uniqueFileName;
+
+        $isPublic = $request->input('is_public', false);
+        $path = $isPublic ? 'public/' . $uuid . '/' . $uniqueFileName : 'private/' . $uuid . '/' . $uniqueFileName;
 
         // Generate presigned URL dengan command PutObject
         $command = $this->s3Client->getCommand('PutObject', [
@@ -68,6 +70,10 @@ class UploadController extends Controller
         $presignedRequest = $this->s3Client->createPresignedRequest($command, '+15 minutes');
         $uploadUrl = (string) $presignedRequest->getUri();
 
+        $publicUrl = $isPublic
+            ? "https://{$this->bucket}.s3." . config('filesystems.disks.s3.region') . ".amazonaws.com/{$path}"
+            : null;
+
         $user = auth('api')->user();
 
         $document = Attachment::create([
@@ -77,16 +83,24 @@ class UploadController extends Controller
             'mime_type' => $contentType,
             'status' => 'pending',
             'uploaded_by' => $user->id,
+            'is_public' => $isPublic,
+            'public_url' => $publicUrl,
         ]);
 
+        $responseData = [
+            'upload_url' => $uploadUrl,
+            'document_id' => $document->id,
+            'path' => $path,
+            'content_type' => $contentType,
+            'expires_in' => 900
+        ];
+
+        if ($isPublic) {
+            $responseData['public_url'] = $publicUrl;
+        }
+
         return $this->sendSuccess('Presigned URL generated successfully.',
-            [
-                'upload_url' => $uploadUrl,
-                'document_id' => $document->id,
-                'path' => $path,
-                'content_type' => $contentType,
-                'expires_in' => 900
-            ],
+            $responseData,
             201
         );
     }
