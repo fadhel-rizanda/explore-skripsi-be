@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\AdoptionDocument;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class CleanupPendingUploads extends Command
@@ -18,8 +19,13 @@ class CleanupPendingUploads extends Command
             ->get();
 
         foreach ($documents as $document) {
-            if (Storage::disk('s3')->exists($document->path)) {
+            try {
                 Storage::disk('s3')->delete($document->path);
+            } catch (\Exception $e) {
+                Log::error('Failed to delete file from S3: ' . $document->path, ['error' => $e->getMessage()]);
+                $document->status = 'failed';
+                $document->save();
+                continue; // Or break if you want to stop processing further documents
             }
             $document->delete();
         }
