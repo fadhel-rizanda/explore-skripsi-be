@@ -6,17 +6,13 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    public function up()
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
     {
-        Schema::create('adoptions', function (Blueprint $table) {
+        Schema::create('attachments', function (Blueprint $table) {
             $table->uuid('id')->primary()->default(\Illuminate\Support\Facades\DB::raw('gen_random_uuid()')); // sebenernya kg eprlu lg default soalnya udh pake boot
-            $table->string('name');
-            $table->timestamps();
-        });
-
-        Schema::create('adoption_documents', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(\Illuminate\Support\Facades\DB::raw('gen_random_uuid()')); // sebenernya kg eprlu lg default soalnya udh pake boot
-            $table->foreignUuid('adoption_id')->constrained()->onDelete('cascade');
             $table->foreignUuid('uploaded_by')->constrained('users')->onDelete('cascade');
             $table->string('filename');
             $table->string('path');
@@ -25,13 +21,14 @@ return new class extends Migration
             $table->enum('status', ['pending', 'completed', 'failed'])->default('pending');
             $table->timestamp('uploaded_at')->nullable();
             $table->timestamps();
-
-            $table->index(['adoption_id', 'status']);
         });
     }
 
-    public function down()
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
     {
-        Schema::dropIfExists('adoption_documents');
+        Schema::dropIfExists('attachments');
     }
 };

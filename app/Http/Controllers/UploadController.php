@@ -3,8 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\generatePresignedUrlRequest;
-use App\Models\AdoptionDocument;
+use App\Models\Attachment;
 use App\Traits\ResponseAPI;
+use Aws\S3\S3Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -13,60 +14,86 @@ class UploadController extends Controller
 {
     use ResponseAPI;
 
+    protected S3Client $s3Client;
+    protected string $bucket;
+
+    public function __construct(S3Client $s3Client)
+    {
+        $this->s3Client = $s3Client;
+        $this->bucket = config('filesystems.disks.s3.bucket');
+    }
+
     public function generatePresignedUrl(generatePresignedUrlRequest $request)
     {
         $allowedTypes = [
-            'image/jpeg', 'image/jpg', 'image/png', 'image/webp',
-            'application/pdf',
-            'application/msword',
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            'image/jpeg' => ['jpg', 'jpeg'],
+            'image/png' => ['png'],
+            'image/webp' => ['webp'],
+            'application/pdf' => ['pdf'],
+            'application/msword' => ['doc'],
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => ['docx']
         ];
 
-        if (!in_array($request->input('content_type'), $allowedTypes)) {
+        $contentType = $request->input('content_type');
+
+        if (!isset($allowedTypes[$contentType])) {
             return $this->sendError('Unsupported file type.', 400);
         }
 
-        // Logic to generate presigned URL goes here.
-        $extension = pathinfo($request->input('filename'), PATHINFO_EXTENSION);
+        $filename = $request->input('filename');
+        // Extract file extension
+        $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+
+        if (empty($extension)) {
+            return $this->sendError('Filename must include a file extension (e.g., document.pdf, image.jpg).', 400);
+        }
+
+        if (!in_array($extension, $allowedTypes[$contentType])) {
+            return $this->sendError("File extension '{$extension}' does not match content type '{$contentType}'. Expected: " . implode(', ', $allowedTypes[$contentType]), 400);
+        }
+
+        // Generate path
         $uniqueFileName = Str::uuid() . '.' . $extension;
-        $path = 'adoptions/' . $request->input('adoption_id') . '/' . $uniqueFileName;
+        $uuid = Str::uuid();
+        $path = 'adoptions/' . $uuid . '/' . $uniqueFileName;
 
-        $url = Storage::disk('s3')->temporaryUrl(
-            $path,
-            now()->addMinutes(15),
-            [
-                'ContentType' => $request->content_type,
-            ]
-        );
+        // Generate presigned URL dengan command PutObject
+        $command = $this->s3Client->getCommand('PutObject', [
+            'Bucket' => $this->bucket,
+            'Key' => $path,
+            'ContentType' => $contentType,
+        ]);
 
-        $document = AdoptionDocument::create([
-            'adoption_id' => $request->input('adoption_id'),
-            'filename' => $request->input('filename'),
+        // Create presigned request (valid 15 menit)
+        $presignedRequest = $this->s3Client->createPresignedRequest($command, '+15 minutes');
+        $uploadUrl = (string) $presignedRequest->getUri();
+
+        $user = auth('api')->user();
+
+        $document = Attachment::create([
+            'filename' => $filename,
             'path' => $path,
             'file_size' => $request->input('file_size'),
-            'mime_type' => $request->input('content_type'),
+            'mime_type' => $contentType,
             'status' => 'pending',
-            'uploaded_by' => auth()->id(),
+            'uploaded_by' => $user->id,
         ]);
 
         return $this->sendSuccess('Presigned URL generated successfully.',
             [
-                'upload_url' => $url,
+                'upload_url' => $uploadUrl,
                 'document_id' => $document->id,
                 'path' => $path,
-                'expires_in' => 600 // seconds
+                'content_type' => $contentType,
+                'expires_in' => 900
             ],
             201
         );
     }
 
-    public function confirmUpload(Request $request)
+    public function confirmUpload($documentId)
     {
-        $request->validate([
-            'document_id' => 'required|exists:adoption_documents,id',
-        ]);
-
-        $document = AdoptionDocument::find($request->input('document_id'));
+        $document = Attachment::find($documentId);
 
         if (!Storage::disk('s3')->exists($document->path)) {
             return $this->sendError('File not found in storage.', 404);
@@ -82,7 +109,7 @@ class UploadController extends Controller
 
     public function generateDownloadUrl($documentId)
     {
-        $document = AdoptionDocument::findOrFail($documentId);
+        $document = Attachment::findOrFail($documentId);
 
         if (!$document || $document->status !== 'completed' || !Storage::disk('s3')->exists($document->path)) {
             return $this->sendError('File not found in storage.', 404);
@@ -104,7 +131,7 @@ class UploadController extends Controller
 
     public function deleteDocument($documentId)
     {
-        $document = AdoptionDocument::findOrFail($documentId);
+        $document = Attachment::findOrFail($documentId);
 
         if (Storage::disk('s3')->exists($document->path)) {
             Storage::disk('s3')->delete($document->path);
@@ -113,14 +140,5 @@ class UploadController extends Controller
         $document->delete();
 
         return $this->sendSuccess('Document deleted successfully.');
-    }
-
-    public function getAdoptionDocuments($adoptionId)
-    {
-        $documents = AdoptionDocument::where('adoption_id', $adoptionId)
-            ->where('status', 'completed')
-            ->get();
-
-        return $this->sendSuccess('Adoption documents retrieved successfully.', ['documents' => $documents]);
     }
 }
