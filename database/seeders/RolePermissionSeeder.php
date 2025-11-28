@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\Permission;
 use App\Models\Role;
+use Illuminate\Database\Seeder;
 
 class RolePermissionSeeder extends Seeder
 {
@@ -17,7 +17,7 @@ class RolePermissionSeeder extends Seeder
         // ----- CREATE ROLES -----
         $roles = ['ADMIN', 'ADOPTER', 'PROVIDER'];
         foreach ($roles as $roleName) {
-            if (!Role::where('name', $roleName)->exists()) {
+            if (! Role::where('name', $roleName)->exists()) {
                 Role::create([
                     'name' => $roleName,
                     'guard_name' => 'api',
@@ -61,11 +61,11 @@ class RolePermissionSeeder extends Seeder
             // Admin only
             'manage-users',
             'manage-roles',
-            'manage-permissions'
+            'manage-permissions',
         ];
 
         foreach ($permissions as $permission) {
-            if (!Permission::where('name', $permission)->exists()) {
+            if (! Permission::where('name', $permission)->exists()) {
                 Permission::create([
                     'name' => $permission,
                     'guard_name' => 'api',

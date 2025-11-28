@@ -1,11 +1,11 @@
 <?php
 
-use \App\Http\Controllers\UploadController;
-use \Illuminate\Support\Facades\Route;
+use App\Http\Controllers\UploadController;
+use Illuminate\Support\Facades\Route;
 
 Route::group([
     'prefix' => 'attachments',
-    'middleware' => ['auth:api', 'check.token.version']
+    'middleware' => ['auth:api', 'check.token.version'],
 ], function () {
     Route::post('/presigned', [UploadController::class, 'generatePresignedUrl']);
     Route::post('/confirm/{documentId}', [UploadController::class, 'confirmUpload']);

@@ -1,12 +1,12 @@
 <?php
 
-use \Illuminate\Support\Facades\Route;
-use \Illuminate\Support\Facades\Storage;
-
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 
 Route::group(['prefix' => 'test'], function () {
     Route::get('/auth', function () {
         $user = auth('api')->user();
+
         return response()->json([
             'error' => false,
             'status' => 'success',
@@ -43,9 +43,9 @@ Route::group(['prefix' => 'test'], function () {
             // Test delete
             Storage::disk('s3')->delete('test.txt');
 
-            return "S3 connection successful! Content: " . $content;
+            return 'S3 connection successful! Content: ' . $content;
         } catch (\Exception $e) {
-            return "S3 connection failed: " . $e->getMessage();
+            return 'S3 connection failed: ' . $e->getMessage();
         }
     });
 });

@@ -2,14 +2,13 @@
 
 namespace App\Traits;
 
-use Psr\Http\Message\ResponseInterface;
-
 trait ResponseAPI
 {
     /**
      * return error response.
-     * @param mixed $message
-     * @param null|mixed $data
+     *
+     * @param  mixed  $message
+     * @param  null|mixed  $data
      */
     public function sendSuccess($message, $data = null, int $code = 200): \Illuminate\Http\JsonResponse
     {
@@ -28,8 +27,9 @@ trait ResponseAPI
 
     /**
      * return error response.
-     * @param mixed $message
-     * @param null|mixed $data
+     *
+     * @param  mixed  $message
+     * @param  null|mixed  $data
      */
     public function sendError($message, int $errorCode = 500, $data = null): \Illuminate\Http\JsonResponse
     {

@@ -26,7 +26,7 @@ class ForgotPasswordRequest extends FormRequest
         ];
     }
 
-//    kalau error response mau custom
+    //    kalau error response mau custom
     public function messages(): array
     {
         return [
