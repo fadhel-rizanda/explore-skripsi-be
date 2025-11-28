@@ -7,6 +7,7 @@ use App\Models\Attachment;
 use App\Traits\ResponseAPI;
 use Aws\S3\S3Client;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -125,7 +126,7 @@ class UploadController extends Controller
     {
         $document = Attachment::findOrFail($documentId);
 
-        if (!$document || $document->status !== 'completed' || !Storage::disk('s3')->exists($document->path)) {
+        if ($document->status !== 'completed' || !Storage::disk('s3')->exists($document->path)) {
             return $this->sendError('File not found in storage.', 404);
         }
 
@@ -147,8 +148,13 @@ class UploadController extends Controller
     {
         $document = Attachment::findOrFail($documentId);
 
-        if (Storage::disk('s3')->exists($document->path)) {
-            Storage::disk('s3')->delete($document->path);
+        try {
+            if (Storage::disk('s3')->exists($document->path)) {
+                Storage::disk('s3')->delete($document->path);
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to delete file from S3: ' . $document->path, ['error' => $e->getMessage()]);
+            return $this->sendError('Failed to delete document from storage.', 500);
         }
 
         $document->delete();
