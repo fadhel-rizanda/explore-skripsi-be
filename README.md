@@ -38,10 +38,48 @@
   ```sh
   docker-compose exec app php artisan <command>
   ```
+## No Docker Setup
+
+1. **Clone the repository:**
+   ```sh
+   git clone <your-repo-url>
+   cd <your-project-directory>
+
+2. **Install dependencies:**
+   ```sh
+   composer install
+   php artisan key:generate
+   php artisan migrate
+   ```
+   
+3. **Run project:**
+   ```sh
+   php artisan serve
+   ```
+
+4. **Code linting:**
+   ```sh
+   composer lint       # Check code style
+   composer format     # Fix code style
+   ```
+
+## Code Linting
+
+This project uses **Laravel Pint** for code style enforcement with automatic pre-commit hooks.
+
+**Commands:**
+```sh
+composer lint       # Check code style
+composer format     # Auto-fix code style
+```
+
+**Pre-commit Hook:**  
+Code style is automatically checked before each commit.  If linting fails, fix with `composer format` and commit again.
 
 ## Notes
 
 - The database service uses PostgreSQL and persists data in a Docker volume.
 - The `.env.docker` file is used for environment configuration inside containers.
+- All code must pass linting checks before commit.
 ```
 Replace `<your-repo-url>` and `<your-project-directory>` as needed.

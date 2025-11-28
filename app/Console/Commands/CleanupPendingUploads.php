@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Storage;
 class CleanupPendingUploads extends Command
 {
     protected $signature = 'uploads:cleanup';
+
     protected $description = 'Cleanup pending uploads older than 1 hour';
 
     public function handle()

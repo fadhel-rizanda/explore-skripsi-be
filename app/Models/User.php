@@ -13,10 +13,12 @@ use Tymon\JWTAuth\Contracts\JWTSubject;
 class User extends Authenticatable implements JWTSubject
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, HasRoles;
+    use HasFactory, HasRoles, Notifiable;
 
     public $incrementing = false;
+
     protected $keyType = 'string';
+
     protected $primaryKey = 'id';
 
     /**

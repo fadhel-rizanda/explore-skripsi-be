@@ -14,9 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->prepend(\Illuminate\Http\Middleware\HandleCors::class);
-        $middleware->redirectTo(function (Request $request) {
-            return null;
-        });
+        $middleware->redirectTo(function (Request $request) {});
         $middleware->alias([
             'check.token.version' => \App\Http\Middleware\CheckTokenVersion::class,
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
@@ -32,7 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 'message' => $e->getMessage(),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json(

@@ -7,6 +7,6 @@ Route::get('/', function () {
         'error' => false,
         'status' => 'success',
         'message' => 'Welcome to the API',
-        'data' => ['version' => '1.0']
+        'data' => ['version' => '1.0'],
     ], 200);
 });

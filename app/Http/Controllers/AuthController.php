@@ -10,12 +10,10 @@ use App\Http\Requests\ResetPasswordRequest;
 use App\Models\User;
 use App\Notifications\ResetPasswordNotification;
 use App\Traits\ResponseAPI;
-use Carbon\Carbon;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
@@ -27,6 +25,7 @@ class AuthController extends BaseController
     public function register(RegisterRequest $request)
     {
         DB::beginTransaction();
+
         try {
             $user = User::create([
                 'name' => $request->input('name'),
@@ -45,10 +44,11 @@ class AuthController extends BaseController
                 ],
                 'token' => $token,
                 'token_type' => 'bearer',
-                'expires_in' => auth('api')->factory()->getTTL() * 60
+                'expires_in' => auth('api')->factory()->getTTL() * 60,
             ];
 
             DB::commit();
+
             return $this->sendSuccess('User registered successfully', $data, 201);
         } catch (\Exception $ex) {
             DB::rollBack();
@@ -57,6 +57,7 @@ class AuthController extends BaseController
                 'message' => $ex->getMessage(),
                 'trace' => $ex->getTraceAsString(),
             ]);
+
             return $this->sendError('Registration failed', 500);
         }
     }
@@ -66,7 +67,7 @@ class AuthController extends BaseController
         try {
             $credentials = $request->only('email', 'password');
 
-            if (!$token = auth('api')->attempt($credentials)) {
+            if (! $token = auth('api')->attempt($credentials)) {
                 return $this->sendError('Wrong credentials', 401);
             }
 
@@ -84,7 +85,7 @@ class AuthController extends BaseController
                 ],
                 'token' => $token,
                 'token_type' => 'bearer',
-                'expires_in' => auth('api')->factory()->getTTL() * 60
+                'expires_in' => auth('api')->factory()->getTTL() * 60,
             ];
 
             return $this->sendSuccess('Login successful', $data, 200);
@@ -94,6 +95,7 @@ class AuthController extends BaseController
                 'message' => $ex->getMessage(),
                 'trace' => $ex->getTraceAsString(),
             ]);
+
             return $this->sendError('Login failed', 500);
         }
     }
@@ -107,11 +109,13 @@ class AuthController extends BaseController
                 'token_type' => 'bearer',
                 'expires_in' => auth('api')->factory()->getTTL() * 60,
             ];
+
             return $this->sendSuccess('Token refreshed successfully', $data, 200);
         } catch (\Exception $ex) {
             Log::error('Token refresh error: ', [
                 'message' => $ex->getMessage(),
             ]);
+
             return $this->sendError('Token refresh failed', 401);
         }
     }
@@ -125,23 +129,24 @@ class AuthController extends BaseController
             // logout from all devices
             $user->token_version = ($user->token_version ?? 0) + 1;
             $user->save();
+
             return $this->sendSuccess('Successfully logged out from all devices', null, 200);
         } catch (\Exception $ex) {
             Log::error('Logout all devices error: ', [
                 'user_id' => auth('api')->id(),
                 'message' => $ex->getMessage(),
             ]);
+
             return $this->sendError('Failed to logout from all devices', 500);
         }
     }
-
 
     public function redirectToProvider(string $provider)
     {
         try {
             // Validasi provider
             $allowedProviders = ['google', 'github', 'facebook']; // sekarang baru google doang
-            if (!in_array($provider, $allowedProviders)) {
+            if (! in_array($provider, $allowedProviders)) {
                 return $this->sendError('Invalid provider', 400);
             }
 
@@ -151,13 +156,14 @@ class AuthController extends BaseController
                 'error' => false,
                 'status' => 'success',
                 'message' => 'Redirect to ' . ucfirst($provider),
-                'data' => ['url' => $url]
+                'data' => ['url' => $url],
             ]);
         } catch (\Exception $ex) {
             Log::error('OAuth redirect error: ', [
                 'provider' => $provider,
                 'message' => $ex->getMessage(),
             ]);
+
             return $this->sendError('OAuth redirect failed', 500);
         }
     }
@@ -165,12 +171,13 @@ class AuthController extends BaseController
     public function handleProviderCallback(string $provider, Request $request)
     {
         DB::beginTransaction();
+
         try {
             $socialUser = Socialite::driver($provider)->stateless()->user();
 
             $user = User::where('email', $socialUser->getEmail())->first();
 
-            if (!$user) {
+            if (! $user) {
                 $user = User::create([
                     'name' => $socialUser->getName(),
                     'email' => $socialUser->getEmail(),
@@ -201,10 +208,11 @@ class AuthController extends BaseController
                 ],
                 'token' => $token,
                 'token_type' => 'bearer',
-                'expires_in' => auth('api')->factory()->getTTL() * 60
+                'expires_in' => auth('api')->factory()->getTTL() * 60,
             ];
 
             DB::commit();
+
             return $this->sendSuccess('Login via ' . ucfirst($provider) . ' successful', $data, 200);
 
         } catch (\Exception $ex) {
@@ -214,6 +222,7 @@ class AuthController extends BaseController
                 'message' => $ex->getMessage(),
                 'trace' => $ex->getTraceAsString(),
             ]);
+
             return $this->sendError('OAuth authentication failed', 500);
         }
     }
@@ -228,11 +237,12 @@ class AuthController extends BaseController
                     ['email' => $user->email],
                     [
                         'token' => Hash::make($token),
-                        'created_at' => now()
+                        'created_at' => now(),
                     ]
                 );
                 $user->notify(new ResetPasswordNotification($token, $user->email));
             }
+
             return $this->sendSuccess('Password reset link sent to your email', null, 200);
         } catch (\Exception $ex) {
             Log::error('Forgot password error: ', [
@@ -240,6 +250,7 @@ class AuthController extends BaseController
                 'message' => $ex->getMessage(),
                 'trace' => $ex->getTraceAsString(),
             ]);
+
             return $this->sendError('Failed to send reset link', 500);
         }
     }
@@ -247,9 +258,10 @@ class AuthController extends BaseController
     public function resetPassword(ResetPasswordRequest $request)
     {
         DB::beginTransaction();
+
         try {
             $tokenRecord = DB::table('password_reset_tokens')->where('email', $request->email)->first();
-            if (!$tokenRecord || !Hash::check($request->token, $tokenRecord->token)) {
+            if (! $tokenRecord || ! Hash::check($request->token, $tokenRecord->token)) {
                 return $this->sendError('Invalid or expired token', 400);
             }
             $tokenAge = now()->diffinMinutes($tokenRecord->created_at);
@@ -259,11 +271,12 @@ class AuthController extends BaseController
                 DB::table('password_reset_tokens')
                     ->where('email', $request->email)
                     ->delete();
+
                 return $this->sendError('Token has expired', 400);
             }
 
             $user = User::where('email', $request->email)->first();
-            if (!$user) {
+            if (! $user) {
                 return $this->sendError('User not found', 404);
             }
             $user->password = Hash::make($request->password);
@@ -274,6 +287,7 @@ class AuthController extends BaseController
                 ->delete();
 
             DB::commit();
+
             return $this->sendSuccess('Password has been reset successfully', null, 200);
         } catch (\Exception $ex) {
             DB::rollBack();
@@ -282,6 +296,7 @@ class AuthController extends BaseController
                 'message' => $ex->getMessage(),
                 'trace' => $ex->getTraceAsString(),
             ]);
+
             return $this->sendError('Failed to reset password', 500);
         }
     }
@@ -291,7 +306,7 @@ class AuthController extends BaseController
         try {
             $user = auth('api')->user();
 
-            if (!Hash::check($request->current_password, $user->password)) {
+            if (! Hash::check($request->current_password, $user->password)) {
                 return $this->sendError('Current password is incorrect', 400);
             }
 
@@ -306,6 +321,7 @@ class AuthController extends BaseController
                 'user_id' => auth('api')->id(),
                 'message' => $ex->getMessage(),
             ]);
+
             return $this->sendError('Failed to change password', 500);
         }
     }

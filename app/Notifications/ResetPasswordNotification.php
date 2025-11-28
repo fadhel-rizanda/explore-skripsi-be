@@ -3,7 +3,6 @@
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -12,6 +11,7 @@ class ResetPasswordNotification extends Notification
     use Queueable;
 
     public $token;
+
     public $email;
 
     /**
@@ -40,7 +40,7 @@ class ResetPasswordNotification extends Notification
     {
         $resetUrl = config('app.frontend_url') . '/reset-password?token=' . $this->token . '&email=' . urlencode($this->email);
 
-        return (new MailMessage)
+        return (new MailMessage())
             ->subject('Reset Password Notification')
             ->greeting('Hello!')
             ->line('You are receiving this email because we received a password reset request for your account.')

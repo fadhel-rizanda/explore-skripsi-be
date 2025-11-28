@@ -16,6 +16,7 @@ class UploadController extends Controller
     use ResponseAPI;
 
     protected S3Client $s3Client;
+
     protected string $bucket;
 
     public function __construct(S3Client $s3Client)
@@ -32,12 +33,12 @@ class UploadController extends Controller
             'image/webp' => ['webp'],
             'application/pdf' => ['pdf'],
             'application/msword' => ['doc'],
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => ['docx']
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => ['docx'],
         ];
 
         $contentType = $request->input('content_type');
 
-        if (!isset($allowedTypes[$contentType])) {
+        if (! isset($allowedTypes[$contentType])) {
             return $this->sendError('Unsupported file type.', 400);
         }
 
@@ -49,7 +50,7 @@ class UploadController extends Controller
             return $this->sendError('Filename must include a file extension (e.g., document.pdf, image.jpg).', 400);
         }
 
-        if (!in_array($extension, $allowedTypes[$contentType])) {
+        if (! in_array($extension, $allowedTypes[$contentType])) {
             return $this->sendError("File extension '{$extension}' does not match content type '{$contentType}'. Expected: " . implode(', ', $allowedTypes[$contentType]), 400);
         }
 
@@ -93,14 +94,15 @@ class UploadController extends Controller
             'document_id' => $document->id,
             'path' => $path,
             'content_type' => $contentType,
-            'expires_in' => 900
+            'expires_in' => 900,
         ];
 
         if ($isPublic) {
             $responseData['public_url'] = $publicUrl;
         }
 
-        return $this->sendSuccess('Presigned URL generated successfully.',
+        return $this->sendSuccess(
+            'Presigned URL generated successfully.',
             $responseData,
             201
         );
@@ -110,13 +112,13 @@ class UploadController extends Controller
     {
         $document = Attachment::find($documentId);
 
-        if (!Storage::disk('s3')->exists($document->path)) {
+        if (! Storage::disk('s3')->exists($document->path)) {
             return $this->sendError('File not found in storage.', 404);
         }
 
         $document->update([
             'status' => 'completed',
-            'uploaded_at' => now()
+            'uploaded_at' => now(),
         ]);
 
         return $this->sendSuccess('Upload confirmed successfully.', ['document' => $document]);
@@ -126,7 +128,7 @@ class UploadController extends Controller
     {
         $document = Attachment::findOrFail($documentId);
 
-        if ($document->status !== 'completed' || !Storage::disk('s3')->exists($document->path)) {
+        if ($document->status !== 'completed' || ! Storage::disk('s3')->exists($document->path)) {
             return $this->sendError('File not found in storage.', 404);
         }
 
@@ -140,7 +142,7 @@ class UploadController extends Controller
 
         return $this->sendSuccess('Download URL generated successfully.', [
             'download_url' => $url,
-            'expires_in' => 3600 // seconds
+            'expires_in' => 3600, // seconds
         ]);
     }
 
@@ -154,6 +156,7 @@ class UploadController extends Controller
             }
         } catch (\Exception $e) {
             Log::error('Failed to delete file from S3: ' . $document->path, ['error' => $e->getMessage()]);
+
             return $this->sendError('Failed to delete document from storage.', 500);
         }
 
