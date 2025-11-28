@@ -5,12 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class AdoptionDocument extends Model
+class Attachment extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'adoption_id',
         'uploaded_by',
         'filename',
         'path',
@@ -23,11 +22,6 @@ class AdoptionDocument extends Model
     protected $casts = [
         'uploaded_at' => 'datetime',
     ];
-
-    public function adoption()
-    {
-        return $this->belongsTo(Adoption::class);
-    }
 
     public function uploader()
     {
