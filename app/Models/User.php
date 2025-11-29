@@ -4,6 +4,8 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
@@ -62,7 +64,7 @@ class User extends Authenticatable implements JWTSubject
         ];
     }
 
-    protected static function boot()
+    protected static function boot(): void
     {
         parent::boot();
 
@@ -73,15 +75,26 @@ class User extends Authenticatable implements JWTSubject
         });
     }
 
-    public function getJWTIdentifier()
+    public function getJWTIdentifier(): mixed
     {
         return $this->getKey();
     }
 
-    public function getJWTCustomClaims()
+    public function getJWTCustomClaims(): array
     {
         return [
             'token_version' => $this->token_version ?? 0,
         ];
+    }
+
+    public function chatRooms(): BelongsToMany
+    {
+        return $this->belongsToMany(Chat::class, 'chat_room_user', 'user_id', 'chat_room_id')
+                    ->withTimestamps()
+                    ->withPivot('last_read_at', 'joined_at');
+    }
+
+    public function chatMessages(): HasMany{
+        return $this->hasMany(Message::class, 'user_id');
     }
 }
