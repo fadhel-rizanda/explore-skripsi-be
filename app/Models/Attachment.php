@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 
 class Attachment extends Model
@@ -34,7 +35,7 @@ class Attachment extends Model
         'uploaded_at' => 'datetime',
     ];
 
-    protected static function boot()
+    protected static function boot(): void
     {
         parent::boot();
 
@@ -45,7 +46,7 @@ class Attachment extends Model
         });
     }
 
-    public function uploader()
+    public function uploader():BelongsTo
     {
         return $this->belongsTo(User::class, 'uploaded_by');
     }
