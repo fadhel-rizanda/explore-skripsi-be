@@ -108,7 +108,7 @@ class UploadController extends Controller
                 201
             );
         }catch (\Exception $exception){
-            Log::error('generatePresignedUrl failed: ' . $exception->getMessage(), [
+            Log::error('generatePresignedUrl failed', [
                 'exception' => $exception->getMessage(),
                 'trace' => $exception->getTraceAsString(),
             ]);
@@ -133,7 +133,7 @@ class UploadController extends Controller
 
             return $this->sendSuccess('Upload confirmed successfully.', ['document' => $document]);
         }catch (\Exception $exception){
-            Log::error('confirmUpload failed: ' . $exception->getMessage(), [
+            Log::error('confirmUpload failed', [
                 'exception' => $exception->getMessage(),
                 'trace' => $exception->getTraceAsString(),
             ]);
@@ -163,7 +163,7 @@ class UploadController extends Controller
                 'expires_in' => 3600, // seconds
             ]);
         }catch (\Exception $exception){
-            Log::error('generateDownloadUrl failed: ' . $exception->getMessage(), [
+            Log::error('generateDownloadUrl failed', [
                 'exception' => $exception->getMessage(),
                 'trace' => $exception->getTraceAsString(),
             ]);
@@ -180,7 +180,7 @@ class UploadController extends Controller
                 Storage::disk('s3')->delete($document->path);
             }
         } catch (\Exception $exception) {
-            Log::error('deleteDocument failed: ' . $exception->getMessage(), [
+            Log::error('deleteDocument failed', [
                 'exception' => $exception->getMessage(),
                 'trace' => $exception->getTraceAsString(),
             ]);
