@@ -7,6 +7,8 @@ use App\Http\Requests\CreateChatRequest;
 use App\Http\Requests\SendMessageRequest;
 use App\Models\Chat;
 use App\Traits\ResponseAPI;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ChatController extends Controller
 {
@@ -38,38 +40,62 @@ class ChatController extends Controller
     {
         $currentUser = auth('api')->user();
         $userIds = collect($request->user_ids)->push($currentUser->id)->unique()->sort()->values();
-        $chatRoom = Chat::where('type', 'private')
-            ->whereHas('users', function ($query) use ($userIds) {
-                $query->whereIn('user_id', $userIds);
-            }, '=', count($userIds))
-            ->first();
-        if (! $chatRoom) {
-            $chatRoom = Chat::create([
-                'type' => $request->type,
-                'created_by' => $currentUser->id,
+
+        try {
+            $chatRoom = Chat::where('type', 'private')
+                ->whereHas('users', function ($query) use ($userIds) {
+                    $query->whereIn('user_id', $userIds);
+                }, '=', count($userIds))
+                ->first();
+            if (! $chatRoom) {
+                $chatRoom = Chat::create([
+                    'type' => $request->type,
+                    'created_by' => $currentUser->id,
+                ]);
+                $chatRoom->users()->attach($userIds);
+            }
+
+            $chatRoom->load('users', 'lastMessage');
+
+            return $this->sendSuccess('Private chat room retrieved successfully', $chatRoom);
+        } catch (\Exception $exception) {
+            Log::error('getOrCreatePrivateChat failed: ' . $exception->getMessage(), [
+                'exception' => $exception->getMessage(),
+                'trace' => $exception->getTraceAsString(),
             ]);
-            $chatRoom->users()->attach($userIds);
+
+            return $this->sendError('Failed to get private chat', 500);
         }
-
-        $chatRoom->load('users', 'lastMessage');
-
-        return $this->sendSuccess('Private chat room retrieved successfully', $chatRoom);
     }
 
     public function createChat(CreateChatRequest $request)
     {
         $currentUser = auth('api')->user();
-        $chatRoom = Chat::create([
-            'name' => $request->name,
-            'type' => $request->type,
-            'created_by' => $currentUser->id,
-        ]);
-        $userIds = collect($request->user_ids)->push($currentUser->id)->unique();
-        $chatRoom->users()->attach($userIds);
+        DB::beginTransaction();
 
-        $chatRoom->load('users', 'lastMessage');
+        try {
+            $chatRoom = Chat::create([
+                'name' => $request->name,
+                'type' => $request->type,
+                'created_by' => $currentUser->id,
+            ]);
+            $userIds = collect($request->user_ids)->push($currentUser->id)->unique();
+            $chatRoom->users()->attach($userIds);
 
-        return $this->sendSuccess('Chat room created successfully', $chatRoom);
+            $chatRoom->load('users', 'lastMessage');
+
+            DB::commit();
+
+            return $this->sendSuccess('Chat room created successfully', $chatRoom);
+        } catch (\Exception $exception) {
+            DB::rollBack();
+            Log::error('createChat failed: ' . $exception->getMessage(), [
+                'exception' => $exception->getMessage(),
+                'trace' => $exception->getTraceAsString(),
+            ]);
+
+            return $this->sendError('Failed to create chat', 500);
+        }
     }
 
     public function sendMessage($roomId, SendMessageRequest $request)
@@ -81,17 +107,26 @@ class ChatController extends Controller
             return $this->sendError('You are not a member of this chat room', 403);
         }
 
-        $message = $room->messages()->create([
-            'user_id' => $user->id,
-            'message' => $request->input('message'),
-            'attachment_id' => $request->input('attachment_id'),
-        ]);
+        try {
+            $message = $room->messages()->create([
+                'user_id' => $user->id,
+                'message' => $request->input('message'),
+                'attachment_id' => $request->input('attachment_id'),
+            ]);
 
-        $message->load('user', 'attachment');
+            $message->load('user', 'attachment');
 
-        broadcast(new MessageSent($message));
+            broadcast(new MessageSent($message));
 
-        return $this->sendSuccess('Message sent successfully', $message);
+            return $this->sendSuccess('Message sent successfully', $message);
+        } catch (\Exception $exception) {
+            Log::error('sendMessage failed: ' . $exception->getMessage(), [
+                'exception' => $exception->getMessage(),
+                'trace' => $exception->getTraceAsString(),
+            ]);
+
+            return $this->sendError('Failed to send message', 500);
+        }
     }
 
     public function markRoomAsRead($roomId)
@@ -103,11 +138,20 @@ class ChatController extends Controller
             return $this->sendError('You are not a member of this chat room', 403);
         }
 
-        $room->readStatuses()->updateOrCreate(
-            ['user_id' => $user->id],
-            ['last_read_at' => now()]
-        );
+        try {
+            $room->readStatuses()->updateOrCreate(
+                ['user_id' => $user->id],
+                ['last_read_at' => now()]
+            );
 
-        return $this->sendSuccess('Chat room marked as read');
+            return $this->sendSuccess('Chat room marked as read');
+        } catch (\Exception $exception) {
+            Log::error('markRoomAsRead failed: ' . $exception->getMessage(), [
+                'exception' => $exception->getMessage(),
+                'trace' => $exception->getTraceAsString(),
+            ]);
+
+            return $this->sendError('Failed to mark room as read', 500);
+        }
     }
 }
