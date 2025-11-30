@@ -35,19 +35,19 @@ class Chat extends Model
         });
     }
 
-    public function messages():HasMany
+    public function messages(): HasMany
     {
         return $this->hasMany(Message::class, 'room_id');
     }
 
-    public function users():BelongsToMany
+    public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'chat_room_user', 'chat_room_id', 'user_id')
-                    ->withTimestamps()
-                    ->withPivot('last_read_at', 'joined_at');
+            ->withTimestamps()
+            ->withPivot('last_read_at', 'joined_at');
     }
 
-    public function latestMessage():HasMany
+    public function latestMessage(): HasMany
     {
         return $this->messages()->latest();
     }

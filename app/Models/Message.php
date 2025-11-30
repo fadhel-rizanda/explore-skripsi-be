@@ -36,22 +36,22 @@ class Message extends Model
         });
     }
 
-    public function room():BelongsTo
+    public function room(): BelongsTo
     {
         return $this->belongsTo(Chat::class, 'room_id');
     }
 
-    public function user():BelongsTo
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function attachment():BelongsTo
+    public function attachment(): BelongsTo
     {
         return $this->belongsTo(Attachment::class, 'attachment_id');
     }
 
-    public function readBy():BelongsToMany
+    public function readBy(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'chat_message_reads', 'message_id', 'user_id')
             ->withPivot('read_at')

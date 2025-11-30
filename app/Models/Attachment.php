@@ -46,7 +46,7 @@ class Attachment extends Model
         });
     }
 
-    public function uploader():BelongsTo
+    public function uploader(): BelongsTo
     {
         return $this->belongsTo(User::class, 'uploaded_by');
     }
