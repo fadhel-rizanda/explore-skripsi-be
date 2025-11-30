@@ -59,7 +59,7 @@ class ChatController extends Controller
 
             return $this->sendSuccess('Private chat room retrieved successfully', $chatRoom);
         } catch (\Exception $exception) {
-            Log::error('getOrCreatePrivateChat failed: ' . $exception->getMessage(), [
+            Log::error('getOrCreatePrivateChat failed', [
                 'exception' => $exception->getMessage(),
                 'trace' => $exception->getTraceAsString(),
             ]);
@@ -89,7 +89,7 @@ class ChatController extends Controller
             return $this->sendSuccess('Chat room created successfully', $chatRoom);
         } catch (\Exception $exception) {
             DB::rollBack();
-            Log::error('createChat failed: ' . $exception->getMessage(), [
+            Log::error('createChat failed', [
                 'exception' => $exception->getMessage(),
                 'trace' => $exception->getTraceAsString(),
             ]);
@@ -120,7 +120,7 @@ class ChatController extends Controller
 
             return $this->sendSuccess('Message sent successfully', $message);
         } catch (\Exception $exception) {
-            Log::error('sendMessage failed: ' . $exception->getMessage(), [
+            Log::error('sendMessage failed', [
                 'exception' => $exception->getMessage(),
                 'trace' => $exception->getTraceAsString(),
             ]);
@@ -146,7 +146,7 @@ class ChatController extends Controller
 
             return $this->sendSuccess('Chat room marked as read');
         } catch (\Exception $exception) {
-            Log::error('markRoomAsRead failed: ' . $exception->getMessage(), [
+            Log::error('markRoomAsRead failed', [
                 'exception' => $exception->getMessage(),
                 'trace' => $exception->getTraceAsString(),
             ]);
