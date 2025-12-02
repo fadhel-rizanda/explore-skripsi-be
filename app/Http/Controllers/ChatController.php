@@ -82,7 +82,7 @@ class ChatController extends Controller
             $userIds = collect($request->user_ids)->push($currentUser->id)->unique();
             $chatRoom->users()->attach($userIds);
 
-            $chatRoom->load('users', 'lastMessage');
+            $chatRoom->load('users');
 
             DB::commit();
 

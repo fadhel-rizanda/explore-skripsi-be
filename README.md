@@ -57,10 +57,21 @@
    php artisan serve
    ```
 
-4. **Code linting:**
+4. **Run Reverb WebSocket server:**
    ```sh
-   composer lint       # Check code style
-   composer format     # Fix code style
+   php artisan reverb:start
+   php artisan queue:work
+   ```
+   
+5. **Test Reverb WebSocket server:**
+   ```sh
+   npm install -g wscat
+   
+   wscat -c ws://localhost:8080/app/<REVERB_APP_KEY>?protocol=7&client=js&version=6.0.0
+    > {"event":"pusher:subscribe","data":{"channel":"<CHANNEL_NAME>"}}
+   
+   php artisan tinker
+   event(new \App\Events\TestBroadcast());
    ```
 
 ## Code Linting
