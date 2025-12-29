@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Models\AdoptionDocument;
+use App\Models\Attachment;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -15,7 +15,7 @@ class CleanupPendingUploads extends Command
 
     public function handle()
     {
-        $documents = AdoptionDocument::where('status', 'pending')
+        $documents = Attachment::where('status', 'pending')
             ->where('created_at', '<', now()->subHour())
             ->get();
 
