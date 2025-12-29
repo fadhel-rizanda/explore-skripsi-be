@@ -54,58 +54,67 @@ class UploadController extends Controller
             return $this->sendError("File extension '{$extension}' does not match content type '{$contentType}'. Expected: " . implode(', ', $allowedTypes[$contentType]), 400);
         }
 
-        // Generate path
-        $uniqueFileName = Str::uuid() . '.' . $extension;
-        $uuid = Str::uuid();
+        try {
+            // Generate path
+            $uniqueFileName = Str::uuid() . '.' . $extension;
+            $uuid = Str::uuid();
 
-        $isPublic = $request->input('is_public', false);
-        $path = $isPublic ? 'public/' . $uuid . '/' . $uniqueFileName : 'private/' . $uuid . '/' . $uniqueFileName;
+            $isPublic = $request->input('is_public', false);
+            $path = $isPublic ? 'public/' . $uuid . '/' . $uniqueFileName : 'private/' . $uuid . '/' . $uniqueFileName;
 
-        // Generate presigned URL dengan command PutObject
-        $command = $this->s3Client->getCommand('PutObject', [
-            'Bucket' => $this->bucket,
-            'Key' => $path,
-            'ContentType' => $contentType,
-        ]);
+            // Generate presigned URL dengan command PutObject
+            $command = $this->s3Client->getCommand('PutObject', [
+                'Bucket' => $this->bucket,
+                'Key' => $path,
+                'ContentType' => $contentType,
+            ]);
 
-        // Create presigned request (valid 15 menit)
-        $presignedRequest = $this->s3Client->createPresignedRequest($command, '+15 minutes');
-        $uploadUrl = (string) $presignedRequest->getUri();
+            // Create presigned request (valid 15 menit)
+            $presignedRequest = $this->s3Client->createPresignedRequest($command, '+15 minutes');
+            $uploadUrl = (string) $presignedRequest->getUri();
 
-        $publicUrl = $isPublic
-            ? "https://{$this->bucket}.s3." . config('filesystems.disks.s3.region') . ".amazonaws.com/{$path}"
-            : null;
+            $publicUrl = $isPublic
+                ? "https://{$this->bucket}.s3." . config('filesystems.disks.s3.region') . ".amazonaws.com/{$path}"
+                : null;
 
-        $user = auth('api')->user();
+            $user = auth('api')->user();
 
-        $document = Attachment::create([
-            'filename' => $filename,
-            'path' => $path,
-            'file_size' => $request->input('file_size'),
-            'mime_type' => $contentType,
-            'status' => 'pending',
-            'uploaded_by' => $user->id,
-            'is_public' => $isPublic,
-            'public_url' => $publicUrl,
-        ]);
+            $document = Attachment::create([
+                'filename' => $filename,
+                'path' => $path,
+                'file_size' => $request->input('file_size'),
+                'mime_type' => $contentType,
+                'status' => 'pending',
+                'uploaded_by' => $user->id,
+                'is_public' => $isPublic,
+                'public_url' => $publicUrl,
+            ]);
 
-        $responseData = [
-            'upload_url' => $uploadUrl,
-            'document_id' => $document->id,
-            'path' => $path,
-            'content_type' => $contentType,
-            'expires_in' => 900,
-        ];
+            $responseData = [
+                'upload_url' => $uploadUrl,
+                'document_id' => $document->id,
+                'path' => $path,
+                'content_type' => $contentType,
+                'expires_in' => 900,
+            ];
 
-        if ($isPublic) {
-            $responseData['public_url'] = $publicUrl;
+            if ($isPublic) {
+                $responseData['public_url'] = $publicUrl;
+            }
+
+            return $this->sendSuccess(
+                'Presigned URL generated successfully.',
+                $responseData,
+                201
+            );
+        }catch (\Exception $exception){
+            Log::error('generatePresignedUrl failed', [
+                'exception' => $exception->getMessage(),
+                'trace' => $exception->getTraceAsString(),
+            ]);
+
+            return $this->sendError('Failed to generate presigned URL', 500);
         }
-
-        return $this->sendSuccess(
-            'Presigned URL generated successfully.',
-            $responseData,
-            201
-        );
     }
 
     public function confirmUpload($documentId)
@@ -116,12 +125,20 @@ class UploadController extends Controller
             return $this->sendError('File not found in storage.', 404);
         }
 
-        $document->update([
-            'status' => 'completed',
-            'uploaded_at' => now(),
-        ]);
+        try {
+            $document->update([
+                'status' => 'completed',
+                'uploaded_at' => now(),
+            ]);
 
-        return $this->sendSuccess('Upload confirmed successfully.', ['document' => $document]);
+            return $this->sendSuccess('Upload confirmed successfully.', ['document' => $document]);
+        }catch (\Exception $exception){
+            Log::error('confirmUpload failed', [
+                'exception' => $exception->getMessage(),
+                'trace' => $exception->getTraceAsString(),
+            ]);
+            return $this->sendError('Failed to confirm upload.', 500);
+        }
     }
 
     public function generateDownloadUrl($documentId)
@@ -132,18 +149,26 @@ class UploadController extends Controller
             return $this->sendError('File not found in storage.', 404);
         }
 
-        $url = Storage::disk('s3')->temporaryUrl(
-            $document->path,
-            now()->addHour(),
-            [
-                'ResponseContentDisposition' => 'attachment; filename="' . $document->filename . '"',
-            ]
-        );
+        try {
+            $url = Storage::disk('s3')->temporaryUrl(
+                $document->path,
+                now()->addHour(),
+                [
+                    'ResponseContentDisposition' => 'attachment; filename="' . $document->filename . '"',
+                ]
+            );
 
-        return $this->sendSuccess('Download URL generated successfully.', [
-            'download_url' => $url,
-            'expires_in' => 3600, // seconds
-        ]);
+            return $this->sendSuccess('Download URL generated successfully.', [
+                'download_url' => $url,
+                'expires_in' => 3600, // seconds
+            ]);
+        }catch (\Exception $exception){
+            Log::error('generateDownloadUrl failed', [
+                'exception' => $exception->getMessage(),
+                'trace' => $exception->getTraceAsString(),
+            ]);
+            return $this->sendError('Failed to generate download URL.', 500);
+        }
     }
 
     public function deleteDocument($documentId)
@@ -154,8 +179,11 @@ class UploadController extends Controller
             if (Storage::disk('s3')->exists($document->path)) {
                 Storage::disk('s3')->delete($document->path);
             }
-        } catch (\Exception $e) {
-            Log::error('Failed to delete file from S3: ' . $document->path, ['error' => $e->getMessage()]);
+        } catch (\Exception $exception) {
+            Log::error('deleteDocument failed', [
+                'exception' => $exception->getMessage(),
+                'trace' => $exception->getTraceAsString(),
+            ]);
 
             return $this->sendError('Failed to delete document from storage.', 500);
         }
