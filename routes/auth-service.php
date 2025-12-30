@@ -10,7 +10,7 @@ Route::group(['prefix' => 'auth'], function () {
     Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
     Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
-    Route::get('/provider}', [AuthController::class, 'redirectToProvider']);
+    Route::get('/{provider}', [AuthController::class, 'redirectToProvider']);
     Route::get('/{provider}/callback', [AuthController::class, 'handleProviderCallback']);
 
     // harus 2 biar semua token yang ke invalid
