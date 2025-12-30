@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class Notification extends Model
 {
@@ -37,7 +38,7 @@ class Notification extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function reference(): BelongsTo
+    public function reference(): MorphTo
     {
         return $this->morphTo(
             __FUNCTION__, // otomatis menggunakan nama fungsi sebagai nama relasi

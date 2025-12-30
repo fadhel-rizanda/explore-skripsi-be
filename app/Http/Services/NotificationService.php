@@ -40,11 +40,6 @@ class NotificationService
 
         Notification::insert($notifications);
 
-        foreach ($notifications as $notificationData) {
-            $notification = new Notification((array) $notificationData);
-            broadcast(new NotificationSent($notification));
-        }
-
         return count($notifications);
     }
 

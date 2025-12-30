@@ -39,7 +39,7 @@ class NotificationSent implements ShouldBroadcast
             'reference_type' => $this->notification->reference_type,
             'reference_id' => $this->notification->reference_id,
             'created_at' => $this->notification->created_at->toIso8601String(),
-            'read_at' => $this->notification->read_at->toIso8601String() ?? null,
+            'read_at' => $this->notification->read_at?->toIso8601String(),
         ];
     }
 

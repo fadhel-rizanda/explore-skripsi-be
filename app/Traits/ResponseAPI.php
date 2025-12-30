@@ -32,7 +32,7 @@ trait ResponseAPI
                 'error' => false,
                 'status' => 'success',
                 'message' => $message,
-                'data' => $data ?: ($pagination->items() ?: []),
+                'data' => $data ?? $pagination->items(),
                 'current_page' => $pagination->currentPage(),
                 'total' => $pagination->total(),
                 'per_page' => $pagination->perPage(),
