@@ -48,7 +48,7 @@ class NotificationController extends Controller
             $notificationId
         );
         if ($notification) {
-            return $this->sendSuccess('Notification marked as unread', $notification);
+            return $this->sendSuccess('Notification marked as unread');
         } else {
             return $this->sendError('Notification not found or already read', 404);
         }
