@@ -22,8 +22,8 @@ class SendMessageRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'message' => 'required|string',
-            'attachment_id' => 'nullable|uuid',
+            'message' => 'required_without:attachment_id|nullable|string|max:10000',
+            'attachment_id' => 'required_without:message|nullable|string|exists:attachments,id',
         ];
     }
 }
