@@ -85,6 +85,13 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withSchedule(function (\Illuminate\Console\Scheduling\Schedule $schedule): void {
-        $schedule->command('uploads:cleanup')->hourly();
+        //        php artisan schedule:list
+        $schedule->command('uploads:cleanup')
+            ->hourly();
+        $schedule->command('reminders:weekly-notifications')
+            ->weeklyOn(1, '09:00') // setiap hari senin jam 9 pagi
+            ->timezone('Asia/Jakarta')
+            ->emailOutputOnFailure(config('mail.admin_email')) // kirim email ke admin jika gagal
+            ->appendOutputTo(storage_path('logs/weekly-reminders.log')); // simpan log ke file
     })
     ->create();
