@@ -21,7 +21,7 @@ class NotificationController extends Controller
     {
         $notifications = $this->notificationService->getUserNotifications(
             auth('api')->id(),
-            $request->query('unread_only', false),
+            $request->boolean('unread_only'),
             $request->query('per_page', 15)
         );
 
@@ -35,7 +35,7 @@ class NotificationController extends Controller
             $notificationId
         );
         if ($notification) {
-            return $this->sendSuccess('Notification marked as read', $notification);
+            return $this->sendSuccess('Notification marked as read');
         } else {
             return $this->sendError('Notification not found or already read', 404);
         }

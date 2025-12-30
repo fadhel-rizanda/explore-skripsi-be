@@ -54,19 +54,19 @@ class SendWeeklyNotificationReminders extends Command
         $bar = $this->output->createProgressBar($total);
         $bar->start();
 
-        $query->chunk(500, function ($users) use ($bar) {
+        $query->withCount(['notifications as unread_count' => function ($query) {
+            $query->unread();
+        }])->whereHas('notifications', function ($query) {
+            $query->unread();
+        })->chunk(500, function ($users) use ($bar) {
             foreach ($users as $user) {
-                $unreadCount = Notification::forUser($user->id)->unread()->count();
-                if ($unreadCount > 0) {
-                    if ($this->option('dry-run')) {
-                        $this->info("Dry run: Would send reminder to user ID {$user->id} with {$unreadCount} unread notifications.");
-                    } else {
-                        SendWeeklyReminderEmail::dispatch($user->id, $unreadCount);
-                    }
+                if ($this->option('dry-run')) {
+                    $this->info("Dry run: Would send reminder to user ID {$user->id} with {$user->unread_count} unread notifications.");
+                } else {
+                    SendWeeklyReminderEmail::dispatch($user->id, $user->unread_count);
                 }
                 $bar->advance();
             }
-            usleep(100000); // biar kg meleduk dbnya
         });
 
         $bar->finish();
