@@ -2,20 +2,20 @@
 
 namespace App\Console\Commands;
 
-use App\Models\AdoptionDocument;
+use App\Models\Attachment;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class CleanupPendingUploads extends Command
 {
-    protected $signature = 'uploads:cleanup';
+    protected $signature = 'uploads:cleanup'; // php artisan uploads:cleanup, fungsinya biar bisa dieksekusi oleh eksternal (cronjob)
 
     protected $description = 'Cleanup pending uploads older than 1 hour';
 
     public function handle()
     {
-        $documents = AdoptionDocument::where('status', 'pending')
+        $documents = Attachment::where('status', 'pending')
             ->where('created_at', '<', now()->subHour())
             ->get();
 
@@ -26,7 +26,7 @@ class CleanupPendingUploads extends Command
                 Log::error('Failed to delete file from S3: ' . $document->path, ['error' => $e->getMessage()]);
                 $document->status = 'failed';
                 $document->save();
-                continue; // Or break if you want to stop processing further documents
+                continue;
             }
             $document->delete();
         }

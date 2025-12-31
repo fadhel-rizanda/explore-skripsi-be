@@ -57,13 +57,18 @@
    php artisan serve
    ```
 
-4. **Run Reverb WebSocket server:**
+4. **Run Scheduler:**
+   ```sh
+   php artisan schedule:work
+   ```
+
+5. **Run Reverb WebSocket server:**
    ```sh
    php artisan reverb:start --debug
    php artisan queue:work --verbose 
    ```
    
-5. **Test Reverb WebSocket server (public):**
+6. **Test Reverb WebSocket server (public):**
    ```sh
    npm install -g wscat
    

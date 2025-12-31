@@ -25,6 +25,28 @@ trait ResponseAPI
         );
     }
 
+    public function sendSuccessPagination($message, $pagination, $data = null, int $code = 200): \Illuminate\Http\JsonResponse
+    {
+        return response()->json(
+            [
+                'error' => false,
+                'status' => 'success',
+                'message' => $message,
+                'data' => $data ?? $pagination->items(),
+                'current_page' => $pagination->currentPage(),
+                'total' => $pagination->total(),
+                'per_page' => $pagination->perPage(),
+                'next_page_url' => $pagination->nextPageUrl(),
+                'prev_page_url' => $pagination->previousPageUrl(),
+                'first_page_url' => $pagination->url(1),
+                'last_page_url' => $pagination->url($pagination->lastPage()),
+            ],
+            $code,
+            [],
+            JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT
+        );
+    }
+
     /**
      * return error response.
      *

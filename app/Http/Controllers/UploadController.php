@@ -107,7 +107,7 @@ class UploadController extends Controller
                 $responseData,
                 201
             );
-        }catch (\Exception $exception){
+        } catch (\Exception $exception) {
             Log::error('generatePresignedUrl failed', [
                 'exception' => $exception->getMessage(),
                 'trace' => $exception->getTraceAsString(),
@@ -132,11 +132,12 @@ class UploadController extends Controller
             ]);
 
             return $this->sendSuccess('Upload confirmed successfully.', ['document' => $document]);
-        }catch (\Exception $exception){
+        } catch (\Exception $exception) {
             Log::error('confirmUpload failed', [
                 'exception' => $exception->getMessage(),
                 'trace' => $exception->getTraceAsString(),
             ]);
+
             return $this->sendError('Failed to confirm upload.', 500);
         }
     }
@@ -162,11 +163,12 @@ class UploadController extends Controller
                 'download_url' => $url,
                 'expires_in' => 3600, // seconds
             ]);
-        }catch (\Exception $exception){
+        } catch (\Exception $exception) {
             Log::error('generateDownloadUrl failed', [
                 'exception' => $exception->getMessage(),
                 'trace' => $exception->getTraceAsString(),
             ]);
+
             return $this->sendError('Failed to generate download URL.', 500);
         }
     }
