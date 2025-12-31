@@ -59,19 +59,21 @@
 
 4. **Run Reverb WebSocket server:**
    ```sh
-   php artisan reverb:start
-   php artisan queue:work
+   php artisan reverb:start --debug
+   php artisan queue:work --verbose 
    ```
    
-5. **Test Reverb WebSocket server:**
+5. **Test Reverb WebSocket server (public):**
    ```sh
    npm install -g wscat
    
-   wscat -c ws://localhost:8080/app/<REVERB_APP_KEY>?protocol=7&client=js&version=6.0.0
+   wscat -c "ws://localhost:8080/app/"<REVERB_APP_KEY>"?protocol=7&client=js&version=6.0.0"
+    # first response will be connection established
+    > {"event":"pusher:connection_established","data":"{\"socket_id\":\"206735107.416029623\",\"activity_timeout\":30}"}
+    # input this for public channel
     > {"event":"pusher:subscribe","data":{"channel":"<CHANNEL_NAME>"}}
-   
-   php artisan tinker
-   event(new \App\Events\TestBroadcast());
+    # input this for private channel
+    > {"event":"pusher:subscribe","data":{"auth":"<TOKEN_BROADCASTING_AUTH>","channel":"<CHANNEL_NAME>"}} # TOKEN_BROADCASTING_AUTH from get from api/broadcasting/auth {socket_id, channel_name}
    ```
 
 ## Code Linting
