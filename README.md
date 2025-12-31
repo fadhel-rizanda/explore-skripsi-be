@@ -67,7 +67,7 @@
    ```sh
    npm install -g wscat
    
-   wscat -c "ws://localhost:8080/app/"<REVERB_APP_KEY>"?protocol=7&client=js&version=6.0.0"
+   wscat -c "ws://localhost:8080/app/<REVERB_APP_KEY>?protocol=7&client=js&version=6.0.0"
     # first response will be connection established
     > {"event":"pusher:connection_established","data":"{\"socket_id\":\"206735107.416029623\",\"activity_timeout\":30}"}
     # input this for public channel
