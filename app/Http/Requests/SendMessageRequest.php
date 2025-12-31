@@ -23,7 +23,7 @@ class SendMessageRequest extends FormRequest
     {
         return [
             'message' => 'required_without:attachment_id|nullable|string|max:10000',
-            'attachment_id' => 'required_without:message|nullable|uuid|exists:attachments,id',
+            'attachment_id' => 'required_without:message|nullable|uuid',
         ];
     }
 }

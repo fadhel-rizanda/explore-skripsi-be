@@ -40,13 +40,20 @@ class ResetPasswordNotification extends Notification
     {
         $resetUrl = config('app.frontend_url') . '/reset-password?token=' . $this->token . '&email=' . urlencode($this->email);
 
+        //        return (new MailMessage())
+        //            ->subject('Reset Password Notification')
+        //            ->greeting('Hello!')
+        //            ->line('You are receiving this email because we received a password reset request for your account.')
+        //            ->action('Reset Password', $resetUrl)
+        //            ->line('This password reset link will expire in ' . config('auth.passwords.users.expire') . ' minutes.')
+        //            ->line('If you did not request a password reset, no further action is required.');
+
         return (new MailMessage())
             ->subject('Reset Password Notification')
-            ->greeting('Hello!')
-            ->line('You are receiving this email because we received a password reset request for your account.')
-            ->action('Reset Password', $resetUrl)
-            ->line('This password reset link will expire in ' . config('auth.passwords.users.expire') . ' minutes.')
-            ->line('If you did not request a password reset, no further action is required.');
+            ->view('emails.reset-password', [
+                'resetUrl' => $resetUrl,
+                'expire' => config('auth.passwords.users.expire'),
+            ]);
     }
 
     /**
