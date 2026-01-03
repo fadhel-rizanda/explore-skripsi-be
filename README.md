@@ -23,6 +23,13 @@
 
 4. **Access the application:**
     - Open [http://localhost:8000](http://localhost:8000) in your browser.
+    - Open logs in another terminal:
+      ```sh
+      docker logs -f laravel_frankenphp
+      docker logs -f laravel_scheduler
+      docker logs -f laravel_queue
+      docker logs -f laravel_reverb
+      ```
 
 ## Useful Commands
 - **log containers:**
