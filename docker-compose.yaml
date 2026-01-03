@@ -107,7 +107,7 @@ services:
         condition: service_healthy
     networks:
       - laravel
-    command: sh -c "php artisan reverb:start --host=0.0.0.0 --port=8080"
+    command: sh -c "php artisan reverb:start --host=0.0.0.0 --port=8080 --debug"
 
   queue:
     build:
@@ -129,7 +129,7 @@ services:
         condition: service_healthy
     networks:
       - laravel
-    command: sh -c "php artisan queue:work --sleep=3 --tries=3 --max-time=3600"
+    command: sh -c "php artisan queue:work --sleep=3 --tries=3 --max-time=3600 --verbose"
   scheduler:
     build:
       context: .
@@ -150,7 +150,7 @@ services:
         condition: service_healthy
     networks:
       - laravel
-    command: sh -c "while true; do php artisan schedule:run --verbose --no-interaction & sleep 60; done"
+    command: sh -c "while true; do php artisan schedule:run --verbose --no-interaction; sleep 60; done"
 volumes:
   postgres_data:
     driver: local
