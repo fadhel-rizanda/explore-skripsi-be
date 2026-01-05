@@ -7,7 +7,7 @@ Route::group([
     'prefix' => 'chats',
     'middleware' => ['auth:api', 'check.token.version'],
 ], function () {
-    Route::get('/rooms', [ChatController::class, 'getChatRooms']);
+    Route::get('/', [ChatController::class, 'getChatRooms']);
     Route::post('/private/{userId}', [ChatController::class, 'getOrCreatePrivateChat']);
     Route::post('/', [ChatController::class, 'createChat']);
     Route::post('/{roomId}/messages', [ChatController::class, 'sendMessage']);

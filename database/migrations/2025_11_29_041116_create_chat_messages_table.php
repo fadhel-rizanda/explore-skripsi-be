@@ -30,7 +30,7 @@ return new class() extends Migration
             $table->timestamp('joined_at')->useCurrent();
             $table->timestamps();
 
-            $table->unique(['chat_id', 'user_id']);
+            $table->primary(['chat_id', 'user_id']);
             $table->index('user_id');
         });
 
@@ -46,13 +46,11 @@ return new class() extends Migration
         });
 
         Schema::create('tr_message_read', function (Blueprint $table) {
-            $table->uuid('id')->primary();
             $table->foreignUuid('message_id')->constrained('tr_message')->onDelete('cascade');
             $table->foreignUuid('user_id')->constrained('mt_user')->onDelete('cascade');
             $table->timestamp('read_at')->useCurrent();
             $table->timestamps();
-
-            $table->unique(['message_id', 'user_id']);
+            $table->primary(['message_id', 'user_id']);
         });
     }
 

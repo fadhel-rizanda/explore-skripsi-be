@@ -3,8 +3,8 @@
 use Illuminate\Support\Facades\Broadcast;
 
 // php artisan install:broadcasting
-Broadcast::channel('room.{roomId}', function ($user, $roomId) {
+Broadcast::channel('chat.{roomId}', function ($user, $roomId) {
     return $user->chatRooms()
-        ->where('chat_rooms.id', $roomId)
+        ->where('mt_chat.id', $roomId)
         ->exists();
 });
