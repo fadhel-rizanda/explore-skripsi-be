@@ -25,7 +25,7 @@ class CreateChatRequest extends FormRequest
             'name' => 'nullable|string|max:255',
             'type' => 'required|in:private,group',
             'user_ids' => 'required|array|min:1',
-            'user_ids.*' => 'string|exists:users,id',
+            'user_ids.*' => 'string|exists:mt_user,id',
         ];
     }
 }
