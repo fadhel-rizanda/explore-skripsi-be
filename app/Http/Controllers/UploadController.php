@@ -56,8 +56,8 @@ class UploadController extends Controller
 
         try {
             // Generate path
-            $uniqueFileName = Str::uuid() . '.' . $extension;
-            $uuid = Str::uuid();
+            $uuid = Str::uuid7();
+            $uniqueFileName = $uuid . '.' . $extension;
 
             $isPublic = $request->input('is_public', false);
             $path = $isPublic ? 'public/' . $uuid . '/' . $uniqueFileName : 'private/' . $uuid . '/' . $uniqueFileName;
@@ -92,7 +92,7 @@ class UploadController extends Controller
 
             $responseData = [
                 'upload_url' => $uploadUrl,
-                'document_id' => $document->id,
+                'attachment_id' => $document->id,
                 'path' => $path,
                 'content_type' => $contentType,
                 'expires_in' => 900,
@@ -131,7 +131,7 @@ class UploadController extends Controller
                 'uploaded_at' => now(),
             ]);
 
-            return $this->sendSuccess('Upload confirmed successfully.', ['document' => $document]);
+            return $this->sendSuccess('Upload confirmed successfully.', ['attachment' => $document]);
         } catch (\Exception $exception) {
             Log::error('confirmUpload failed', [
                 'exception' => $exception->getMessage(),

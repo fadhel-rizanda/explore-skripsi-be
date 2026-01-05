@@ -11,7 +11,7 @@ class Notification extends Model
 {
     use HasUuids;
 
-    protected $table = 'notifications';
+    protected $table = 'tr_notification';
 
     public $incrementing = false;
 
