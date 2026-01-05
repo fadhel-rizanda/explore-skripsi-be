@@ -56,8 +56,8 @@ class UploadController extends Controller
 
         try {
             // Generate path
-            $uniqueFileName = Str::uuid7() . '.' . $extension;
             $uuid = Str::uuid7();
+            $uniqueFileName = $uuid . '.' . $extension;
 
             $isPublic = $request->input('is_public', false);
             $path = $isPublic ? 'public/' . $uuid . '/' . $uniqueFileName : 'private/' . $uuid . '/' . $uniqueFileName;
