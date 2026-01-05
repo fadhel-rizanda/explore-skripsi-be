@@ -11,9 +11,9 @@ return new class() extends Migration
      */
     public function up(): void
     {
-        Schema::create('attachments', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(\Illuminate\Support\Facades\DB::raw('gen_random_uuid()')); // sebenernya kg eprlu lg default soalnya udh pake boot
-            $table->foreignUuid('uploaded_by')->constrained('users')->onDelete('cascade');
+        Schema::create('mt_attachment', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->foreignUuid('uploaded_by')->constrained('mt_user')->onDelete('cascade');
             $table->string('filename');
             $table->string('path');
             $table->integer('file_size');
@@ -31,6 +31,6 @@ return new class() extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('attachments');
+        Schema::dropIfExists('mt_attachment');
     }
 };

@@ -233,7 +233,7 @@ class AuthController extends BaseController
             $user = User::where('email', $request->email)->first();
             if ($user) {
                 $token = Str::random(64);
-                DB::table('password_reset_tokens')->updateOrInsert(
+                DB::table(config('auth.passwords.users.table'))->updateOrInsert(
                     ['email' => $user->email],
                     [
                         'token' => Hash::make($token),
@@ -260,7 +260,7 @@ class AuthController extends BaseController
         DB::beginTransaction();
 
         try {
-            $tokenRecord = DB::table('password_reset_tokens')->where('email', $request->email)->first();
+            $tokenRecord = DB::table(config('auth.passwords.users.table'))->where('email', $request->email)->first();
             if (! $tokenRecord || ! Hash::check($request->token, $tokenRecord->token)) {
                 return $this->sendError('Invalid or expired token', 400);
             }
@@ -268,7 +268,7 @@ class AuthController extends BaseController
 
             $expireTime = config('auth.passwords.users.expire');
             if ($tokenAge > $expireTime) {
-                DB::table('password_reset_tokens')
+                DB::table(config('auth.passwords.users.table'))
                     ->where('email', $request->email)
                     ->delete();
 
@@ -282,7 +282,7 @@ class AuthController extends BaseController
             $user->password = Hash::make($request->password);
             $user->save();
 
-            DB::table('password_reset_tokens')
+            DB::table(config('auth.passwords.users.table'))
                 ->where('email', $request->email)
                 ->delete();
 

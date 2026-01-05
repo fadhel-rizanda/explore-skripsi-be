@@ -3,19 +3,21 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Support\Str;
 use Spatie\Permission\Traits\HasRoles;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 
 class User extends Authenticatable implements JWTSubject
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, HasRoles, Notifiable;
+    use HasFactory, HasRoles, HasUuids, Notifiable;
+
+    protected $table = 'mt_user';
 
     public $incrementing = false;
 
@@ -37,6 +39,8 @@ class User extends Authenticatable implements JWTSubject
         'email_verified_at',
         'remember_token',
         'token_version',
+        'provider',
+        'provider_id',
     ];
 
     /**
@@ -64,17 +68,6 @@ class User extends Authenticatable implements JWTSubject
         ];
     }
 
-    protected static function boot(): void
-    {
-        parent::boot();
-
-        static::creating(function ($model) {
-            if (empty($model->{$model->getKeyName()})) {
-                $model->{$model->getKeyName()} = (string) Str::uuid();
-            }
-        });
-    }
-
     public function getJWTIdentifier(): mixed
     {
         return $this->getKey();
@@ -89,7 +82,7 @@ class User extends Authenticatable implements JWTSubject
 
     public function chatRooms(): BelongsToMany
     {
-        return $this->belongsToMany(Chat::class, 'chat_room_user', 'user_id', 'chat_room_id')
+        return $this->belongsToMany(Chat::class, 'tr_chat_room', 'user_id', 'chat_id')
             ->withTimestamps()
             ->withPivot('last_read_at', 'joined_at');
     }

@@ -4,6 +4,7 @@ namespace App\Http\Services;
 
 use App\Events\NotificationSent;
 use App\Models\Notification;
+use Illuminate\Support\Str;
 
 class NotificationService
 {
@@ -27,7 +28,7 @@ class NotificationService
         $notifications = [];
         foreach ($userIds as $userId) {
             $notifications[] = [
-                'id' => \Illuminate\Support\Str::uuid7(),
+                'id' => Str::uuid7(),
                 'title' => $data['title'],
                 'message' => $data['message'],
                 'user_id' => $userId,
@@ -53,13 +54,6 @@ class NotificationService
         }
 
         return $query->paginate($perPage);
-    }
-
-    public function getUnreadCount(string $userId): int
-    {
-        return Notification::forUser($userId)
-            ->unread()
-            ->count();
     }
 
     public function readNotification(string $userId, string $notificationId): bool

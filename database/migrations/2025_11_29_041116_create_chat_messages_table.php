@@ -11,47 +11,46 @@ return new class() extends Migration
      */
     public function up(): void
     {
-        Schema::create('chat_rooms', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(\Illuminate\Support\Facades\DB::raw('gen_random_uuid()'));
+        Schema::create('mt_chat', function (Blueprint $table) {
+            $table->uuid('id')->primary();
             $table->string('name')->nullable();
+            $table->text('description')->nullable();
             $table->enum('type', ['private', 'group'])->default('private');
-            $table->foreignUuid('created_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignUuid('created_by')->nullable()->constrained('mt_user')->nullOnDelete();
+            $table->foreignUuid('updated_by')->nullable()->constrained('mt_user')->nullOnDelete();
             $table->timestamps();
 
             $table->index('type');
         });
 
-        Schema::create('chat_room_user', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(\Illuminate\Support\Facades\DB::raw('gen_random_uuid()'));
-            $table->foreignUuid('chat_room_id')->constrained('chat_rooms')->onDelete('cascade');
-            $table->foreignUuid('user_id')->constrained('users')->onDelete('cascade');
+        Schema::create('tr_chat_room', function (Blueprint $table) {
+            $table->foreignUuid('chat_id')->constrained('mt_chat')->onDelete('cascade');
+            $table->foreignUuid('user_id')->constrained('mt_user')->onDelete('cascade');
             $table->timestamp('last_read_at')->nullable();
             $table->timestamp('joined_at')->useCurrent();
             $table->timestamps();
 
-            $table->unique(['chat_room_id', 'user_id']);
+            $table->primary(['chat_id', 'user_id']);
             $table->index('user_id');
         });
 
-        Schema::create('chat_messages', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(\Illuminate\Support\Facades\DB::raw('gen_random_uuid()'));
-            $table->foreignUuid('room_id')->constrained('chat_rooms')->onDelete('cascade');
-            $table->foreignUuid('user_id')->constrained('users')->onDelete('cascade');
+        Schema::create('tr_message', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->foreignUuid('chat_id')->constrained('mt_chat')->onDelete('cascade');
+            $table->foreignUuid('user_id')->constrained('mt_user')->onDelete('cascade');
             $table->text('message');
-            $table->foreignUuid('attachment_id')->nullable()->constrained('attachments')->nullOnDelete();
+            $table->foreignUuid('attachment_id')->nullable()->constrained('mt_attachment')->nullOnDelete();
             $table->timestamps();
 
-            $table->index(['room_id', 'created_at']);
+            $table->index(['chat_id', 'created_at']);
         });
 
-        Schema::create('chat_message_reads', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(\Illuminate\Support\Facades\DB::raw('gen_random_uuid()'));
-            $table->foreignUuid('message_id')->constrained('chat_messages')->onDelete('cascade');
-            $table->foreignUuid('user_id')->constrained('users')->onDelete('cascade');
+        Schema::create('tr_message_read', function (Blueprint $table) {
+            $table->foreignUuid('message_id')->constrained('tr_message')->onDelete('cascade');
+            $table->foreignUuid('user_id')->constrained('mt_user')->onDelete('cascade');
             $table->timestamp('read_at')->useCurrent();
             $table->timestamps();
-
-            $table->unique(['message_id', 'user_id']);
+            $table->primary(['message_id', 'user_id']);
         });
     }
 
@@ -60,9 +59,9 @@ return new class() extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('chat_message_reads');
-        Schema::dropIfExists('chat_messages');
-        Schema::dropIfExists('chat_room_user');
-        Schema::dropIfExists('chat_rooms');
+        Schema::dropIfExists('tr_message_read');
+        Schema::dropIfExists('tr_message');
+        Schema::dropIfExists('tr_chat_room');
+        Schema::dropIfExists('mt_chat');
     }
 };
