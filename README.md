@@ -31,6 +31,15 @@
       docker logs -f laravel_reverb
       ```
 
+5. **Restart the application:**
+      ```sh
+        docker compose down -v
+        docker rmi explore-skripsi-app explore-skripsi-queue explore-skripsi-reverb explore-skripsi-scheduler
+        del bootstrap\cache\*.php
+        docker compose build --no-cache
+        docker compose up -d
+      ```
+
 ## Useful Commands
 - **log containers:**
   ```sh

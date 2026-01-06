@@ -1,4 +1,4 @@
-FROM dunglas/frankenphp:1-php8.3
+FROM dunglas/frankenphp:1-php8.4
 
 # Install system dependencies dan PHP extensions
 RUN install-php-extensions \
