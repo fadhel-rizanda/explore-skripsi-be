@@ -25,6 +25,8 @@ class User extends Authenticatable implements JWTSubject
 
     protected $primaryKey = 'id';
 
+    protected $guard_name = 'api';
+
     /**
      * The attributes that are mass assignable.
      *
