@@ -25,9 +25,9 @@ class RolePermissionSeeder extends Seeder
             }
         }
 
-        $admin = Role::findByName('ADMIN', 'api');
-        $adopter = Role::findByName('ADOPTER', 'api');
-        $provider = Role::findByName('PROVIDER', 'api');
+        $admin = Role::findByName('admin', 'api');
+        $adopter = Role::findByName('adpter', 'api');
+        $provider = Role::findByName('provider', 'api');
 
         // ----- CREATE PERMISSIONS -----
         $permissions = [
