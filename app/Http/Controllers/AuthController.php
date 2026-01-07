@@ -33,6 +33,8 @@ class AuthController extends BaseController
                 'password' => Hash::make($request->input('password')),
             ]);
 
+            $user->assignRole($request->input('role'));
+
             // Generate JWT token
             $token = auth('api')->login($user);
 
