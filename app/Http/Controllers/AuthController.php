@@ -125,7 +125,8 @@ class AuthController extends BaseController
             }
 
             if ($tokenModel->used_at) {
-                return $this->sendError('Refresh token already used', 401);
+                RefreshToken::where('user_id', $tokenModel->user_id)->delete();
+                return $this->sendError('Refresh token has already been used. For security, all sessions have been logged out.', 401);
             }
 
             $tokenModel->update(['used_at' => now()]);
@@ -218,7 +219,7 @@ class AuthController extends BaseController
                 $user = User::create([
                     'name' => $socialUser->getName(),
                     'email' => $socialUser->getEmail(),
-                    'password' => Hash::make(uniqid()),
+                    'password' => Hash::make(Str::random(32)),
                     'email_verified_at' => now(),
                     'provider' => $provider,
                     'provider_id' => $socialUser->getId(),
@@ -303,7 +304,22 @@ class AuthController extends BaseController
             }
 
             $token = auth('api')->login($user);
-            $data = $this->authResponse($user, $token);
+            $refreshToken = RefreshToken::createToken($user->id);
+            $data = [
+                'user' => [
+                    'id' => $user->id,
+                    'username' => $user->username ?? $user->name,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'roles' => $user->roles,
+                    'avatar' => $user->avatar,
+                ],
+                'access_token' => $token,
+                'refresh_token' => $refreshToken,
+                'token_type' => 'bearer',
+                'expires_in' => auth('api')->factory()->getTTL() * 60,
+                'refresh_expires_in' => config('jwt.refresh_ttl') * 60,
+            ];
 
             DB::commit();
 

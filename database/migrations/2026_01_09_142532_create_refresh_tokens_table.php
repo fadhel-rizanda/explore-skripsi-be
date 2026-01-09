@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('mt_refresh_token', function (Blueprint $table) {
             $table->id();
-            $table->foreignUuid('user_id')->constrained('mt_user')->nullOnDelete();
+            $table->foreignUuid('user_id')->constrained('mt_user')->cascadeOnDelete();
             $table->string('token', 500)->unique();
             $table->timestamp('used_at')->nullable();
             $table->timestamp('expires_at');

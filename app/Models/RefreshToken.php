@@ -10,7 +10,7 @@ class RefreshToken extends Model
 {
     protected $table = 'mt_refresh_token';
 
-    protected $fillable = ['user_id', 'token', 'expires_at'];
+    protected $fillable = ['user_id', 'token', 'expires_at', 'used_at'];
 
     protected $casts = [
         'expires_at' => 'datetime',
