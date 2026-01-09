@@ -13,10 +13,13 @@ Route::group(['prefix' => 'auth'], function () {
     Route::get('/{provider}', [AuthController::class, 'redirectToProvider']);
     Route::get('/{provider}/callback', [AuthController::class, 'handleProviderCallback']);
 
+    Route::post('/provider', [AuthController::class, 'loginWithProvider']);
+
+    Route::post('/refresh', [AuthController::class, 'refresh']);
+
     // harus 2 biar semua token yang ke invalid
     Route::middleware(['auth:api', 'check.token.version'])->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
-        Route::post('/refresh', [AuthController::class, 'refresh']);
         Route::post('/change-password', [AuthController::class, 'changePassword']);
     });
 });

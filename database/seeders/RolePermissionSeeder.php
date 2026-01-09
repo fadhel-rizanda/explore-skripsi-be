@@ -10,6 +10,7 @@ class RolePermissionSeeder extends Seeder
 {
     /**
      * Run the database seeds.
+     * php artisan optimize:clear
      * php artisan db:seed --class=RolePermissionSeeder
      */
     public function run(): void
@@ -26,7 +27,7 @@ class RolePermissionSeeder extends Seeder
         }
 
         $admin = Role::findByName('admin', 'api');
-        $adopter = Role::findByName('adpter', 'api');
+        $adopter = Role::findByName('adopter', 'api');
         $provider = Role::findByName('provider', 'api');
 
         // ----- CREATE PERMISSIONS -----
@@ -65,12 +66,15 @@ class RolePermissionSeeder extends Seeder
         ];
 
         foreach ($permissions as $permission) {
-            if (! Permission::where('name', $permission)->exists()) {
+            if (! Permission::where('name', $permission)
+                ->where('guard_name', 'api')
+                ->exists()) {
                 Permission::create([
                     'name' => $permission,
                     'guard_name' => 'api',
                 ]);
             }
+
         }
 
         // ----- ASSIGN PERMISSIONS TO ROLES -----
