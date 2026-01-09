@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ChangePasswordRequest;
 use App\Http\Requests\ForgotPasswordRequest;
 use App\Http\Requests\LoginRequest;
+use App\Http\Requests\RefreshTokenRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Http\Requests\ResetPasswordRequest;
+use App\Models\RefreshToken;
 use App\Models\User;
 use App\Notifications\ResetPasswordNotification;
 use App\Traits\ResponseAPI;
@@ -14,7 +16,7 @@ use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Request;
+use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
 
@@ -37,16 +39,21 @@ class AuthController extends BaseController
 
             // Generate JWT token
             $token = auth('api')->login($user);
+            $refreshToken = RefreshToken::createToken($user->id);
 
             $data = [
                 'user' => [
                     'id' => $user->id,
                     'username' => $user->name,
                     'email' => $user->email,
+                    'roles' => $user->roles,
+                    'avatar' => $user->avatar,
                 ],
-                'token' => $token,
+                'access_token' => $token,
+                'refresh_token' => $refreshToken,
                 'token_type' => 'bearer',
                 'expires_in' => auth('api')->factory()->getTTL() * 60,
+                'refresh_expires_in' => config('jwt.refresh_ttl') * 60,
             ];
 
             DB::commit();
@@ -76,6 +83,8 @@ class AuthController extends BaseController
             $user = auth('api')->user();
             $user->load(['roles:id,name', 'roles.permissions:id,name']);
 
+            $refreshToken = RefreshToken::createToken($user->id);
+
             $data = [
                 'user' => [
                     'id' => $user->id,
@@ -85,9 +94,11 @@ class AuthController extends BaseController
                     'roles' => $user->roles,
                     'avatar' => $user->avatar,
                 ],
-                'token' => $token,
+                'access_token' => $token,
+                'refresh_token' => $refreshToken,
                 'token_type' => 'bearer',
                 'expires_in' => auth('api')->factory()->getTTL() * 60,
+                'refresh_expires_in' => config('jwt.refresh_ttl') * 60,
             ];
 
             return $this->sendSuccess('Login successful', $data, 200);
@@ -102,14 +113,39 @@ class AuthController extends BaseController
         }
     }
 
-    public function refresh()
+    public function refresh(RefreshTokenRequest $request)
     {
         try {
-            $newToken = auth('api')->refresh();
+            $refreshToken = $request->input('refresh_token');
+
+            $tokenModel = RefreshToken::findByToken($refreshToken);
+
+            if (!$tokenModel) {
+                return $this->sendError('Invalid or expired refresh token', 401);
+            }
+
+            if ($tokenModel->used_at) {
+                return $this->sendError('Refresh token already used', 401);
+            }
+
+            $tokenModel->update(['used_at' => now()]);
+
+            $user = $tokenModel->user;
+
+            if (!$user) {
+                return $this->sendError('User not found', 401);
+            }
+
+            $newAccessToken = auth('api')->login($user);
+
+            $newRefreshToken = RefreshToken::createToken($user->id);
+
             $data = [
-                'access_token' => $newToken,
+                'access_token' => $newAccessToken,
+                'refresh_token' => $newRefreshToken,
                 'token_type' => 'bearer',
                 'expires_in' => auth('api')->factory()->getTTL() * 60,
+                'refresh_expires_in' => config('jwt.refresh_ttl') * 60,
             ];
 
             return $this->sendSuccess('Token refreshed successfully', $data, 200);
@@ -127,8 +163,8 @@ class AuthController extends BaseController
         try {
             $user = auth('api')->user();
 
-            Log::info($user->all());
-            // logout from all devices
+            RefreshToken::where('user_id', $user->id)->delete();
+
             $user->token_version = ($user->token_version ?? 0) + 1;
             $user->save();
 
@@ -146,8 +182,7 @@ class AuthController extends BaseController
     public function redirectToProvider(string $provider)
     {
         try {
-            // Validasi provider
-            $allowedProviders = ['google', 'github', 'facebook']; // sekarang baru google doang
+            $allowedProviders = ['google'];
             if (! in_array($provider, $allowedProviders)) {
                 return $this->sendError('Invalid provider', 400);
             }
@@ -183,14 +218,13 @@ class AuthController extends BaseController
                 $user = User::create([
                     'name' => $socialUser->getName(),
                     'email' => $socialUser->getEmail(),
-                    'password' => Hash::make(uniqid()), // Random password
+                    'password' => Hash::make(uniqid()),
                     'email_verified_at' => now(),
                     'provider' => $provider,
                     'provider_id' => $socialUser->getId(),
                     'avatar' => $socialUser->getAvatar(),
                 ]);
             } else {
-                // Update provider info jika user sudah ada
                 $user->update([
                     'provider' => $provider,
                     'provider_id' => $socialUser->getId(),
@@ -198,7 +232,6 @@ class AuthController extends BaseController
                 ]);
             }
 
-            // Generate JWT token
             $token = auth('api')->login($user);
 
             $data = [
@@ -208,9 +241,10 @@ class AuthController extends BaseController
                     'email' => $user->email,
                     'avatar' => $user->avatar,
                 ],
-                'token' => $token,
+                'access_token' => $token,
                 'token_type' => 'bearer',
                 'expires_in' => auth('api')->factory()->getTTL() * 60,
+                'refresh_expires_in' => config('jwt.refresh_ttl') * 60,
             ];
 
             DB::commit();
@@ -226,6 +260,63 @@ class AuthController extends BaseController
             ]);
 
             return $this->sendError('OAuth authentication failed', 500);
+        }
+    }
+
+    public function loginWithProvider(Request $request)
+    {
+        DB::beginTransaction();
+
+        try {
+            $validated = $request->validate([
+                'provider' => 'required|in:google',
+                'access_token' => 'required|string',
+                'role' => 'required|in:adopter,provider',
+            ]);
+
+            // Validasi token dengan Google
+            $socialUser = Socialite::driver($validated['provider'])
+                ->userFromToken($validated['access_token']);
+
+            $user = User::where('email', $socialUser->getEmail())->first();
+
+            if (!$user) {
+                $user = User::create([
+                    'name' => $socialUser->getName(),
+                    'email' => $socialUser->getEmail(),
+                    'password' => Hash::make(Str::random(32)),
+                    'email_verified_at' => now(),
+                    'provider' => $validated['provider'],
+                    'provider_id' => $socialUser->getId(),
+                    'avatar' => $socialUser->getAvatar(),
+                ]);
+                $user->assignRole($validated['role']);
+            } else {
+                $user->update([
+                    'provider' => $validated['provider'],
+                    'provider_id' => $socialUser->getId(),
+                    'avatar' => $socialUser->getAvatar(),
+                ]);
+                if (!$user->hasRole($validated['role'])) {
+                    $user->assignRole($validated['role']);
+                }
+            }
+
+            $token = auth('api')->login($user);
+            $data = $this->authResponse($user, $token);
+
+            DB::commit();
+
+            return $this->sendSuccess('Login successful', $data, 200);
+
+        } catch (\Exception $ex) {
+            DB::rollBack();
+            Log::error('Provider login error: ', [
+                'message' => $ex->getMessage(),
+                'trace' => $ex->getTraceAsString(),
+            ]);
+
+            return $this->sendError('Authentication failed', 500);
         }
     }
 
@@ -314,6 +405,7 @@ class AuthController extends BaseController
 
             $user->password = Hash::make($request->new_password);
             // logout from all devices
+            RefreshToken::where('user_id', $user->id)->delete();
             $user->token_version = ($user->token_version ?? 0) + 1;
             $user->save();
 
