@@ -305,6 +305,8 @@ class AuthController extends BaseController
 
             $token = auth('api')->login($user);
             $refreshToken = RefreshToken::createToken($user->id);
+            $user->load(['roles:id,name', 'roles.permissions:id,name']);
+
             $data = [
                 'user' => [
                     'id' => $user->id,
