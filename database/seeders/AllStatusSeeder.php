@@ -2,9 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\Status;
+use App\Models\AllStatus;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
 
 class AllStatusSeeder extends Seeder
 {
@@ -22,15 +21,7 @@ class AllStatusSeeder extends Seeder
         ];
 
         foreach ($statuses as $status) {
-            if (!Status::where('status_name', $status['status_name'])
-                ->where('status_type', $status['status_type'])
-                ->exists()) {
-                Status::create([
-                    'id' => Str::uuid(),
-                    'status_name' => $status['status_name'],
-                    'status_type' => $status['status_type'],
-                ]);
-            }
+            AllStatus::firstOrCreate($status);
         }
     }
 }

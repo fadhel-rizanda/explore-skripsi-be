@@ -48,41 +48,17 @@ class PetController extends Controller
 
                 // Attach physique tags if provided
                 if ($request->has('physique_ids')) {
-                    $physiqueRecords = array_map(function ($physiqueId) use ($pet) {
-                        return [
-                            'id' => Str::uuid(),
-                            'pet_id' => $pet->id,
-                            'all_tag_id' => $physiqueId
-                        ];
-                    }, $request->physique_ids);
-                    
-                    DB::table('tr_all_tag_pet_physique_record')->insert($physiqueRecords);
+                    $this->attachMany($pet, $request->physique_ids, 'tr_all_tag_pet_physique_record', 'all_tag_id');
                 }
 
                 // Attach personality tags if provided
                 if ($request->has('personality_ids')) {
-                    $personalityRecords = array_map(function ($personalityId) use ($pet) {
-                        return [
-                            'id' => Str::uuid(),
-                            'pet_id' => $pet->id,
-                            'all_tag_id' => $personalityId
-                        ];
-                    }, $request->personality_ids);
-                    
-                    DB::table('tr_all_tag_pet_personality_record')->insert($personalityRecords);
+                    $this->attachMany($pet, $request->personality_ids, 'tr_all_tag_pet_personality_record', 'all_tag_id');
                 }
 
                 // Attach profile pictures if provided
                 if ($request->has('profile_picture_ids')) {
-                    $profilePictureRecords = array_map(function ($attachmentId) use ($pet) {
-                        return [
-                            'id' => Str::uuid(),
-                            'pet_id' => $pet->id,
-                            'attachment_id' => $attachmentId
-                        ];
-                    }, $request->profile_picture_ids);
-                    
-                    DB::table('tr_pet_profile_picture')->insert($profilePictureRecords);
+                    $this->attachMany($pet, $request->profile_picture_ids, 'tr_pet_profile_picture', 'attachment_id');
                 }
 
                 return $pet;
@@ -135,5 +111,25 @@ class PetController extends Controller
     public function destroy(string $id)
     {
         //
+    }
+
+    /**
+     * Helper method to attach multiple records to a pet.
+     */
+    private function attachMany(Pet $pet, array $ids, string $tableName, string $foreignKeyName): void
+    {
+        if (empty($ids)) {
+            return;
+        }
+
+        $records = array_map(function ($id) use ($pet, $foreignKeyName) {
+            return [
+                'id' => Str::uuid(),
+                'pet_id' => $pet->id,
+                $foreignKeyName => $id,
+            ];
+        }, $ids);
+
+        DB::table($tableName)->insert($records);
     }
 }
