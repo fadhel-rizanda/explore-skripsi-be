@@ -36,7 +36,7 @@ class PetPersonalityTag extends Model
      */
 
     /**
-     * Get the pet that owns the additional record.
+     * Get the pet that owns the personality tag.
      */
     public function pet(): BelongsTo
     {

@@ -11,11 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('tr_pet_aditional_record', function (Blueprint $table) {
+        Schema::create('tr_pet_additional_record', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('pet_id')->constrained('tr_pet')->onDelete('cascade');
             $table->foreignUuid('attachment_id')->constrained('mt_attachment')->onDelete('cascade');
-            
+            $table->timestamps();
         });
     }
 
@@ -24,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('tr_pet_aditional_record');
+        Schema::dropIfExists('tr_pet_additional_record');
     }
 };

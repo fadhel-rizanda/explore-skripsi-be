@@ -30,17 +30,4 @@ class AllTag extends Model
         'tag_type',
     ];
 
-    /**
-     * Get the pet personality records associated with this tag.
-     */
-    public function pet(): BelongsTo
-    {
-        return $this->belongsTo(Pet::class, 'pet_id');
-    }
-
-    public function allTag(): BelongsTo
-    {
-        return $this->belongsTo(AllTag::class, 'all_tag_id');
-    }
-
 }

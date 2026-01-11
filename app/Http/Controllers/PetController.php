@@ -40,34 +40,49 @@ class PetController extends Controller
                 // Auto-set status_id ke "available" (ambil dari database)
                 $availableStatus = DB::table('mt_all_status')
                     ->where('status_name', 'available')
-                    ->first();
+                    ->firstOrFail();
                 
-                if ($availableStatus) {
-                    $petData['status_id'] = $availableStatus->id;
-                }
+                $petData['status_id'] = $availableStatus->id;
                 
                 $pet = Pet::create($petData);
 
                 // Attach physique tags if provided
                 if ($request->has('physique_ids')) {
-                    foreach ($request->physique_ids as $physiqueId) {
-                        DB::table('tr_all_tag_pet_physique_record')->insert([
+                    $physiqueRecords = array_map(function ($physiqueId) use ($pet) {
+                        return [
                             'id' => Str::uuid(),
                             'pet_id' => $pet->id,
                             'all_tag_id' => $physiqueId
-                        ]);
-                    }
+                        ];
+                    }, $request->physique_ids);
+                    
+                    DB::table('tr_all_tag_pet_physique_record')->insert($physiqueRecords);
                 }
 
                 // Attach personality tags if provided
                 if ($request->has('personality_ids')) {
-                    foreach ($request->personality_ids as $personalityId) {
-                        DB::table('tr_all_tag_pet_personality_record')->insert([
+                    $personalityRecords = array_map(function ($personalityId) use ($pet) {
+                        return [
                             'id' => Str::uuid(),
                             'pet_id' => $pet->id,
                             'all_tag_id' => $personalityId
-                        ]);
-                    }
+                        ];
+                    }, $request->personality_ids);
+                    
+                    DB::table('tr_all_tag_pet_personality_record')->insert($personalityRecords);
+                }
+
+                // Attach profile pictures if provided
+                if ($request->has('profile_picture_ids')) {
+                    $profilePictureRecords = array_map(function ($attachmentId) use ($pet) {
+                        return [
+                            'id' => Str::uuid(),
+                            'pet_id' => $pet->id,
+                            'attachment_id' => $attachmentId
+                        ];
+                    }, $request->profile_picture_ids);
+                    
+                    DB::table('tr_pet_profile_picture')->insert($profilePictureRecords);
                 }
 
                 return $pet;
@@ -80,10 +95,12 @@ class PetController extends Controller
             ], 201);
 
         } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Pet creation failed: ' . $e->getMessage());
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to create pet',
-                'error' => $e->getMessage()
+                'error' => config('app.debug') ? $e->getMessage() : 'An error occurred while creating the pet.'
             ], 500);
         }
     }
