@@ -2,8 +2,10 @@
 
 namespace Database\Seeders;
 
-use App\Models\Status;
+use App\Models\AllStatus;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class AllStatusSeeder extends Seeder
 {
@@ -20,8 +22,40 @@ class AllStatusSeeder extends Seeder
             ['status_name' => 'unavailable', 'status_type' => 'pet'],
         ];
 
+        // Fetch all existing status pairs in a single query
+        $existingStatuses = AllStatus::where(function ($query) use ($statuses) {
+            foreach ($statuses as $status) {
+                $query->orWhere(function ($subQuery) use ($status) {
+                    $subQuery->where('status_name', $status['status_name'])
+                        ->where('status_type', $status['status_type']);
+                });
+            }
+        })->get(['status_name', 'status_type']);
+
+        // Build a set of existing (status_name, status_type) combinations
+        $existingKeys = $existingStatuses
+            ->map(function ($status) {
+                return $status->status_name . '|' . $status->status_type;
+            })
+            ->all();
+
+        // Collect all missing statuses to insert in a single batch
+        $statusesToInsert = [];
         foreach ($statuses as $status) {
-            Status::firstOrCreate($status);
+            $key = $status['status_name'] . '|' . $status['status_type'];
+            if (!in_array($key, $existingKeys, true)) {
+                $statusesToInsert[] = [
+                    'id' => Str::uuid(),
+                    'status_name' => $status['status_name'],
+                    'status_type' => $status['status_type'],
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            }
+        }
+
+        if (!empty($statusesToInsert)) {
+            AllStatus::insert($statusesToInsert);
         }
     }
 }
