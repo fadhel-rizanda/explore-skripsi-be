@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Models\AllTag;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
 
 class AllTagSeeder extends Seeder
 {
@@ -57,15 +56,7 @@ class AllTagSeeder extends Seeder
         ];
 
         foreach ($tags as $tag) {
-            if (!AllTag::where('tag_name', $tag['tag_name'])
-                ->where('tag_type', $tag['tag_type'])
-                ->exists()) {
-                AllTag::create([
-                    'id' => Str::uuid(),
-                    'tag_name' => $tag['tag_name'],
-                    'tag_type' => $tag['tag_type'],
-                ]);
-            }
+            AllTag::firstOrCreate($tag);
         }
     }
 }
