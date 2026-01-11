@@ -4,12 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\PetRequest;
 use App\Models\Pet;
+use App\Traits\ResponseAPI;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class PetController extends Controller
 {
+    use ResponseAPI;
     /**
      * Display a listing of the resource.
      */
@@ -48,36 +51,55 @@ class PetController extends Controller
 
                 // Attach physique tags if provided
                 if ($request->has('physique_ids')) {
-                    $this->attachMany($pet, $request->physique_ids, 'tr_all_tag_pet_physique_record', 'all_tag_id');
+                    $physiqueRecords = array_map(function ($physiqueId) use ($pet) {
+                        return [
+                            'id' => Str::uuid(),
+                            'pet_id' => $pet->id,
+                            'all_tag_id' => $physiqueId
+                        ];
+                    }, $request->physique_ids);
+                    
+                    DB::table('tr_all_tag_pet_physique_record')->insert($physiqueRecords);
                 }
 
                 // Attach personality tags if provided
                 if ($request->has('personality_ids')) {
-                    $this->attachMany($pet, $request->personality_ids, 'tr_all_tag_pet_personality_record', 'all_tag_id');
+                    $personalityRecords = array_map(function ($personalityId) use ($pet) {
+                        return [
+                            'id' => Str::uuid(),
+                            'pet_id' => $pet->id,
+                            'all_tag_id' => $personalityId
+                        ];
+                    }, $request->personality_ids);
+                    
+                    DB::table('tr_all_tag_pet_personality_record')->insert($personalityRecords);
                 }
 
                 // Attach profile pictures if provided
                 if ($request->has('profile_picture_ids')) {
-                    $this->attachMany($pet, $request->profile_picture_ids, 'tr_pet_profile_picture', 'attachment_id');
+                    $profilePictureRecords = array_map(function ($attachmentId) use ($pet) {
+                        return [
+                            'id' => Str::uuid(),
+                            'pet_id' => $pet->id,
+                            'attachment_id' => $attachmentId
+                        ];
+                    }, $request->profile_picture_ids);
+                    
+                    DB::table('tr_pet_profile_picture')->insert($profilePictureRecords);
                 }
 
                 return $pet;
             });
 
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Pet created successfully',
-                'data' => $pet
-            ], 201);
+            return $this->sendSuccess('Pet created successfully', $pet, 201);
 
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Pet creation failed: ' . $e->getMessage());
+            Log::error('Pet creation failed: ' . $e->getMessage());
 
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Failed to create pet',
-                'error' => config('app.debug') ? $e->getMessage() : 'An error occurred while creating the pet.'
-            ], 500);
+            return $this->sendError(
+                config('app.debug') ? $e->getMessage() : 'Failed to create pet',
+                500
+            );
         }
     }
 
@@ -111,25 +133,5 @@ class PetController extends Controller
     public function destroy(string $id)
     {
         //
-    }
-
-    /**
-     * Helper method to attach multiple records to a pet.
-     */
-    private function attachMany(Pet $pet, array $ids, string $tableName, string $foreignKeyName): void
-    {
-        if (empty($ids)) {
-            return;
-        }
-
-        $records = array_map(function ($id) use ($pet, $foreignKeyName) {
-            return [
-                'id' => Str::uuid(),
-                'pet_id' => $pet->id,
-                $foreignKeyName => $id,
-            ];
-        }, $ids);
-
-        DB::table($tableName)->insert($records);
     }
 }
