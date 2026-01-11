@@ -16,10 +16,10 @@ class PetRequest extends FormRequest
         return [
             'user_id' => 'required|uuid|exists:mt_user,id',
             'type_of_animal_id' => 'required|uuid|exists:mt_all_tag,id',
-            'size_id' => 'required|uuid|exists:mt_all_tag,id',
+            'size' => 'required|string|in:Small,Medium,Large,Extra Large',
             'name' => 'required|string|max:50',
             'date_of_birth' => 'required|date',
-            'gender_id' => 'required|uuid|exists:mt_all_tag,id',
+            'gender' => 'required|string|in:Male,Female',
             'about' => 'required|string',
             'breed' => 'required|string|max:255',
             'special_needs' => 'required|boolean',

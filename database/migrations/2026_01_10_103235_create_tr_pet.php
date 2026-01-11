@@ -16,10 +16,10 @@ return new class extends Migration
             $table->foreignUuid('user_id')->constrained('mt_user')->onDelete('cascade');
             $table->foreignUuid('status_id')->constrained('mt_all_status')->onDelete('cascade');
             $table->foreignUuid('type_of_animal_id')->constrained('mt_all_tag');
-            $table->foreignUuid('size_id')->constrained('mt_all_tag');
+            $table->string('size', 20);
             $table->string('name', 50);
             $table->date('date_of_birth');
-            $table->foreignUuid('gender_id')->constrained('mt_all_tag');
+            $table->string('gender', 20);
             $table->text('about');
             $table->string('breed');
             $table->boolean('special_needs')->default(false);
