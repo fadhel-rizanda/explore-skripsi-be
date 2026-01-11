@@ -22,16 +22,6 @@ class AllTagSeeder extends Seeder
             ['tag_name' => 'Fish', 'tag_type' => 'type_of_animal'],
             ['tag_name' => 'Reptile', 'tag_type' => 'type_of_animal'],
             
-            // Size tags
-            ['tag_name' => 'Small', 'tag_type' => 'size'],
-            ['tag_name' => 'Medium', 'tag_type' => 'size'],
-            ['tag_name' => 'Large', 'tag_type' => 'size'],
-            ['tag_name' => 'Extra Large', 'tag_type' => 'size'],
-            
-            // Gender tags
-            ['tag_name' => 'Male', 'tag_type' => 'gender'],
-            ['tag_name' => 'Female', 'tag_type' => 'gender'],
-            
             // Physique tags
             ['tag_name' => 'Slim', 'tag_type' => 'physique'],
             ['tag_name' => 'Normal', 'tag_type' => 'physique'],
