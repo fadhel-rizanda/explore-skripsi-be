@@ -42,16 +42,38 @@ class AllStatusSeeder extends Seeder
         // Collect all missing statuses to insert in a single batch
         $statusesToInsert = [];
         foreach ($statuses as $status) {
+        // Fetch all existing status pairs in a single query
+        $existingStatuses = Status::where(function ($query) use ($statuses) {
+            foreach ($statuses as $status) {
+                $query->orWhere(function ($subQuery) use ($status) {
+                    $subQuery->where('status_name', $status['status_name'])
+                        ->where('status_type', $status['status_type']);
+                });
+            }
+        })->get(['status_name', 'status_type']);
+
+        // Build a set of existing (status_name, status_type) combinations
+        $existingKeys = $existingStatuses
+            ->map(function ($status) {
+                return $status->status_name . '|' . $status->status_type;
+            })
+            ->all();
+
+        // Collect all missing statuses to insert in a single batch
+        $statusesToInsert = [];
+        foreach ($statuses as $status) {
             $key = $status['status_name'] . '|' . $status['status_type'];
             if (!in_array($key, $existingKeys, true)) {
                 $statusesToInsert[] = [
                     'id' => Str::uuid(),
                     'status_name' => $status['status_name'],
                     'status_type' => $status['status_type'],
-                    'created_at' => now(),
-                    'updated_at' => now(),
                 ];
             }
+        }
+
+        if (!empty($statusesToInsert)) {
+            Status::insert($statusesToInsert);
         }
 
         if (!empty($statusesToInsert)) {
