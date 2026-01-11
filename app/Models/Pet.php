@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Pet extends Model
 {
@@ -35,7 +36,6 @@ class Pet extends Model
         'gender_id',
         'about',
         'breed',
-        'profile_picture',
         'special_needs',
     ];
 
@@ -65,5 +65,13 @@ class Pet extends Model
     public function status(): BelongsTo
     {
         return $this->belongsTo(Status::class, 'status_id');
+    }
+
+    /**
+     * Get the profile pictures for the pet.
+     */
+    public function profilePictures(): HasMany
+    {
+        return $this->hasMany(PetProfilePicture::class, 'pet_id');
     }
 }

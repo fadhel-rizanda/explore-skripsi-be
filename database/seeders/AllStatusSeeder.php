@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Models\Status;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class AllStatusSeeder extends Seeder
@@ -15,12 +15,22 @@ class AllStatusSeeder extends Seeder
     {
         $statuses = [
             // Pet statuses
-            ['id' => Str::uuid(), 'status_name' => 'available', 'status_type' => 'pet'],
-            ['id' => Str::uuid(), 'status_name' => 'adopted', 'status_type' => 'pet'],
-            ['id' => Str::uuid(), 'status_name' => 'pending', 'status_type' => 'pet'],
-            ['id' => Str::uuid(), 'status_name' => 'unavailable', 'status_type' => 'pet'],
+            ['status_name' => 'available', 'status_type' => 'pet'],
+            ['status_name' => 'adopted', 'status_type' => 'pet'],
+            ['status_name' => 'pending', 'status_type' => 'pet'],
+            ['status_name' => 'unavailable', 'status_type' => 'pet'],
         ];
 
-        DB::table('mt_all_status')->insert($statuses);
+        foreach ($statuses as $status) {
+            if (!Status::where('status_name', $status['status_name'])
+                ->where('status_type', $status['status_type'])
+                ->exists()) {
+                Status::create([
+                    'id' => Str::uuid(),
+                    'status_name' => $status['status_name'],
+                    'status_type' => $status['status_type'],
+                ]);
+            }
+        }
     }
 }
