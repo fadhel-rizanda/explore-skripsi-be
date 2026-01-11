@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\AllStatus;
+use App\Models\Status;
 use Illuminate\Database\Seeder;
 
 class AllStatusSeeder extends Seeder
@@ -21,7 +21,7 @@ class AllStatusSeeder extends Seeder
         ];
 
         foreach ($statuses as $status) {
-            AllStatus::firstOrCreate($status);
+            Status::firstOrCreate($status);
         }
     }
 }
