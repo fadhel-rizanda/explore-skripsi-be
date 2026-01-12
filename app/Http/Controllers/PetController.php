@@ -50,7 +50,7 @@ class PetController extends Controller
                     'id' => $pet->id,
                     'name' => $pet->name,
                     'type_of_animal_id' => $pet->type_of_animal_id,
-                    'type_of_animal_name' => $pet->typeOfAnimal->tag_name ?? null,
+                    'type_of_animal_name' => $pet->typeOfAnimal->tag_name,
                     'age' => $age,
                     'age_unit' => $ageUnit,
                     'tags_personality_id' => $personalityTag->id ?? null,
