@@ -26,7 +26,7 @@ class RegisterRequest extends FormRequest
     {
         return [
             'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255|unique:'.(new User())->getTable().',email',
+            'email' => 'required|email|max:255|unique:' . (new User())->getTable() . ',email',
             'role' => ['required', Rule::in(RoleEnum::publicRoles())],
             'password' => 'required|string',
         ];
