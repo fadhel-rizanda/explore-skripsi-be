@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Pet extends Model
@@ -73,5 +74,26 @@ class Pet extends Model
     public function profilePictures(): HasMany
     {
         return $this->hasMany(PetProfilePicture::class, 'pet_id');
+    }
+
+    /**
+     * Get the type of animal tag.
+     */
+    public function typeOfAnimal(): BelongsTo
+    {
+        return $this->belongsTo(AllTag::class, 'type_of_animal_id');
+    }
+
+    /**
+     * Get personality tags for the pet.
+     */
+    public function personalityTags(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            AllTag::class,
+            'tr_all_tag_pet_personality_record',
+            'pet_id',
+            'all_tag_id'
+        );
     }
 }
