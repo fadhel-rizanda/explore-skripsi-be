@@ -41,7 +41,7 @@ return new class() extends Migration
         });
 
         Schema::create('tr_user_activation', function (Blueprint $table) {
-            $table->foreignUuid('user_id')->primary();
+            $table->foreignUuid('user_id')->primary()->constrained('mt_user')->onDelete('cascade');
             $table->string('activation_token');
             $table->timestamp('expires_at');
             $table->timestamp('created_at');

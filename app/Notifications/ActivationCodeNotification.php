@@ -36,13 +36,10 @@ class ActivationCodeNotification extends Notification implements ShouldQueue
      */
     public function toMail(object $notifiable): MailMessage
     {
-        $activateUrl = config('app.frontend_url') . '/reset-password?token=' . $this->token;
-
         return (new MailMessage())
             ->subject('Activation Code Notification')
             ->view('emails.activation-code', [
                 'token' => $this->token,
-                'activationUrl' => $activateUrl,
                 'expire' => config('auth.passwords.users.expire'),
             ]);
     }

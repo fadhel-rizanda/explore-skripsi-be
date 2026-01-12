@@ -347,12 +347,7 @@ class AuthController extends BaseController
         try {
             $user = User::where('email', $request->email)->first();
             if ($user) {
-                $token = str_pad(
-                    (string) random_int(0, 99999999),
-                    8,
-                    '0',
-                    STR_PAD_LEFT
-                );
+                $token = Str::upper(Str::random(8));
                 DB::table(config('auth.passwords.users.table'))->updateOrInsert(
                     ['email' => $user->email],
                     [
@@ -466,32 +461,18 @@ class AuthController extends BaseController
 
     private function sendActivationCode(User $user)
     {
-        try {
-            $token = str_pad(
-                (string) random_int(0, 99999999),
-                8,
-                '0',
-                STR_PAD_LEFT
-            );
+        $token = Str::upper(Str::random(8));
 
-            DB::table('tr_user_activation')->updateOrInsert(
-                ['user_id' => $user->id],
-                [
-                    'activation_token' => Hash::make($token),
-                    'created_at' => now(),
-                    'expires_at' => now()->addMinutes(config('auth.activation.expire')),
-                ]
-            );
+        DB::table('tr_user_activation')->updateOrInsert(
+            ['user_id' => $user->id],
+            [
+                'activation_token' => Hash::make($token),
+                'created_at' => now(),
+                'expires_at' => now()->addMinutes(config('auth.activation.expire')),
+            ]
+        );
 
-            $user->notify(new ActivationCodeNotification($token));
-
-        } catch (\Exception $ex) {
-            Log::error('Send activation code error: ', [
-                'user_id' => $user->id,
-                'message' => $ex->getMessage(),
-                'trace' => $ex->getTraceAsString(),
-            ]);
-        }
+        $user->notify(new ActivationCodeNotification($token));
     }
 
     public function validateActivationCode(ActivationCodeRequest $request)
@@ -518,7 +499,7 @@ class AuthController extends BaseController
             return $this->sendSuccess('Account activated successfully', null, 200);
         } catch (\Exception $ex) {
             Log::error('Verify activation code error: ', [
-                'email' => $request->input('email'),
+                'user_id' => auth('api')->id(),
                 'message' => $ex->getMessage(),
                 'trace' => $ex->getTraceAsString(),
             ]);
