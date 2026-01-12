@@ -122,4 +122,17 @@ class Pet extends Model
             'all_tag_id'
         );
     }
+
+    /**
+     * Get physique tags for the pet.
+     */
+    public function physiqueTags(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            AllTag::class,
+            'tr_all_tag_pet_physique_record',
+            'pet_id',
+            'all_tag_id'
+        );
+    }
 }
