@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Reset Password</title>
+    <title>Activate Your Account</title>
 </head>
 
 <body style="margin:0;padding:0;background-color:#f9fafb;font-family:Arial, sans-serif;">
@@ -15,12 +15,12 @@
                 <tr>
                     <td style="padding:30px;">
                         <h2 style="margin-top:0;">
-                            Reset Your Password
+                            Activate Your Account
                         </h2>
 
                         <p>
-                            We received a request to reset the password for your account,
-                            please use the token below to proceed.
+                            Thank you for registering. To complete your registration,
+                            please activate your account using the activation code below.
                         </p>
 
                         <!-- Token Box -->
@@ -39,11 +39,11 @@
                         </div>
 
                         <p>
-                            This password reset token will expire in {{ $expire }} minutes.
+                            This activation code will expire in {{ $expire }} minutes.
                         </p>
 
                         <p>
-                            If you did not request a password reset, you can safely ignore this email.
+                            If you did not create an account, you can safely ignore this email.
                         </p>
 
                         <hr style="border:none;border-top:1px solid #e5e7eb;">

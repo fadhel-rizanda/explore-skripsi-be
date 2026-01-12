@@ -21,5 +21,7 @@ Route::group(['prefix' => 'auth'], function () {
     Route::middleware(['auth:api', 'check.token.version'])->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::post('/change-password', [AuthController::class, 'changePassword']);
+        Route::post('/activation-code/resend', [AuthController::class, 'resendActivationCode']);
+        Route::post('/activation-code/verify', [AuthController::class, 'validateActivationCode']);
     });
 });

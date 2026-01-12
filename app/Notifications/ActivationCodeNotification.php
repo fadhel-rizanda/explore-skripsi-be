@@ -7,7 +7,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class ResetPasswordNotification extends Notification implements ShouldQueue
+class ActivationCodeNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
@@ -34,12 +34,15 @@ class ResetPasswordNotification extends Notification implements ShouldQueue
     /**
      * Get the mail representation of the notification.
      */
-    public function toMail($notifiable): MailMessage
+    public function toMail(object $notifiable): MailMessage
     {
+        $activateUrl = config('app.frontend_url') . '/reset-password?token=' . $this->token;
+
         return (new MailMessage())
-            ->subject('Reset Password Notification')
-            ->view('emails.reset-password', [
+            ->subject('Activation Code Notification')
+            ->view('emails.activation-code', [
                 'token' => $this->token,
+                'activationUrl' => $activateUrl,
                 'expire' => config('auth.passwords.users.expire'),
             ]);
     }
