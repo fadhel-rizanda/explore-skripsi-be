@@ -81,20 +81,10 @@ class PetController extends Controller
             // Set transformed data back to collection
             $pets->setCollection($transformedData);
 
-            // Build response dengan meta pagination
-            $response = [
-                'status' => 'success',
-                'message' => 'Animals retrieved successfully',
-                'data' => $pets->items(),
-                'meta' => [
-                    'page' => $pets->currentPage(),
-                    'limit' => $pets->perPage(),
-                    'total_items' => $pets->total(),
-                    'total_pages' => $pets->lastPage(),
-                ],
-            ];
-
-            return response()->json($response, 200);
+            return $this->sendSuccessPagination(
+                'Animals retrieved successfully',
+                $pets
+            );
 
         } catch (\Exception $e) {
             Log::error('Failed to retrieve pets: ' . $e->getMessage());
