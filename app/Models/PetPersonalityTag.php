@@ -12,7 +12,10 @@ class PetPersonalityTag extends Model
     use HasFactory, HasUuids;
 
     protected $table = 'tr_all_tag_pet_personality_record';
+
     public $incrementing = false;
+
+    public $timestamps = false;
 
     protected $keyType = 'string';
 

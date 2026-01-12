@@ -100,9 +100,7 @@ class PetController extends Controller
                         return [
                             'id' => Str::uuid(),
                             'pet_id' => $pet->id,
-                            'all_tag_id' => $physiqueId,
-                            'created_at' => now(),
-                            'updated_at' => now()
+                            'all_tag_id' => $physiqueId
                         ];
                     })->all();
                     PetPhysiqueTag::insert($physiqueRecords);
