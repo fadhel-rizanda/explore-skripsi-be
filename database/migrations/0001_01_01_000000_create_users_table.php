@@ -39,6 +39,13 @@ return new class() extends Migration
             $table->longText('payload');
             $table->integer('last_activity')->index();
         });
+
+        Schema::create('tr_user_activation', function (Blueprint $table) {
+            $table->foreignUuid('user_id')->primary()->constrained('mt_user')->onDelete('cascade');
+            $table->string('activation_token');
+            $table->timestamp('expires_at');
+            $table->timestamp('created_at');
+        });
     }
 
     /**
@@ -49,5 +56,6 @@ return new class() extends Migration
         Schema::dropIfExists('mt_user');
         Schema::dropIfExists('tr_password_reset_token');
         Schema::dropIfExists('sessions');
+        Schema::dropIfExists('tr_user_activation');
     }
 };
