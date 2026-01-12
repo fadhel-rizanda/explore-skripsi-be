@@ -96,35 +96,40 @@ class PetController extends Controller
 
                 // Attach physique tags if provided
                 if ($request->has('physique_ids')) {
-                    foreach ($request->physique_ids as $physiqueId) {
-                        PetPhysiqueTag::create([
+                    $physiqueRecords = collect($request->physique_ids)->map(function ($physiqueId) use ($pet) {
+                        return [
                             'id' => Str::uuid(),
                             'pet_id' => $pet->id,
-                            'all_tag_id' => $physiqueId
-                        ]);
-                    }
+                            'all_tag_id' => $physiqueId,
+                            'created_at' => now(),
+                            'updated_at' => now()
+                        ];
+                    })->all();
+                    PetPhysiqueTag::insert($physiqueRecords);
                 }
 
                 // Attach personality tags if provided
                 if ($request->has('personality_ids')) {
-                    foreach ($request->personality_ids as $personalityId) {
-                        PetPersonalityTag::create([
+                    $personalityRecords = collect($request->personality_ids)->map(function ($personalityId) use ($pet) {
+                        return [
                             'id' => Str::uuid(),
                             'pet_id' => $pet->id,
                             'all_tag_id' => $personalityId
-                        ]);
-                    }
+                        ];
+                    })->all();
+                    PetPersonalityTag::insert($personalityRecords);
                 }
 
                 // Attach profile pictures if provided
                 if ($request->has('profile_picture_ids')) {
-                    foreach ($request->profile_picture_ids as $attachmentId) {
-                        PetProfilePicture::create([
+                    $profilePictureRecords = collect($request->profile_picture_ids)->map(function ($attachmentId) use ($pet) {
+                        return [
                             'id' => Str::uuid(),
                             'pet_id' => $pet->id,
                             'attachment_id' => $attachmentId
-                        ]);
-                    }
+                        ];
+                    })->all();
+                    PetProfilePicture::insert($profilePictureRecords);
                 }
 
                 return $pet;
