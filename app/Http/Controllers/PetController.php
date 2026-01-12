@@ -27,54 +27,34 @@ class PetController extends Controller
             $page = $request->query('page', 1);
             $limit = $request->query('limit', 10);
 
-            // Query pets dengan join ke tabel terkait
-            $pets = Pet::select(
-                'tr_pet.id',
-                'tr_pet.name',
-                'tr_pet.type_of_animal_id',
-                'tr_pet.date_of_birth',
-                'type_tag.tag_name as type_of_animal_name'
-            )
-                ->leftJoin('mt_all_tag as type_tag', 'tr_pet.type_of_animal_id', '=', 'type_tag.id')
-                ->paginate($limit, ['*'], 'page', $page);
+            // Eager load relationships to avoid N+1 query issues
+            $pets = Pet::with(['typeOfAnimal', 'personalityTags'])->paginate($limit, ['*'], 'page', $page);
 
-            // Transform data untuk menambahkan personality tags dan age calculation
+            // Transform data using map. For more complex transformations, consider using API Resources.
             $transformedData = $pets->getCollection()->map(function ($pet) {
-                // Get personality tags
-                $personalityTag = PetPersonalityTag::with('allTag')
-                    ->where('pet_id', $pet->id)
-                    ->first();
-                
-                $personalityTags = $personalityTag ? (object) [
-                    'tags_personality_id' => $personalityTag->allTag->id,
-                    'tags_personality_name' => $personalityTag->allTag->tag_name,
-                ] : null;
+                $personalityTag = $pet->personalityTags->first();
 
                 // Calculate age
                 $dateOfBirth = \Carbon\Carbon::parse($pet->date_of_birth);
-                $now = \Carbon\Carbon::now();
-                
-                // Calculate difference
-                $years = $dateOfBirth->diffInYears($now);
-                $months = $dateOfBirth->diffInMonths($now) % 12; // Sisa bulan setelah dikurangi tahun
+                $ageInYears = $dateOfBirth->age; // Carbon's age property is simpler
 
-                if ($years >= 1) {
-                    $age = (int) $years;
-                    $ageUnit = $years === 1 ? 'year old' : 'years old';
+                if ($ageInYears >= 1) {
+                    $age = $ageInYears;
+                    $ageUnit = $age === 1 ? 'year old' : 'years old';
                 } else {
-                    $age = (int) $months;
-                    $ageUnit = $months === 1 ? 'month old' : 'months old';
+                    $age = $dateOfBirth->diffInMonths(now());
+                    $ageUnit = $age === 1 ? 'month old' : 'months old';
                 }
 
                 return [
                     'id' => $pet->id,
                     'name' => $pet->name,
                     'type_of_animal_id' => $pet->type_of_animal_id,
-                    'type_of_animal_name' => $pet->type_of_animal_name,
+                    'type_of_animal_name' => $pet->typeOfAnimal->tag_name ?? null,
                     'age' => $age,
                     'age_unit' => $ageUnit,
-                    'tags_personality_id' => $personalityTags->tags_personality_id ?? null,
-                    'tags_personality_name' => $personalityTags->tags_personality_name ?? null,
+                    'tags_personality_id' => $personalityTag->id ?? null,
+                    'tags_personality_name' => $personalityTag->tag_name ?? null,
                 ];
             });
 
