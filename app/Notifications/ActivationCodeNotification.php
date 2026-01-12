@@ -40,7 +40,7 @@ class ActivationCodeNotification extends Notification implements ShouldQueue
             ->subject('Activation Code Notification')
             ->view('emails.activation-code', [
                 'token' => $this->token,
-                'expire' => config('auth.passwords.users.expire'),
+                'expire' => config('auth.activation.expire'),
             ]);
     }
 
