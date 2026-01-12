@@ -87,7 +87,7 @@ class PetController extends Controller
                 $petData = $request->validated();
                 $petData['id'] = Str::uuid();
                 
-                // Auto-set status_id ke "available" (ambil dari database)
+                // Auto-set status_id to "available" (fetched from the database)
                 $availableStatus = Status::where('status_name', 'available')->firstOrFail();
                 
                 $petData['status_id'] = $availableStatus->id;
