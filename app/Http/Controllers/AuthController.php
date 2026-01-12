@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ActivationCodeRequest;
 use App\Http\Requests\ChangePasswordRequest;
 use App\Http\Requests\ForgotPasswordRequest;
 use App\Http\Requests\LoginRequest;
@@ -10,13 +11,14 @@ use App\Http\Requests\RegisterRequest;
 use App\Http\Requests\ResetPasswordRequest;
 use App\Models\RefreshToken;
 use App\Models\User;
+use App\Notifications\ActivationCodeNotification;
 use App\Notifications\ResetPasswordNotification;
 use App\Traits\ResponseAPI;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
 
@@ -36,6 +38,7 @@ class AuthController extends BaseController
             ]);
 
             $user->assignRole($request->input('role'));
+            $this->sendActivationCode($user);
 
             // Generate JWT token
             $token = auth('api')->login($user);
@@ -120,12 +123,13 @@ class AuthController extends BaseController
 
             $tokenModel = RefreshToken::findByToken($refreshToken);
 
-            if (!$tokenModel) {
+            if (! $tokenModel) {
                 return $this->sendError('Invalid or expired refresh token', 401);
             }
 
             if ($tokenModel->used_at) {
                 RefreshToken::where('user_id', $tokenModel->user_id)->delete();
+
                 return $this->sendError('Refresh token has already been used. For security, all sessions have been logged out.', 401);
             }
 
@@ -133,7 +137,7 @@ class AuthController extends BaseController
 
             $user = $tokenModel->user;
 
-            if (!$user) {
+            if (! $user) {
                 return $this->sendError('User not found', 401);
             }
 
@@ -281,7 +285,7 @@ class AuthController extends BaseController
 
             $user = User::where('email', $socialUser->getEmail())->first();
 
-            if (!$user) {
+            if (! $user) {
                 $user = User::create([
                     'name' => $socialUser->getName(),
                     'email' => $socialUser->getEmail(),
@@ -298,7 +302,7 @@ class AuthController extends BaseController
                     'provider_id' => $socialUser->getId(),
                     'avatar' => $socialUser->getAvatar(),
                 ]);
-                if (!$user->hasRole($validated['role'])) {
+                if (! $user->hasRole($validated['role'])) {
                     $user->assignRole($validated['role']);
                 }
             }
@@ -343,7 +347,7 @@ class AuthController extends BaseController
         try {
             $user = User::where('email', $request->email)->first();
             if ($user) {
-                $token = Str::random(64);
+                $token = Str::upper(Str::random(8));
                 DB::table(config('auth.passwords.users.table'))->updateOrInsert(
                     ['email' => $user->email],
                     [
@@ -351,7 +355,7 @@ class AuthController extends BaseController
                         'created_at' => now(),
                     ]
                 );
-                $user->notify(new ResetPasswordNotification($token, $user->email));
+                $user->notify(new ResetPasswordNotification($token));
             }
 
             return $this->sendSuccess('Password reset link sent to your email', null, 200);
@@ -435,6 +439,72 @@ class AuthController extends BaseController
             ]);
 
             return $this->sendError('Failed to change password', 500);
+        }
+    }
+
+    public function resendActivationCode()
+    {
+        try {
+            $user = auth('api')->user();
+            $this->sendActivationCode($user);
+
+            return $this->sendSuccess('Activation code resent successfully', null, 200);
+        } catch (\Exception $ex) {
+            Log::error('Resend activation code error: ', [
+                'user_id' => auth('api')->id(),
+                'message' => $ex->getMessage(),
+            ]);
+
+            return $this->sendError('Failed to resend activation code', 500);
+        }
+    }
+
+    private function sendActivationCode(User $user)
+    {
+        $token = Str::upper(Str::random(8));
+
+        DB::table('tr_user_activation')->updateOrInsert(
+            ['user_id' => $user->id],
+            [
+                'activation_token' => Hash::make($token),
+                'created_at' => now(),
+                'expires_at' => now()->addMinutes(config('auth.activation.expire')),
+            ]
+        );
+
+        $user->notify(new ActivationCodeNotification($token));
+    }
+
+    public function validateActivationCode(ActivationCodeRequest $request)
+    {
+        try {
+            $user = auth('api')->user();
+
+            $activationRecord = DB::table('tr_user_activation')->where('user_id', $user->id)->first();
+            if (! $activationRecord || ! Hash::check($request->token, $activationRecord->activation_token)) {
+                return $this->sendError('Invalid or expired activation token', 400);
+            }
+
+            if (now()->greaterThan($activationRecord->expires_at)) {
+                DB::table('tr_user_activation')->where('user_id', $user->id)->delete();
+
+                return $this->sendError('Activation token has expired', 400);
+            }
+
+            $user->email_verified_at = now();
+            $user->save();
+
+            DB::table('tr_user_activation')->where('user_id', $user->id)->delete();
+
+            return $this->sendSuccess('Account activated successfully', null, 200);
+        } catch (\Exception $ex) {
+            Log::error('Verify activation code error: ', [
+                'user_id' => auth('api')->id(),
+                'message' => $ex->getMessage(),
+                'trace' => $ex->getTraceAsString(),
+            ]);
+
+            return $this->sendError('Failed to verify activation code', 500);
         }
     }
 }

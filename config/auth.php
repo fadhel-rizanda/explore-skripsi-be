@@ -116,4 +116,7 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    'activation' => [
+        'expire' => (int) env('ACTIVATION_CODE_EXPIRE', 5),
+    ],
 ];
