@@ -25,7 +25,7 @@ class TagController extends Controller
             $tags = $query->when(
                 Uuid::isValid($search),
                 fn ($q) => $q->where('id', $search),
-                fn ($q) => $q->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($search) . '%'])
+                fn ($q) => $q->where('name', 'ILIKE', "%{$search}%")
             )->get();
         } else {
             $tags = Cache::remember(
