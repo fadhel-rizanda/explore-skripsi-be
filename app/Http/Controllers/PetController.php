@@ -36,7 +36,7 @@ class PetController extends Controller
             // Transform data using map. For more complex transformations, consider using API Resources.
             $transformedData = $pets->getCollection()->map(function ($pet) {
                 // Calculate age
-                $dateOfBirth = \Carbon\Carbon::parse($pet->date_of_birth);
+                $dateOfBirth = $pet->date_of_birth;
                 $ageInYears = $dateOfBirth->age; // Carbon's age property is simpler
 
                 if ($ageInYears >= 1) {
