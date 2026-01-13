@@ -28,8 +28,8 @@ class Status extends Model
      */
     protected $fillable = [
         'id',
-        'status_name',
-        'status_type',
+        'name',
+        'type',
     ];
 
     /**

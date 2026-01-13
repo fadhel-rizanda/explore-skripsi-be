@@ -4,15 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\PetRequest;
 use App\Models\Pet;
-use App\Models\PetPersonalityTag;
-use App\Models\PetPhysiqueTag;
-use App\Models\PetProfilePicture;
 use App\Models\Status;
 use App\Traits\ResponseAPI;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 
 class PetController extends Controller
 {
@@ -24,16 +20,21 @@ class PetController extends Controller
     public function index(Request $request)
     {
         try {
-            $page = $request->query('page', 1);
-            $limit = $request->query('limit', 10);
+            $perPage = $request->query('per_page', 15);
 
             // Eager load relationships to avoid N+1 query issues
-            $pets = Pet::with(['typeOfAnimal', 'personalityTags'])->paginate($limit, ['*'], 'page', $page);
+            $pets = Pet::with([
+                'typeOfAnimal:id,name',
+                'status:id,name',
+                'personalityTags:id,name',
+                'physiqueTags:id,name',
+                'profilePictures:id,filename,mime_type,public_url,path',
+                'additionalRecords:id,filename,mime_type,public_url,path',
+            ])
+                ->paginate($perPage);
 
             // Transform data using map. For more complex transformations, consider using API Resources.
             $transformedData = $pets->getCollection()->map(function ($pet) {
-                $personalityTag = $pet->personalityTags->first();
-
                 // Calculate age
                 $dateOfBirth = \Carbon\Carbon::parse($pet->date_of_birth);
                 $ageInYears = $dateOfBirth->age; // Carbon's age property is simpler
@@ -49,12 +50,33 @@ class PetController extends Controller
                 return [
                     'id' => $pet->id,
                     'name' => $pet->name,
+                    'status' => $pet->status->name,
                     'type_of_animal_id' => $pet->type_of_animal_id,
-                    'type_of_animal_name' => $pet->typeOfAnimal->tag_name,
+                    'type_of_animal_name' => $pet->typeOfAnimal->name,
                     'age' => $age,
                     'age_unit' => $ageUnit,
-                    'tags_personality_id' => $personalityTag->id ?? null,
-                    'tags_personality_name' => $personalityTag->tag_name ?? null,
+                    'tags_personality' => $pet->personalityTags->map(fn ($tag) => [
+                        'id' => $tag->id,
+                        'name' => $tag->name,
+                    ])->values(),
+                    'tags_physique' => $pet->physiqueTags->map(fn ($tag) => [
+                        'id' => $tag->id,
+                        'name' => $tag->name,
+                    ])->values(),
+                    'profile_pictures' => $pet->profilePictures->map(fn ($picture) => [
+                        'id' => $picture->id,
+                        'filename' => $picture->filename,
+                        'mime_type' => $picture->mime_type,
+                        'public_url' => $picture->public_url,
+                        'path' => $picture->path,
+                    ])->values(),
+                    'additional_records' => $pet->additionalRecords->map(fn ($record) => [
+                        'id' => $record->id,
+                        'filename' => $record->filename,
+                        'mime_type' => $record->mime_type,
+                        'public_url' => $record->public_url,
+                        'path' => $record->path,
+                    ])->values(),
                 ];
             });
 
@@ -75,7 +97,7 @@ class PetController extends Controller
             );
         }
     }
-    
+
     /**
      * Store a newly created resource in storage.
      */
@@ -83,51 +105,39 @@ class PetController extends Controller
     {
         try {
             $pet = DB::transaction(function () use ($request) {
-                // Create pet
-                $petData = $request->validated();
-                $petData['id'] = Str::uuid();
-                
-                // Auto-set status_id to "available" (fetched from the database)
-                $availableStatus = Status::where('status_name', 'available')->firstOrFail();
-                
-                $petData['status_id'] = $availableStatus->id;
-                
-                $pet = Pet::create($petData);
+                $availableStatus = Status::where('name', 'available')->firstOrFail();
+
+                $pet = Pet::create([
+                    'user_id' => auth('api')->user()->id,
+                    'type_of_animal_id' => $request->type_of_animal_id,
+                    'size' => $request->size,
+                    'name' => $request->name,
+                    'date_of_birth' => $request->date_of_birth,
+                    'gender' => $request->gender,
+                    'about' => $request->about,
+                    'breed' => $request->breed,
+                    'special_needs' => $request->special_needs,
+                    'status_id' => $availableStatus->id,
+                ]);
 
                 // Attach physique tags if provided
-                if ($request->has('physique_ids')) {
-                    $physiqueRecords = collect($request->physique_ids)->map(function ($physiqueId) use ($pet) {
-                        return [
-                            'id' => Str::uuid(),
-                            'pet_id' => $pet->id,
-                            'all_tag_id' => $physiqueId
-                        ];
-                    })->all();
-                    PetPhysiqueTag::insert($physiqueRecords);
+                if ($request->filled('physique_ids')) {
+                    $pet->physiqueTags()->sync($request->physique_ids);
                 }
 
                 // Attach personality tags if provided
-                if ($request->has('personality_ids')) {
-                    $personalityRecords = collect($request->personality_ids)->map(function ($personalityId) use ($pet) {
-                        return [
-                            'id' => Str::uuid(),
-                            'pet_id' => $pet->id,
-                            'all_tag_id' => $personalityId
-                        ];
-                    })->all();
-                    PetPersonalityTag::insert($personalityRecords);
+                if ($request->filled('personality_ids')) {
+                    $pet->personalityTags()->sync($request->personality_ids);
                 }
 
                 // Attach profile pictures if provided
-                if ($request->has('profile_picture_ids')) {
-                    $profilePictureRecords = collect($request->profile_picture_ids)->map(function ($attachmentId) use ($pet) {
-                        return [
-                            'id' => Str::uuid(),
-                            'pet_id' => $pet->id,
-                            'attachment_id' => $attachmentId
-                        ];
-                    })->all();
-                    PetProfilePicture::insert($profilePictureRecords);
+                if ($request->filled('profile_picture_ids')) {
+                    $pet->profilePictures()->sync($request->profile_picture_ids);
+                }
+
+                // Attach profile pictures if provided
+                if ($request->filled('additional_record_ids')) {
+                    $pet->additionalRecords()->sync($request->additional_record_ids);
                 }
 
                 return $pet;
