@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
+return new class() extends Migration
 {
     /**
      * Run the migrations.
@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('mt_all_status', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->string('status_name');
-            $table->string('status_type');
+            $table->string('name');
+            $table->string('type');
         });
     }
 
