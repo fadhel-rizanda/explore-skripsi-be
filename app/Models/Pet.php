@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Pet extends Model
 {
@@ -50,7 +49,7 @@ class Pet extends Model
         'special_needs' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
-    ];  
+    ];
 
     /**
      * Get the user that owns the pet.
@@ -71,9 +70,14 @@ class Pet extends Model
     /**
      * Get the profile pictures for the pet.
      */
-    public function profilePictures(): HasMany
+    public function profilePictures(): BelongsToMany
     {
-        return $this->hasMany(PetProfilePicture::class, 'pet_id');
+        return $this->belongsToMany(
+            Attachment::class,
+            'tr_pet_profile_picture',
+            'pet_id',
+            'attachment_id'
+        );
     }
 
     /**
@@ -96,6 +100,7 @@ class Pet extends Model
             'all_tag_id'
         );
     }
+
     /**
      * Get physique tags for the pet.
      */
@@ -106,6 +111,19 @@ class Pet extends Model
             'tr_all_tag_pet_physique_record',
             'pet_id',
             'all_tag_id'
+        );
+    }
+
+    /**
+     * Get personality tags for the pet.
+     */
+    public function additionalRecords(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Attachment::class,
+            'tr_pet_additional_record',
+            'pet_id',
+            'attachment_id'
         );
     }
 }

@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
+return new class() extends Migration
 {
     /**
      * Run the migrations.
@@ -12,9 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('tr_all_tag_pet_personality_record', function (Blueprint $table) {
-            $table->uuid('id')->primary();
             $table->foreignUuid('pet_id')->constrained('tr_pet')->onDelete('cascade');
             $table->foreignUuid('all_tag_id')->constrained('mt_all_tag')->onDelete('cascade');
+            $table->primary(['pet_id', 'all_tag_id']);
         });
     }
 
