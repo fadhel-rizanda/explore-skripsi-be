@@ -17,27 +17,23 @@ class StatusController extends Controller
         $type = $request->type;
         $search = $request->search;
 
+        $query = Status::query()
+            ->when($type, fn ($q) => $q->where('type', $type))
+            ->orderBy('name', 'asc');
+
         if ($search) {
-            $statuses = Status::query()
-                ->when($type, fn ($q) => $q->where('type', $type))
-                ->when(
-                    Uuid::isValid($search),
-                    fn ($q) => $q->where('id', $search),
-                    fn ($q) => $q->where('name', 'ILIKE', "%{$search}%")
-                )
-                ->orderBy('name', 'asc')
-                ->get();
-
-            return $this->sendSuccess('Statuses retrieved successfully', $statuses);
+            $statuses = $query->when(
+                Uuid::isValid($search),
+                fn ($q) => $q->where('id', $search),
+                fn ($q) => $q->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($search) . '%'])
+            )->get();
+        } else {
+            $statuses = Cache::remember(
+                'statuses.type_' . ($type ?? 'all'),
+                now()->addHours(6),
+                fn () => $query->get()
+            );
         }
-
-        $statuses = Cache::remember(
-            'statuses.type_' . ($type ?? 'all'),
-            now()->addHours(6),
-            function () use ($type) {
-                return Status::when($type, fn ($q) => $q->where('type', $type))->orderBy('name', 'asc')->get();
-            }
-        );
 
         return $this->sendSuccess('Statuses retrieved successfully', $statuses);
     }

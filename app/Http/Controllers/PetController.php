@@ -33,7 +33,7 @@ class PetController extends Controller
                 'additionalRecords:id,filename,mime_type,public_url,path',
             ])
                 ->when($search, function ($q, $search) {
-                    $q->where('tr_pet.name', 'ILIKE', "%{$search}%");
+                    $q->where('name', 'ILIKE', "%{$search}%");
                 })
                 ->orderBy('created_at', 'desc') // Default sorting
                 ->paginate($perPage);
