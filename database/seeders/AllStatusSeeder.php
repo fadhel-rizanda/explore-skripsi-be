@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Models\Status;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class AllStatusSeeder extends Seeder
@@ -16,43 +15,43 @@ class AllStatusSeeder extends Seeder
     {
         $statuses = [
             // Pet statuses
-            ['status_name' => 'available', 'status_type' => 'pet'],
-            ['status_name' => 'adopted', 'status_type' => 'pet'],
-            ['status_name' => 'pending', 'status_type' => 'pet'],
-            ['status_name' => 'unavailable', 'status_type' => 'pet'],
+            ['name' => 'available', 'type' => 'pet'],
+            ['name' => 'adopted', 'type' => 'pet'],
+            ['name' => 'pending', 'type' => 'pet'],
+            ['name' => 'unavailable', 'type' => 'pet'],
         ];
 
         // Fetch all existing status pairs in a single query
         $existingStatuses = Status::where(function ($query) use ($statuses) {
             foreach ($statuses as $status) {
                 $query->orWhere(function ($subQuery) use ($status) {
-                    $subQuery->where('status_name', $status['status_name'])
-                        ->where('status_type', $status['status_type']);
+                    $subQuery->where('name', $status['name'])
+                        ->where('type', $status['type']);
                 });
             }
-        })->get(['status_name', 'status_type']);
+        })->get(['name', 'type']);
 
-        // Build a set of existing (status_name, status_type) combinations
+        // Build a set of existing (name, type) combinations
         $existingKeys = $existingStatuses
             ->map(function ($status) {
-                return $status->status_name . '|' . $status->status_type;
+                return $status->name . '|' . $status->type;
             })
             ->all();
 
         // Collect all missing statuses to insert in a single batch
         $statusesToInsert = [];
         foreach ($statuses as $status) {
-            $key = $status['status_name'] . '|' . $status['status_type'];
-            if (!in_array($key, $existingKeys, true)) {
+            $key = $status['name'] . '|' . $status['type'];
+            if (! in_array($key, $existingKeys, true)) {
                 $statusesToInsert[] = [
                     'id' => Str::uuid(),
-                    'status_name' => $status['status_name'],
-                    'status_type' => $status['status_type'],
+                    'name' => $status['name'],
+                    'type' => $status['type'],
                 ];
             }
         }
 
-        if (!empty($statusesToInsert)) {
+        if (! empty($statusesToInsert)) {
             Status::insert($statusesToInsert);
         }
     }
