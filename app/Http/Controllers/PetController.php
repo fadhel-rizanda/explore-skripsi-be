@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\GetAllRequest;
 use App\Http\Requests\PetRequest;
 use App\Models\Pet;
 use App\Models\Status;
 use App\Traits\ResponseAPI;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -17,10 +17,11 @@ class PetController extends Controller
     /**
      * Display a listing of the pets.
      */
-    public function index(Request $request)
+    public function index(GetAllRequest $request)
     {
         try {
             $perPage = $request->query('per_page', 15);
+            $search = $request->query('search');
 
             // Eager load relationships to avoid N+1 query issues
             $pets = Pet::with([
@@ -31,6 +32,10 @@ class PetController extends Controller
                 'profilePictures:id,filename,mime_type,public_url,path',
                 'additionalRecords:id,filename,mime_type,public_url,path',
             ])
+                ->when($search, function ($q, $search) {
+                    $q->where('name', 'ILIKE', "%{$search}%");
+                })
+                ->orderBy('created_at', 'desc') // Default sorting
                 ->paginate($perPage);
 
             // Transform data using map. For more complex transformations, consider using API Resources.
