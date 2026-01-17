@@ -22,6 +22,9 @@ class PetController extends Controller
         try {
             $perPage = $request->query('per_page', 15);
             $search = $request->query('search');
+            $typeOfAnimalId = $request->query('type_of_animal_id');
+            $age = $request->query('age');
+            $tagPersonalityId = $request->query('tag_personality_id');
 
             // Eager load relationships to avoid N+1 query issues
             $pets = Pet::with([
@@ -34,6 +37,43 @@ class PetController extends Controller
             ])
                 ->when($search, function ($q, $search) {
                     $q->where('name', 'ILIKE', "%{$search}%");
+                })
+                ->when($typeOfAnimalId, function ($q) use ($typeOfAnimalId) {
+                    $q->where('type_of_animal_id', $typeOfAnimalId);
+                })
+                ->when($age !== null, function ($q) use ($age) {
+                    $now = now();
+                    if ($age === 'baby') {
+                        // 0-6 bulan
+                        $maxDate = $now;
+                        $minDate = $now->copy()->subMonths(6)->addDay();
+                        $q->where('date_of_birth', '>', $minDate)
+                          ->where('date_of_birth', '<=', $maxDate);
+                    } elseif ($age === 'young') {
+                        // 7-12 bulan
+                        $maxDate = $now->copy()->subMonths(6);
+                        $minDate = $now->copy()->subYear()->addDay();
+                        $q->where('date_of_birth', '>', $minDate)
+                          ->where('date_of_birth', '<=', $maxDate);
+                    } elseif ($age === 'adult') {
+                        // 1-7 tahun
+                        $maxDate = $now->copy()->subYear();
+                        $minDate = $now->copy()->subYears(7)->addDay();
+                        $q->where('date_of_birth', '>', $minDate)
+                          ->where('date_of_birth', '<=', $maxDate);
+                    } elseif ($age === 'senior') {
+                        // >7 tahun
+                        $maxDate = $now->copy()->subYears(7);
+                        $q->where('date_of_birth', '<=', $maxDate);
+                    }
+                })
+                ->when($tagPersonalityId, function ($q) use ($tagPersonalityId) {
+                    $q->whereExists(function ($sub) use ($tagPersonalityId) {
+                        $sub->select(DB::raw(1))
+                            ->from('tr_all_tag_pet_personality_record as tappr')
+                            ->whereColumn('tappr.pet_id', 'tr_pet.id')
+                            ->where('tappr.all_tag_id', $tagPersonalityId);
+                    });
                 })
                 ->orderBy('created_at', 'desc') // Default sorting
                 ->paginate($perPage);

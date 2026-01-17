@@ -27,6 +27,9 @@ class GetAllRequest extends FormRequest
             'per_page' => 'sometimes|integer|min:1|max:100',
             'type' => 'sometimes|string|max:50',
             'status' => 'sometimes|string|max:50',
+            'type_of_animal_id' => 'sometimes|uuid|exists:mt_all_tag,id',
+            'age' => 'sometimes|string|in:baby,young,adult,senior',
+            'tag_personality_id' => 'sometimes|uuid|exists:mt_all_tag,id',
             // 'sort_by' => 'sometimes|string|max:100',
             // 'order_by' => 'sometimes|string|in:asc,desc',
         ];
