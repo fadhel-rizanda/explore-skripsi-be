@@ -29,7 +29,7 @@ class GetAllRequest extends FormRequest
             'type' => 'sometimes|string|max:50',
             'status' => 'sometimes|string|max:50',
             'type_of_animal_id' => 'sometimes|uuid|exists:' . (new AllTag())->getTable() . ',id',
-            'age' => 'sometimes|string|in:Baby,Young,Adult,Senior',
+            'age' => 'sometimes|string|in:baby,young,adult,senior',
             'tag_personality_id' => 'sometimes|uuid|exists:' . (new AllTag())->getTable() . ',id',
             // 'sort_by' => 'sometimes|string|max:100',
             // 'order_by' => 'sometimes|string|in:asc,desc',
