@@ -60,12 +60,9 @@ class PetController extends Controller
                         $q->where('date_of_birth', '<=', $now->copy()->subYears(7));
                     }
                 })
-                ->when($tagPersonalityId, function ($q) use ($tagPersonalityId) {
-                    $q->whereExists(function ($sub) use ($tagPersonalityId) {
-                        $sub->select(DB::raw(1))
-                            ->from('tr_all_tag_pet_personality_record as tappr')
-                            ->whereColumn('tappr.pet_id', 'tr_pet.id')
-                            ->where('tappr.all_tag_id', $tagPersonalityId);
+                  ->when($tagPersonalityId, function ($q) use ($tagPersonalityId) {
+                    $q->whereHas('personalityTags', function ($subQuery) use ($tagPersonalityId) {
+                        $subQuery->where('mt_all_tag.id', $tagPersonalityId);
                     });
                 })
                 ->orderBy('created_at', 'desc') // Default sorting
