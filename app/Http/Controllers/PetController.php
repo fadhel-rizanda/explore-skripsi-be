@@ -209,23 +209,22 @@ class PetController extends Controller
                     'special_needs' => $request->special_needs,
                 ]);
 
-                // Sync physique tags if provided
-                if ($request->filled('physique_ids')) {
+                if ($request->has('physique_ids')) {
                     $pet->physiqueTags()->sync($request->physique_ids);
                 }
 
                 // Sync personality tags if provided
-                if ($request->filled('personality_ids')) {
+                if ($request->has('personality_ids')) {
                     $pet->personalityTags()->sync($request->personality_ids);
                 }
 
                 // Sync profile pictures if provided
-                if ($request->filled('profile_picture_ids')) {
+                if ($request->has('profile_picture_ids')) {
                     $pet->profilePictures()->sync($request->profile_picture_ids);
                 }
 
                 // Sync additional records if provided
-                if ($request->filled('additional_record_ids')) {
+                if ($request->has('additional_record_ids')) {
                     $pet->additionalRecords()->sync($request->additional_record_ids);
                 }
             });
