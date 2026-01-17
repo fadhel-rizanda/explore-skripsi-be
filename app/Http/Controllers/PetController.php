@@ -198,16 +198,7 @@ class PetController extends Controller
             $pet = Pet::findOrFail($id);
 
             DB::transaction(function () use ($request, $pet) {
-                $pet->update([
-                    'type_of_animal_id' => $request->type_of_animal_id,
-                    'size' => $request->size,
-                    'name' => $request->name,
-                    'date_of_birth' => $request->date_of_birth,
-                    'gender' => $request->gender,
-                    'about' => $request->about,
-                    'breed' => $request->breed,
-                    'special_needs' => $request->special_needs,
-                ]);
+                $pet->update($request->validated());
 
                 if ($request->has('physique_ids')) {
                     $pet->physiqueTags()->sync($request->physique_ids);
