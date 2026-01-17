@@ -43,28 +43,21 @@ class PetController extends Controller
                 })
                 ->when($age !== null, function ($q) use ($age) {
                     $now = now();
-                    if ($age === 'baby') {
-                        // 0-6 bulan
-                        $maxDate = $now;
-                        $minDate = $now->copy()->subMonths(6)->addDay();
-                        $q->where('date_of_birth', '>', $minDate)
-                          ->where('date_of_birth', '<=', $maxDate);
-                    } elseif ($age === 'young') {
-                        // 7-12 bulan
-                        $maxDate = $now->copy()->subMonths(6);
-                        $minDate = $now->copy()->subYear()->addDay();
-                        $q->where('date_of_birth', '>', $minDate)
-                          ->where('date_of_birth', '<=', $maxDate);
-                    } elseif ($age === 'adult') {
-                        // 1-7 tahun
-                        $maxDate = $now->copy()->subYear();
-                        $minDate = $now->copy()->subYears(7)->addDay();
-                        $q->where('date_of_birth', '>', $minDate)
-                          ->where('date_of_birth', '<=', $maxDate);
-                    } elseif ($age === 'senior') {
-                        // >7 tahun
-                        $maxDate = $now->copy()->subYears(7);
-                        $q->where('date_of_birth', '<=', $maxDate);
+                    if ($age === 'Baby') {
+                        // < 6 months
+                        $q->where('date_of_birth', '>', $now->copy()->subMonths(6))
+                          ->where('date_of_birth', '<=', $now);
+                    } elseif ($age === 'Young') {
+                        // 6 months to < 1 year
+                        $q->where('date_of_birth', '<=', $now->copy()->subMonths(6))
+                          ->where('date_of_birth', '>', $now->copy()->subYear());
+                    } elseif ($age === 'Adult') {
+                        // 1 year to < 7 years
+                        $q->where('date_of_birth', '<=', $now->copy()->subYear())
+                          ->where('date_of_birth', '>', $now->copy()->subYears(7));
+                    } elseif ($age === 'Senior') {
+                        // >= 7 years
+                        $q->where('date_of_birth', '<=', $now->copy()->subYears(7));
                     }
                 })
                 ->when($tagPersonalityId, function ($q) use ($tagPersonalityId) {
