@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Requests\GetAllRequest;
 use App\Models\Role;
 use App\Traits\ResponseAPI;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Ramsey\Uuid\Uuid;
 

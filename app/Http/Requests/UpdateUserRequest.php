@@ -23,14 +23,15 @@ class UpdateUserRequest extends FormRequest
      */
     public function rules(): array
     {
-        return array_merge([
-            'name' => 'sometimes|string|max:255',
-            'email' => 'sometimes|string|email|max:255|unique:'. (new User())->getTable() .',email,' . $this->user()->id . ',id',
-            'phone' => 'sometimes|string|max:20|unique:'. (new User())->getTable() .',phone,' . $this->user()->id . ',id',
-            'about_me' => 'sometimes|string|max:1000',
-            'open_to_special_needs' => 'sometimes|boolean',
-            'attachment_id' => 'sometimes|uuid|exists:'.(new Attachment())->getTable().',id',
-        ],
+        return array_merge(
+            [
+                'name' => 'sometimes|string|max:255',
+                'email' => 'sometimes|string|email|max:255|unique:' . (new User())->getTable() . ',email,' . $this->user()->id . ',id',
+                'phone' => 'sometimes|string|max:20|unique:' . (new User())->getTable() . ',phone,' . $this->user()->id . ',id',
+                'about_me' => 'sometimes|string|max:1000',
+                'open_to_special_needs' => 'sometimes|boolean',
+                'attachment_id' => 'sometimes|uuid|exists:' . (new Attachment())->getTable() . ',id',
+            ],
             (new UpdateAddressRequest())->rules(),
             (new UserBackgroundRequest())->rules()
         );

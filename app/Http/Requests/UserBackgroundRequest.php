@@ -28,13 +28,13 @@ class UserBackgroundRequest extends FormRequest
             'pet_preferences' => 'sometimes|string|max:1000',
 
             'personality_tags' => 'sometimes|array',
-            'personality_tags.*' => 'uuid|exists:'. (new AllTag())->getTable() .',id',
+            'personality_tags.*' => 'uuid|exists:' . (new AllTag())->getTable() . ',id',
 
             'pet_experience_tags' => 'sometimes|array',
-            'pet_experience_tags.*' => 'uuid|exists:'. (new AllTag())->getTable() .',id',
+            'pet_experience_tags.*' => 'uuid|exists:' . (new AllTag())->getTable() . ',id',
 
             'pet_preferences_tags' => 'sometimes|array',
-            'pet_preferences_tags.*' => 'uuid|exists:'. (new AllTag())->getTable() .',id',
+            'pet_preferences_tags.*' => 'uuid|exists:' . (new AllTag())->getTable() . ',id',
         ];
     }
 }
