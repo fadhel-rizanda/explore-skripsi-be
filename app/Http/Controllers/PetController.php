@@ -22,6 +22,9 @@ class PetController extends Controller
         try {
             $perPage = $request->query('per_page', 15);
             $search = $request->query('search');
+            $typeOfAnimalId = $request->query('type_of_animal_id');
+            $age = $request->query('age');
+            $tagPersonalityId = $request->query('tag_personality_id');
 
             // Eager load relationships to avoid N+1 query issues
             $pets = Pet::with([
@@ -34,6 +37,33 @@ class PetController extends Controller
             ])
                 ->when($search, function ($q, $search) {
                     $q->where('name', 'ILIKE', "%{$search}%");
+                })
+                ->when($typeOfAnimalId, function ($q) use ($typeOfAnimalId) {
+                    $q->where('type_of_animal_id', $typeOfAnimalId);
+                })
+                ->when($age !== null, function ($q) use ($age) {
+                    $now = now();
+                    if ($age === 'baby') {
+                        // < 6 months
+                        $q->where('date_of_birth', '>', $now->copy()->subMonths(6))
+                            ->where('date_of_birth', '<=', $now);
+                    } elseif ($age === 'young') {
+                        // 6 months to < 1 year
+                        $q->where('date_of_birth', '<=', $now->copy()->subMonths(6))
+                            ->where('date_of_birth', '>', $now->copy()->subYear());
+                    } elseif ($age === 'adult') {
+                        // 1 year to < 7 years
+                        $q->where('date_of_birth', '<=', $now->copy()->subYear())
+                            ->where('date_of_birth', '>', $now->copy()->subYears(7));
+                    } elseif ($age === 'senior') {
+                        // >= 7 years
+                        $q->where('date_of_birth', '<=', $now->copy()->subYears(7));
+                    }
+                })
+                ->when($tagPersonalityId, function ($q) use ($tagPersonalityId) {
+                    $q->whereHas('personalityTags', function ($subQuery) use ($tagPersonalityId) {
+                        $subQuery->where('mt_all_tag.id', $tagPersonalityId);
+                    });
                 })
                 ->orderBy('created_at', 'desc') // Default sorting
                 ->paginate($perPage);

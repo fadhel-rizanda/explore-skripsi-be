@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\AllTag;
 use Illuminate\Foundation\Http\FormRequest;
 
 class GetAllRequest extends FormRequest
@@ -27,6 +28,9 @@ class GetAllRequest extends FormRequest
             'per_page' => 'sometimes|integer|min:1|max:100',
             'type' => 'sometimes|string|max:50',
             'status' => 'sometimes|string|max:50',
+            'type_of_animal_id' => 'sometimes|uuid|exists:' . (new AllTag())->getTable() . ',id',
+            'age' => 'sometimes|string|in:baby,young,adult,senior',
+            'tag_personality_id' => 'sometimes|uuid|exists:' . (new AllTag())->getTable() . ',id',
             // 'sort_by' => 'sometimes|string|max:100',
             // 'order_by' => 'sometimes|string|in:asc,desc',
         ];
