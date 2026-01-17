@@ -189,4 +189,47 @@ class PetController extends Controller
             );
         }
     }
+    /**
+     * Update the specified pet in storage.
+     */
+    public function update(PetRequest $request, $id)
+    {
+        try {
+            $pet = Pet::findOrFail($id);
+
+            DB::transaction(function () use ($request, $pet) {
+                $pet->update($request->validated());
+
+                if ($request->has('physique_ids')) {
+                    $pet->physiqueTags()->sync($request->physique_ids);
+                }
+
+                // Sync personality tags if provided
+                if ($request->has('personality_ids')) {
+                    $pet->personalityTags()->sync($request->personality_ids);
+                }
+
+                // Sync profile pictures if provided
+                if ($request->has('profile_picture_ids')) {
+                    $pet->profilePictures()->sync($request->profile_picture_ids);
+                }
+
+                // Sync additional records if provided
+                if ($request->has('additional_record_ids')) {
+                    $pet->additionalRecords()->sync($request->additional_record_ids);
+                }
+            });
+
+            return $this->sendSuccess('Pet updated successfully', $pet);
+
+        } catch (\Exception $e) {
+            Log::error('Pet update failed: ' . $e->getMessage());
+
+            return $this->sendError(
+                config('app.debug') ? $e->getMessage() : 'Failed to update pet',
+                500
+            );
+        }
+    }
+
 }
