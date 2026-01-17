@@ -24,6 +24,10 @@ return new class() extends Migration
             $table->string('public_url')->nullable();
             $table->timestamps();
         });
+
+        Schema::table('mt_user', function (Blueprint $table) {
+            $table->foreignUuid('attachment_id')->nullable()->constrained('mt_attachment')->onDelete('set null');
+        });
     }
 
     /**

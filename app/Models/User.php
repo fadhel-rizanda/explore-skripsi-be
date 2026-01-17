@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -36,8 +37,16 @@ class User extends Authenticatable implements JWTSubject
         'id',
         'name',
         'email',
+        'phone',
+        'about_me',
+        'personality',
+        'pet_experience',
+        'pet_preferences',
+        'open_to_special_needs',
         'password',
         'avatar',
+        'attachment_id',
+        'address_id',
         'email_verified_at',
         'remember_token',
         'token_version',
@@ -67,6 +76,7 @@ class User extends Authenticatable implements JWTSubject
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'token_version' => 'integer',
+            'open_to_special_needs' => 'boolean',
         ];
     }
 
@@ -97,5 +107,30 @@ class User extends Authenticatable implements JWTSubject
     public function notifications(): HasMany
     {
         return $this->hasMany(Notification::class, 'user_id');
+    }
+
+    public function attachment(): BelongsTo
+    {
+        return $this->belongsTo(Attachment::class, 'attachment_id', 'id');
+    }
+
+    public function address(): BelongsTo
+    {
+        return $this->belongsTo(Address::class, 'address_id', 'id');
+    }
+
+    public function personalityTags(): BelongsToMany
+    {
+        return $this->belongsToMany(AllTag::class, 'tr_all_tag_user_personality_record', 'user_id', 'tag_id');
+    }
+
+    public function petExperienceTags(): BelongsToMany
+    {
+        return $this->belongsToMany(AllTag::class, 'tr_all_tag_user_experience_record', 'user_id', 'tag_id');
+    }
+
+    public function petPreferencesTags(): BelongsToMany
+    {
+        return $this->belongsToMany(AllTag::class, 'tr_all_tag_user_preferences_record', 'user_id', 'tag_id');
     }
 }
