@@ -189,4 +189,57 @@ class PetController extends Controller
             );
         }
     }
+    /**
+     * Update the specified pet in storage.
+     */
+    public function update(PetRequest $request, $id)
+    {
+        try {
+            $pet = Pet::findOrFail($id);
+
+            DB::transaction(function () use ($request, $pet) {
+                $pet->update([
+                    'type_of_animal_id' => $request->type_of_animal_id,
+                    'size' => $request->size,
+                    'name' => $request->name,
+                    'date_of_birth' => $request->date_of_birth,
+                    'gender' => $request->gender,
+                    'about' => $request->about,
+                    'breed' => $request->breed,
+                    'special_needs' => $request->special_needs,
+                ]);
+
+                // Sync physique tags if provided
+                if ($request->filled('physique_ids')) {
+                    $pet->physiqueTags()->sync($request->physique_ids);
+                }
+
+                // Sync personality tags if provided
+                if ($request->filled('personality_ids')) {
+                    $pet->personalityTags()->sync($request->personality_ids);
+                }
+
+                // Sync profile pictures if provided
+                if ($request->filled('profile_picture_ids')) {
+                    $pet->profilePictures()->sync($request->profile_picture_ids);
+                }
+
+                // Sync additional records if provided
+                if ($request->filled('additional_record_ids')) {
+                    $pet->additionalRecords()->sync($request->additional_record_ids);
+                }
+            });
+
+            return $this->sendSuccess('Pet updated successfully', $pet);
+
+        } catch (\Exception $e) {
+            Log::error('Pet update failed: ' . $e->getMessage());
+
+            return $this->sendError(
+                config('app.debug') ? $e->getMessage() : 'Failed to update pet',
+                500
+            );
+        }
+    }
+
 }
