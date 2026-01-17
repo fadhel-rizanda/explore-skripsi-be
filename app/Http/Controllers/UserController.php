@@ -16,43 +16,7 @@ class UserController extends Controller
     public function listUsers(GetAllRequest $request)
     {
         try {
-            $perPage = min((int) $request->query('per_page', 15), 100);
-            $search = $request->query('search');
-            $roleId = $request->query('role_id');
-            $sortBy = $request->query('sort_by', 'created_at');
-
-            $protectedSortFields = ['name', 'email', 'created_at', 'updated_at'];
-            if (! in_array($sortBy, $protectedSortFields)) {
-                $sortBy = 'created_at';
-            }
-
-            $users = User::with([
-                'attachment:id,public_url',
-                'roles:id,name',
-            ])
-                ->when($search, function ($q, $search) {
-                    $q->where(function ($query) use ($search) {
-                        $query->where('name', 'ILIKE', "%{$search}%");
-                    });
-                })
-                ->when($roleId, function ($q, $roleId) {
-                    $q->whereHas('roles', function ($query) use ($roleId) {
-                        $query->where('id', $roleId);
-                    });
-                })
-                ->orderBy($sortBy, 'desc')
-                ->paginate($perPage);
-
-            $users->getCollection()->transform(function ($user) {
-                return [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'avatar' => $user->avatar ?? optional($user->attachment)->public_url,
-                    'role_name' => $user->roles->first()?->name,
-                    'created_at' => $user->created_at,
-                    'updated_at' => $user->updated_at,
-                ];
-            });
+            $users = $this->getUsersQuery($request, false);
 
             return $this->sendSuccessPagination('Users retrieved successfully.', $users);
         } catch (\Exception $e) {
@@ -65,48 +29,7 @@ class UserController extends Controller
     public function listUsersAdmin(GetAllRequest $request)
     {
         try {
-            $perPage = min((int) $request->query('per_page', 15), 100);
-            $search = $request->query('search');
-            $roleId = $request->query('role_id');
-            $sortBy = $request->query('sort_by', 'created_at');
-
-            $protectedSortFields = ['name', 'email', 'created_at', 'updated_at'];
-            if (! in_array($sortBy, $protectedSortFields)) {
-                $sortBy = 'created_at';
-            }
-
-            $users = User::with([
-                'attachment:id,public_url',
-                'roles:id,name',
-            ])
-                ->when($search, function ($q, $search) {
-                    $q->where(function ($query) use ($search) {
-                        $query->where('name', 'ILIKE', "%{$search}%")
-                            ->orWhere('email', 'ILIKE', "%{$search}%")
-                            ->orWhere('phone', 'ILIKE', "%{$search}%")
-                            ->orWhere('id', 'ILIKE', "%{$search}%");
-                    });
-                })
-                ->when($roleId, function ($q, $roleId) {
-                    $q->whereHas('roles', function ($query) use ($roleId) {
-                        $query->where('id', $roleId);
-                    });
-                })
-                ->orderBy($sortBy, 'desc')
-                ->paginate($perPage);
-
-            $users->getCollection()->transform(function ($user) {
-                return [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'phone' => $user->phone,
-                    'avatar' => $user->avatar ?? optional($user->attachment)->public_url,
-                    'role_name' => $user->roles->first()?->name,
-                    'created_at' => $user->created_at,
-                    'updated_at' => $user->updated_at,
-                ];
-            });
+            $users = $this->getUsersQuery($request, true);
 
             return $this->sendSuccessPagination('Users retrieved successfully.', $users);
         } catch (\Exception $e) {
@@ -114,6 +37,60 @@ class UserController extends Controller
 
             return $this->sendError('Error fetching users: ' . $e->getMessage());
         }
+    }
+
+    private function getUsersQuery(GetAllRequest $request, bool $isAdmin)
+    {
+        $perPage = min((int) $request->query('per_page', 15), 100);
+        $search = $request->query('search');
+        $roleId = $request->query('role_id');
+        $sortBy = $request->query('sort_by', 'created_at');
+
+        // Simple validation
+        $allowedSorts = ['name', 'email', 'created_at', 'updated_at'];
+        if (! in_array($sortBy, $allowedSorts)) {
+            $sortBy = 'created_at';
+        }
+
+        $users = User::with(['attachment:id,public_url', 'roles:id,name'])
+            ->when($search, function ($q) use ($search, $isAdmin) {
+                $q->where(function ($query) use ($search, $isAdmin) {
+                    $query->where('name', 'ILIKE', "%{$search}%");
+
+                    if ($isAdmin) {
+                        $query->orWhere('email', 'ILIKE', "%{$search}%")
+                            ->orWhere('phone', 'ILIKE', "%{$search}%")
+                            ->orWhere('id', 'ILIKE', "%{$search}%");
+                    }
+                });
+            })
+            ->when(
+                $roleId,
+                fn ($q, $roleId) => $q->whereHas('roles', fn ($query) => $query->where('id', $roleId))
+            )
+            ->orderBy($sortBy, 'desc')
+            ->paginate($perPage);
+
+        // Transform inline
+        $users->getCollection()->transform(function ($user) use ($isAdmin) {
+            $data = [
+                'id' => $user->id,
+                'name' => $user->name,
+                'avatar' => $user->avatar ?? optional($user->attachment)->public_url,
+                'role_name' => $user->roles->first()?->name,
+                'created_at' => $user->created_at,
+                'updated_at' => $user->updated_at,
+            ];
+
+            if ($isAdmin) {
+                $data['email'] = $user->email;
+                $data['phone'] = $user->phone;
+            }
+
+            return $data;
+        });
+
+        return $users;
     }
 
     public function userDetails($id)
@@ -128,7 +105,7 @@ class UserController extends Controller
                 'roles:id,name',
             ])->findOrFail($id);
 
-            $user = [
+            $userResponse = [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
@@ -148,7 +125,9 @@ class UserController extends Controller
                 'updated_at' => $user->updated_at,
             ];
 
-            return $this->sendSuccess('User details retrieved successfully.', $user);
+            return $this->sendSuccess('User details retrieved successfully.', $userResponse);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return $this->sendError('User not found.', 404);
         } catch (\Exception $e) {
             \Log::error('Error fetching user details: ' . $e->getMessage());
 
@@ -172,6 +151,14 @@ class UserController extends Controller
                 'attachment_id',
             ]));
 
+            $requiredAddressFields = [
+                'street',
+                'city',
+                'state',
+                'zip_code',
+                'country',
+            ];
+
             $addressFields = [
                 'street',
                 'city',
@@ -183,12 +170,17 @@ class UserController extends Controller
             ];
 
             if ($request->hasAny($addressFields)) {
-
                 if ($user->address) {
                     $user->address->update(
                         $request->only($addressFields)
                     );
                 } else {
+                    if (! $request->filled($requiredAddressFields)) {
+                        return $this->sendError(
+                            'To create an address, street, city, state, zip code, and country are required.',
+                            422
+                        );
+                    }
                     $address = Address::create(
                         $request->only($addressFields)
                     );
@@ -207,6 +199,8 @@ class UserController extends Controller
             if ($request->has('pet_preferences_tags')) {
                 $user->petPreferencesTags()->sync($request->input('pet_preferences_tags'));
             }
+
+            $user->touch();
 
             $user->load([
                 'address',
@@ -233,7 +227,7 @@ class UserController extends Controller
             $userPassword = $request->input('password');
 
             if (! password_verify($userPassword, $user->password)) {
-                return $this->sendError('Incorrect password provided.');
+                return $this->sendError('Incorrect password provided.', 422);
             }
 
             $user->delete();
