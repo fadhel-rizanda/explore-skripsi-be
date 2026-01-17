@@ -46,21 +46,21 @@ class PetController extends Controller
                     if ($age === 'Baby') {
                         // < 6 months
                         $q->where('date_of_birth', '>', $now->copy()->subMonths(6))
-                          ->where('date_of_birth', '<=', $now);
+                            ->where('date_of_birth', '<=', $now);
                     } elseif ($age === 'Young') {
                         // 6 months to < 1 year
                         $q->where('date_of_birth', '<=', $now->copy()->subMonths(6))
-                          ->where('date_of_birth', '>', $now->copy()->subYear());
+                            ->where('date_of_birth', '>', $now->copy()->subYear());
                     } elseif ($age === 'Adult') {
                         // 1 year to < 7 years
                         $q->where('date_of_birth', '<=', $now->copy()->subYear())
-                          ->where('date_of_birth', '>', $now->copy()->subYears(7));
+                            ->where('date_of_birth', '>', $now->copy()->subYears(7));
                     } elseif ($age === 'Senior') {
                         // >= 7 years
                         $q->where('date_of_birth', '<=', $now->copy()->subYears(7));
                     }
                 })
-                  ->when($tagPersonalityId, function ($q) use ($tagPersonalityId) {
+                ->when($tagPersonalityId, function ($q) use ($tagPersonalityId) {
                     $q->whereHas('personalityTags', function ($subQuery) use ($tagPersonalityId) {
                         $subQuery->where('mt_all_tag.id', $tagPersonalityId);
                     });
