@@ -18,8 +18,9 @@ class TagController extends Controller
         $search = $request->search;
 
         $query = AllTag::query()
+            ->select('id', 'name', 'type')
             ->when($type, fn ($q) => $q->where('type', $type))
-            ->orderBy('name', 'asc');
+            ->orderBy('name');
 
         if ($search) {
             $tags = $query->when(

@@ -3,39 +3,36 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\GetAllRequest;
-use App\Models\Status;
+use App\Models\Role;
 use App\Traits\ResponseAPI;
 use Illuminate\Support\Facades\Cache;
 use Ramsey\Uuid\Uuid;
 
-class StatusController extends Controller
+class RoleController extends Controller
 {
     use ResponseAPI;
 
-    public function listStatuses(GetAllRequest $request)
+    public function listRoles(GetAllRequest $request)
     {
-        $type = $request->type;
         $search = $request->search;
-
-        $query = Status::query()
-            ->select('id', 'name', 'type')
-            ->when($type, fn ($q) => $q->where('type', $type))
+        $query = Role::query()
+            ->select('id', 'name')
             ->orderBy('name');
 
         if ($search) {
-            $statuses = $query->when(
+            $roles = $query->when(
                 Uuid::isValid($search),
                 fn ($q) => $q->where('id', $search),
                 fn ($q) => $q->where('name', 'ILIKE', "%{$search}%")
             )->get();
         } else {
-            $statuses = Cache::remember(
-                'statuses.type_' . ($type ?? 'all'),
+            $roles = Cache::remember(
+                'roles',
                 now()->addHours(6),
                 fn () => $query->get()
             );
         }
 
-        return $this->sendSuccess('Statuses retrieved successfully', $statuses);
+        return $this->sendSuccess('Roles retrieved successfully', $roles);
     }
 }
