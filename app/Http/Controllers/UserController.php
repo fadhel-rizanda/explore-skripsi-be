@@ -5,12 +5,9 @@ namespace App\Http\Controllers;
 use App\Http\Requests\DeleteUserRequest;
 use App\Http\Requests\GetAllRequest;
 use App\Http\Requests\UpdateUserRequest;
-use App\Http\Requests\UserBackgroundRequest;
 use App\Models\Address;
 use App\Models\User;
 use App\Traits\ResponseAPI;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller
 {
@@ -19,19 +16,19 @@ class UserController extends Controller
     public function listUsers(GetAllRequest $request)
     {
         try {
-            $perPage = min((int)$request->query('per_page', 15), 100);
+            $perPage = min((int) $request->query('per_page', 15), 100);
             $search = $request->query('search');
             $roleId = $request->query('role_id');
             $sortBy = $request->query('sort_by', 'created_at');
 
             $protectedSortFields = ['name', 'email', 'created_at', 'updated_at'];
-            if (!in_array($sortBy, $protectedSortFields)) {
+            if (! in_array($sortBy, $protectedSortFields)) {
                 $sortBy = 'created_at';
             }
 
             $users = User::with([
                 'attachment:id,public_url',
-                'roles:id,name'
+                'roles:id,name',
             ])
                 ->when($search, function ($q, $search) {
                     $q->where(function ($query) use ($search) {
@@ -60,6 +57,7 @@ class UserController extends Controller
             return $this->sendSuccessPagination('Users retrieved successfully.', $users);
         } catch (\Exception $e) {
             \Log::error('Error fetching users: ' . $e->getMessage());
+
             return $this->sendError('Error fetching users: ' . $e->getMessage());
         }
     }
@@ -67,19 +65,19 @@ class UserController extends Controller
     public function listUsersAdmin(GetAllRequest $request)
     {
         try {
-            $perPage = min((int)$request->query('per_page', 15), 100);
+            $perPage = min((int) $request->query('per_page', 15), 100);
             $search = $request->query('search');
             $roleId = $request->query('role_id');
             $sortBy = $request->query('sort_by', 'created_at');
 
             $protectedSortFields = ['name', 'email', 'created_at', 'updated_at'];
-            if (!in_array($sortBy, $protectedSortFields)) {
+            if (! in_array($sortBy, $protectedSortFields)) {
                 $sortBy = 'created_at';
             }
 
             $users = User::with([
                 'attachment:id,public_url',
-                'roles:id,name'
+                'roles:id,name',
             ])
                 ->when($search, function ($q, $search) {
                     $q->where(function ($query) use ($search) {
@@ -113,6 +111,7 @@ class UserController extends Controller
             return $this->sendSuccessPagination('Users retrieved successfully.', $users);
         } catch (\Exception $e) {
             \Log::error('Error fetching users: ' . $e->getMessage());
+
             return $this->sendError('Error fetching users: ' . $e->getMessage());
         }
     }
@@ -126,7 +125,7 @@ class UserController extends Controller
                 'personalityTags:id,name',
                 'petExperienceTags:id,name',
                 'petPreferencesTags:id,name',
-                'roles:id,name'
+                'roles:id,name',
             ])->findOrFail($id);
 
             $user = [
@@ -152,11 +151,13 @@ class UserController extends Controller
             return $this->sendSuccess('User details retrieved successfully.', $user);
         } catch (\Exception $e) {
             \Log::error('Error fetching user details: ' . $e->getMessage());
+
             return $this->sendError('Error fetching user details: ' . $e->getMessage());
         }
     }
 
-    public function updateProfile(UpdateUserRequest $request){
+    public function updateProfile(UpdateUserRequest $request)
+    {
         try {
             $user = auth('api')->user();
             $user->update($request->only([
@@ -212,7 +213,7 @@ class UserController extends Controller
                 'personalityTags:id,name',
                 'petExperienceTags:id,name',
                 'petPreferencesTags:id,name',
-                'attachment:id,public_url'
+                'attachment:id,public_url',
             ]);
 
             $user->avatar = $user->avatar ?? optional($user->attachment)->public_url;
@@ -220,6 +221,7 @@ class UserController extends Controller
             return $this->sendSuccess('User profile updated successfully.', $user);
         } catch (\Exception $e) {
             \Log::error('Error updating user profile: ' . $e->getMessage());
+
             return $this->sendError('Error updating user profile: ' . $e->getMessage());
         }
     }
@@ -230,7 +232,7 @@ class UserController extends Controller
             $user = auth('api')->user();
             $userPassword = $request->input('password');
 
-            if (!password_verify($userPassword, $user->password)) {
+            if (! password_verify($userPassword, $user->password)) {
                 return $this->sendError('Incorrect password provided.');
             }
 
@@ -239,6 +241,7 @@ class UserController extends Controller
             return $this->sendSuccess('User deleted successfully.');
         } catch (\Exception $e) {
             \Log::error('Error deleting user: ' . $e->getMessage());
+
             return $this->sendError('Error deleting user: ' . $e->getMessage());
         }
     }
