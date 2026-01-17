@@ -43,19 +43,19 @@ class PetController extends Controller
                 })
                 ->when($age !== null, function ($q) use ($age) {
                     $now = now();
-                    if ($age === 'Baby') {
+                    if ($age === 'baby') {
                         // < 6 months
                         $q->where('date_of_birth', '>', $now->copy()->subMonths(6))
                             ->where('date_of_birth', '<=', $now);
-                    } elseif ($age === 'Young') {
+                    } elseif ($age === 'young') {
                         // 6 months to < 1 year
                         $q->where('date_of_birth', '<=', $now->copy()->subMonths(6))
                             ->where('date_of_birth', '>', $now->copy()->subYear());
-                    } elseif ($age === 'Adult') {
+                    } elseif ($age === 'adult') {
                         // 1 year to < 7 years
                         $q->where('date_of_birth', '<=', $now->copy()->subYear())
                             ->where('date_of_birth', '>', $now->copy()->subYears(7));
-                    } elseif ($age === 'Senior') {
+                    } elseif ($age === 'senior') {
                         // >= 7 years
                         $q->where('date_of_birth', '<=', $now->copy()->subYears(7));
                     }
