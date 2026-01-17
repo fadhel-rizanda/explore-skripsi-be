@@ -15,6 +15,13 @@ return new class() extends Migration
             $table->uuid('id')->primary();
             $table->string('name');
             $table->string('email')->unique();
+            $table->string('phone')->unique()->nullable();
+            $table->date('date_of_birth')->nullable();
+            $table->text('about_me')->nullable();
+            $table->text('personality')->nullable();
+            $table->text('pet_experience')->nullable();
+            $table->text('pet_preferences')->nullable();
+            $table->boolean('open_to_special_needs')->default(false);
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();
