@@ -29,7 +29,7 @@ class PetController extends Controller
             // Eager load only used relationships for efficiency
             $pets = Pet::with([
                 'typeOfAnimal:id,name',
-                'profilePictures:id,filename,mime_type,public_url,path',
+                'profilePicture:id,filename,mime_type,public_url,path',
             ])
                 ->when($search, function ($q, $search) {
                     $q->where('name', 'ILIKE', "%{$search}%");
@@ -77,8 +77,8 @@ class PetController extends Controller
                     $ageUnit = $age === 1 ? 'month old' : 'months old';
                 }
 
-                // Take one profile picture (first) if you have one, return only public_url
-                $profilePicture = $pet->profilePictures->first();
+                // Use eager loaded profilePicture relation (hasOne, but returns collection)
+                $profilePicture = $pet->profilePicture->first();
                 $profilePictureData = $profilePicture ? $profilePicture->public_url : null;
 
                 return [

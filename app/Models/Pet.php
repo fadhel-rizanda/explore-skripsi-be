@@ -126,4 +126,17 @@ class Pet extends Model
             'attachment_id'
         );
     }
+
+    /**
+     * Get the main profile picture for the pet (only one).
+     */
+    public function profilePicture()
+    {
+        return $this->belongsToMany(
+            Attachment::class,
+            'tr_pet_profile_picture',
+            'pet_id',
+            'attachment_id'
+        )->orderBy('tr_pet_profile_picture.attachment_id')->limit(1);
+    }
 }
