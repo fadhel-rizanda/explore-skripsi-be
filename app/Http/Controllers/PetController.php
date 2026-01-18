@@ -81,15 +81,9 @@ class PetController extends Controller
                     $ageUnit = $age === 1 ? 'month old' : 'months old';
                 }
 
-                // Take one profile picture (first) if you have one
+                // Take one profile picture (first) if you have one, return only public_url
                 $profilePicture = $pet->profilePictures->first();
-                $profilePictureData = $profilePicture ? [
-                    'id' => $profilePicture->id,
-                    'filename' => $profilePicture->filename,
-                    'mime_type' => $profilePicture->mime_type,
-                    'public_url' => $profilePicture->public_url,
-                    'path' => $profilePicture->path,
-                ] : null;
+                $profilePictureData = $profilePicture ? $profilePicture->public_url : null;
 
                 return [
                     'id' => $pet->id,
