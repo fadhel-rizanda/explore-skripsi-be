@@ -237,6 +237,8 @@ class PetController extends Controller
 
             return $this->sendSuccess('Pet detail retrieved successfully', $data);
 
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return $this->sendError('Pet not found', 404);
         } catch (\Exception $e) {
             Log::error('Failed to retrieve pet detail: ' . $e->getMessage());
             return $this->sendError(
