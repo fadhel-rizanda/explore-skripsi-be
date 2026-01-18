@@ -9,6 +9,7 @@ use App\Models\Status;
 use App\Traits\ResponseAPI;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class PetController extends Controller
 {
