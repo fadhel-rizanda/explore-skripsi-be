@@ -207,7 +207,6 @@ class PetController extends Controller
             );
         }
     }
-
     /**
      * Display the specified pet detail.
      */
