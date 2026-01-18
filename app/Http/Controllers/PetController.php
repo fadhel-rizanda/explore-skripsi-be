@@ -215,7 +215,8 @@ class PetController extends Controller
     public function show($id)
     {
         try {
-            $pet = Pet::with([
+           $pet = Pet::with([
+                'typeOfAnimal:id,name',
                 'profilePictures:id',
                 'physiqueTags:id',
                 'personalityTags:id',
