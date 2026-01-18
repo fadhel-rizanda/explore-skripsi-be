@@ -9,7 +9,6 @@ use App\Models\Status;
 use App\Traits\ResponseAPI;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class PetController extends Controller
 {
@@ -74,7 +73,7 @@ class PetController extends Controller
                     $age = $ageInYears;
                     $ageUnit = $age === 1 ? 'year old' : 'years old';
                 } else {
-                    $age = round($dateOfBirth->diffInMonths(now()));
+                    $age = (int) $dateOfBirth->diffInMonths(now());
                     $ageUnit = $age === 1 ? 'month old' : 'months old';
                 }
 
