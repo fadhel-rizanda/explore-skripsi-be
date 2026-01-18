@@ -248,5 +248,4 @@ class PetController extends Controller
             );
         }
     }
-
 }
