@@ -73,7 +73,7 @@ class PetController extends Controller
                     $age = $ageInYears;
                     $ageUnit = $age === 1 ? 'year old' : 'years old';
                 } else {
-                    $age = $dateOfBirth->diffInMonths(now());
+                    $age = round($dateOfBirth->diffInMonths(now()));
                     $ageUnit = $age === 1 ? 'month old' : 'months old';
                 }
 
@@ -204,6 +204,43 @@ class PetController extends Controller
 
             return $this->sendError(
                 config('app.debug') ? $e->getMessage() : 'Failed to update pet',
+                500
+            );
+        }
+    }
+
+    /**
+     * Display the specified pet detail.
+     */
+    public function show($id)
+    {
+        try {
+            $pet = Pet::with([
+                'profilePictures:id',
+                'physiqueTags:id',
+                'personalityTags:id',
+            ])->findOrFail($id);
+
+            $data = [
+                'type_of_animal_id' => $pet->type_of_animal_id,
+                'size' => $pet->size,
+                'name' => $pet->name,
+                'date_of_birth' => $pet->date_of_birth?->toDateString(),
+                'gender' => $pet->gender,
+                'about' => $pet->about,
+                'breed' => $pet->breed,
+                'profile_picture_ids' => $pet->profilePictures->pluck('id')->all(),
+                'special_needs' => $pet->special_needs,
+                'physique_ids' => $pet->physiqueTags->pluck('id')->all(),
+                'personality_ids' => $pet->personalityTags->pluck('id')->all(),
+            ];
+
+            return $this->sendSuccess('Pet detail retrieved successfully', $data);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve pet detail: ' . $e->getMessage());
+            return $this->sendError(
+                config('app.debug') ? $e->getMessage() : 'Failed to retrieve pet detail',
                 500
             );
         }
