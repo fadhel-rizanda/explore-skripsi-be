@@ -26,14 +26,10 @@ class PetController extends Controller
             $age = $request->query('age');
             $tagPersonalityId = $request->query('tag_personality_id');
 
-            // Eager load relationships to avoid N+1 query issues
+            // Eager load only used relationships for efficiency
             $pets = Pet::with([
                 'typeOfAnimal:id,name',
-                'status:id,name',
-                'personalityTags:id,name',
-                'physiqueTags:id,name',
                 'profilePictures:id,filename,mime_type,public_url,path',
-                'additionalRecords:id,filename,mime_type,public_url,path',
             ])
                 ->when($search, function ($q, $search) {
                     $q->where('name', 'ILIKE', "%{$search}%");
