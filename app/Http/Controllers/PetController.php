@@ -72,8 +72,7 @@ class PetController extends Controller
             $transformedData = $pets->getCollection()->map(function ($pet) {
                 // Calculate age
                 $dateOfBirth = $pet->date_of_birth;
-                $ageInYears = $dateOfBirth->age; // Carbon's age property is simpler
-
+                $ageInYears = $dateOfBirth->age;
                 if ($ageInYears >= 1) {
                     $age = $ageInYears;
                     $ageUnit = $age === 1 ? 'year old' : 'years old';
@@ -82,36 +81,24 @@ class PetController extends Controller
                     $ageUnit = $age === 1 ? 'month old' : 'months old';
                 }
 
+                // Take one profile picture (first) if you have one
+                $profilePicture = $pet->profilePictures->first();
+                $profilePictureData = $profilePicture ? [
+                    'id' => $profilePicture->id,
+                    'filename' => $profilePicture->filename,
+                    'mime_type' => $profilePicture->mime_type,
+                    'public_url' => $profilePicture->public_url,
+                    'path' => $profilePicture->path,
+                ] : null;
+
                 return [
                     'id' => $pet->id,
                     'name' => $pet->name,
-                    'status' => $pet->status->name,
                     'type_of_animal_id' => $pet->type_of_animal_id,
                     'type_of_animal_name' => $pet->typeOfAnimal->name,
                     'age' => $age,
                     'age_unit' => $ageUnit,
-                    'tags_personality' => $pet->personalityTags->map(fn ($tag) => [
-                        'id' => $tag->id,
-                        'name' => $tag->name,
-                    ])->values(),
-                    'tags_physique' => $pet->physiqueTags->map(fn ($tag) => [
-                        'id' => $tag->id,
-                        'name' => $tag->name,
-                    ])->values(),
-                    'profile_pictures' => $pet->profilePictures->map(fn ($picture) => [
-                        'id' => $picture->id,
-                        'filename' => $picture->filename,
-                        'mime_type' => $picture->mime_type,
-                        'public_url' => $picture->public_url,
-                        'path' => $picture->path,
-                    ])->values(),
-                    'additional_records' => $pet->additionalRecords->map(fn ($record) => [
-                        'id' => $record->id,
-                        'filename' => $record->filename,
-                        'mime_type' => $record->mime_type,
-                        'public_url' => $record->public_url,
-                        'path' => $record->path,
-                    ])->values(),
+                    'profile_picture' => $profilePictureData,
                 ];
             });
 
