@@ -142,13 +142,8 @@ class PostController extends Controller
     {
         try {
             $user = auth('api')->user();
-            if ($post->likes()->where('user_id', $user->id)->exists()) {
-                $post->likes()->detach($user->id);
-                $message = 'Post unliked successfully.';
-            } else {
-                $post->likes()->attach($user->id);
-                $message = 'Post liked successfully.';
-            }
+            $result = $post->likes()->toggle($user->id);
+            $message = count($result['attached']) > 0 ? 'Post liked successfully.' : 'Post unliked successfully.';
 
             return $this->sendSuccess($message);
         } catch (\Throwable $e) {
