@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 
 class Attachment extends Model
 {
@@ -39,5 +40,14 @@ class Attachment extends Model
     public function uploader(): BelongsTo
     {
         return $this->belongsTo(User::class, 'uploaded_by');
+    }
+
+    public function deleteFromStorage(): bool
+    {
+        if (Storage::disk('s3')->exists($this->path)) {
+            Storage::disk('s3')->delete($this->path);
+        }
+
+        return $this->delete();
     }
 }

@@ -8,6 +8,7 @@ use App\Http\Requests\UpdateUserRequest;
 use App\Models\Address;
 use App\Models\User;
 use App\Traits\ResponseAPI;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class UserController extends Controller
@@ -129,7 +130,17 @@ class UserController extends Controller
     public function updateProfile(UpdateUserRequest $request)
     {
         try {
+            DB::beginTransaction();
+
             $user = auth('api')->user();
+
+            if ($request->filled('attachment_id') && $request->attachment_id !== $user->attachment_id) {
+                $oldAttachment = $user->attachment;
+                if ($oldAttachment->attachment) {
+                    $oldAttachment->attachment->deleteFromStorage();
+                }
+            }
+
             $user->update($request->only([
                 'name',
                 'phone',
@@ -192,6 +203,8 @@ class UserController extends Controller
 
             $user->touch();
 
+            DB::commit();
+
             $user->load([
                 'address',
                 'personalityTags:id,name',
@@ -204,6 +217,7 @@ class UserController extends Controller
 
             return $this->sendSuccess('User profile updated successfully.', $user);
         } catch (\Exception $e) {
+            DB::rollBack();
             \Log::error('Error updating user profile: ' . $e->getMessage());
 
             return $this->sendError('Error updating user profile: ' . $e->getMessage());
@@ -213,6 +227,7 @@ class UserController extends Controller
     public function deleteUser(DeleteUserRequest $request)
     {
         try {
+            DB::beginTransaction();
             $user = auth('api')->user();
             $userPassword = $request->input('password');
 
@@ -220,10 +235,16 @@ class UserController extends Controller
                 return $this->sendError('Incorrect password provided.', 422);
             }
 
+            if ($user->attachment) {
+                $user->attachment->deleteFromStorage();
+            }
+
             $user->delete();
+            DB::commit();
 
             return $this->sendSuccess('User deleted successfully.');
         } catch (\Exception $e) {
+            DB::rollBack();
             \Log::error('Error deleting user: ' . $e->getMessage());
 
             return $this->sendError('Error deleting user: ' . $e->getMessage());

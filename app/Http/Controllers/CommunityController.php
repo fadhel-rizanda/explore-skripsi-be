@@ -47,7 +47,7 @@ class CommunityController extends Controller
                 'name' => $community->name,
                 'description' => $community->description,
                 'website' => $community->website,
-                'avatar' => $community->attachment?->public_url,
+                'image_url' => $community->attachment?->public_url,
                 'address' => $community->address,
                 'tags' => $community->tags,
                 'member_count' => $community->members->count(),
@@ -111,6 +111,13 @@ class CommunityController extends Controller
                 $community->address->update($request->input('address'));
             }
 
+            if ($request->filled('attachment_id') && $request->attachment_id !== $community->attachment_id) {
+                $oldAttachment = $community->attachment;
+                if ($oldAttachment->attachment) {
+                    $oldAttachment->attachment->deleteFromStorage();
+                }
+            }
+
             $community->update($request->only([
                 'name',
                 'description',
@@ -141,6 +148,10 @@ class CommunityController extends Controller
     {
         try {
             DB::beginTransaction();
+
+            if ($community->attachment) {
+                $community->attachment->deleteFromStorage();
+            }
 
             $community->delete();
 
@@ -179,9 +190,7 @@ class CommunityController extends Controller
             });
         })
             ->when($tagId, function ($q) use ($tagId) {
-                $q->whereHas('tags', function ($query) use ($tagId) {
-                    $query->where('tags.id', $tagId);
-                });
+                $q->whereHas('tags', fn ($query) => $query->where('mt_all_tag.id', $tagId));
             })
             ->orderBy($sortBy, 'desc')
             ->paginate($perPage);
@@ -191,7 +200,7 @@ class CommunityController extends Controller
                 'id' => $community->id,
                 'name' => $community->name,
                 'description' => $community->description,
-                'avatar' => $community->attachment?->public_url,
+                'image_url' => $community->attachment?->public_url,
                 'created_at' => $community->created_at,
                 'updated_at' => $community->updated_at,
             ];
@@ -208,28 +217,21 @@ class CommunityController extends Controller
         return $communities;
     }
 
-    /**
-     * @param Community $community
-     * @return array
-     */
     public function getDataResponse(Community $community): array
     {
-        $community->load('tags', 'address', 'attachment', 'admins');
-
-        $data = [
+        return [
             'id' => $community->id,
             'name' => $community->name,
             'description' => $community->description,
             'website' => $community->website,
-            'attachment' => $community->attachment,
-            'address' => $community->address,
-            'tags' => $community->tags,
-            'admins' => $community->admins,
-            'created_by' => $community->created_by,
+            'image_url' => optional($community->attachment)->public_url,
+            'attachment_id' => $community->attachment_id,
+            'address_id' => $community->address_id,
+            'tags' => $community->tags->pluck('id'),
+            'admins' => $community->admins->pluck('user_id'),
+            'created_by_id' => $community->created_by,
             'created_at' => $community->created_at,
             'updated_at' => $community->updated_at,
         ];
-
-        return $data;
     }
 }

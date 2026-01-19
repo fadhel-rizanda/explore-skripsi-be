@@ -17,11 +17,11 @@ class UpdateAddressRequest extends FormRequest
     public static function baseRules(): array
     {
         return [
-            'street' => 'sometimes|filled|string|max:500',
-            'city' => 'sometimes|filled|string|max:100',
-            'state' => 'sometimes|filled|string|max:100',
-            'zip_code' => 'sometimes|filled|string|max:20',
-            'country' => 'sometimes|filled|string|max:100',
+            'street' => 'sometimes|string|max:500',
+            'city' => 'sometimes|string|max:100',
+            'state' => 'sometimes|string|max:100',
+            'zip_code' => 'sometimes|string|max:20',
+            'country' => 'sometimes|string|max:100',
             'notes' => 'sometimes|string|max:1000',
             'link' => 'sometimes|url|max:255',
         ];
