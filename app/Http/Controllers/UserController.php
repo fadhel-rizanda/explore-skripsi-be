@@ -8,6 +8,7 @@ use App\Http\Requests\UpdateUserRequest;
 use App\Models\Address;
 use App\Models\User;
 use App\Traits\ResponseAPI;
+use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
@@ -16,20 +17,8 @@ class UserController extends Controller
     public function listUsers(GetAllRequest $request)
     {
         try {
-            $users = $this->getUsersQuery($request, false);
-
-            return $this->sendSuccessPagination('Users retrieved successfully.', $users);
-        } catch (\Exception $e) {
-            \Log::error('Error fetching users: ' . $e->getMessage());
-
-            return $this->sendError('Error fetching users: ' . $e->getMessage());
-        }
-    }
-
-    public function listUsersAdmin(GetAllRequest $request)
-    {
-        try {
-            $users = $this->getUsersQuery($request, true);
+            $isAdmin = auth('api')->user()?->hasRole('admin') ?? false;
+            $users = $this->getUsersQuery($request, $isAdmin);
 
             return $this->sendSuccessPagination('Users retrieved successfully.', $users);
         } catch (\Exception $e) {
@@ -46,24 +35,27 @@ class UserController extends Controller
         $roleId = $request->query('role_id');
         $sortBy = $request->query('sort_by', 'created_at');
 
-        // Simple validation
         $allowedSorts = ['name', 'email', 'created_at', 'updated_at'];
         if (! in_array($sortBy, $allowedSorts)) {
             $sortBy = 'created_at';
         }
 
-        $users = User::with(['attachment:id,public_url', 'roles:id,name'])
-            ->when($search, function ($q) use ($search, $isAdmin) {
-                $q->where(function ($query) use ($search, $isAdmin) {
-                    $query->where('name', 'ILIKE', "%{$search}%");
+        $users = User::with([
+            'attachment:id,public_url',
+            'roles:id,name',
+        ])->when($search, function ($q) use ($search, $isAdmin) {
+            $q->where(function ($query) use ($search, $isAdmin) {
+                $query->where('name', 'ILIKE', "%{$search}%");
 
-                    if ($isAdmin) {
-                        $query->orWhere('email', 'ILIKE', "%{$search}%")
-                            ->orWhere('phone', 'ILIKE', "%{$search}%")
-                            ->orWhere('id', 'ILIKE', "%{$search}%");
+                if ($isAdmin) {
+                    $query->orWhere('email', 'ILIKE', "%{$search}%")
+                        ->orWhere('phone', 'ILIKE', "%{$search}%");
+                    if (Str::isUuid($search)) {
+                        $query->orWhere('id', $search);
                     }
-                });
-            })
+                }
+            });
+        })
             ->when(
                 $roleId,
                 fn ($q, $roleId) => $q->whereHas('roles', fn ($query) => $query->where('id', $roleId))
@@ -71,7 +63,6 @@ class UserController extends Controller
             ->orderBy($sortBy, 'desc')
             ->paginate($perPage);
 
-        // Transform inline
         $users->getCollection()->transform(function ($user) use ($isAdmin) {
             $data = [
                 'id' => $user->id,
@@ -93,17 +84,17 @@ class UserController extends Controller
         return $users;
     }
 
-    public function userDetails($id)
+    public function userDetails(User $user)
     {
         try {
-            $user = User::with([
+            $user->load([
                 'attachment:id,public_url',
                 'address',
                 'personalityTags:id,name',
                 'petExperienceTags:id,name',
                 'petPreferencesTags:id,name',
                 'roles:id,name',
-            ])->findOrFail($id);
+            ]);
 
             $userResponse = [
                 'id' => $user->id,
@@ -141,7 +132,6 @@ class UserController extends Controller
             $user = auth('api')->user();
             $user->update($request->only([
                 'name',
-                'email',
                 'phone',
                 'about_me',
                 'personality',

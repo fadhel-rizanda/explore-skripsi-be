@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('users')->group(function () {
     Route::get('/', [UserController::class, 'listUsers']);
-    Route::get('/{id}', [UserController::class, 'userDetails']);
+    Route::get('/{user}', [UserController::class, 'userDetails']);
 });
 
 Route::middleware(['auth:api', 'check.token.version'])->group(function () {
