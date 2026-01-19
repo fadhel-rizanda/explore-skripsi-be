@@ -22,6 +22,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
             'community.admin' => \App\Http\Middleware\CommunityAdmin::class,
+            'post.owner' => \App\Http\Middleware\PostOwner::class,
+            'comment.owner' => \App\Http\Middleware\CommentOwner::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

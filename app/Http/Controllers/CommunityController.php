@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\CreateCommunityRequest;
 use App\Http\Requests\GetAllRequest;
 use App\Http\Requests\UpdateCommunityRequest;
+use App\Http\Resources\CommunityResource;
 use App\Models\Address;
 use App\Models\Community;
 use App\Traits\ResponseAPI;
@@ -50,7 +51,7 @@ class CommunityController extends Controller
                 'image_url' => $community->attachment?->public_url,
                 'address' => $community->address,
                 'tags' => $community->tags,
-                'member_count' => $community->members->count(),
+                'members_count' => $community->members_count,
                 'created_at' => $community->created_at,
                 'updated_at' => $community->updated_at,
             ];
@@ -91,9 +92,7 @@ class CommunityController extends Controller
 
             DB::commit();
 
-            $data = $this->getDataResponse($community);
-
-            return $this->sendSuccess('Community created successfully.', $data);
+            return $this->sendSuccess('Community created successfully.', new CommunityResource($community->load('tags', 'admins')));
         } catch (\Throwable $e) {
             DB::rollBack();
             \Log::error('Error creating community', ['error' => $e->getMessage()]);
@@ -133,9 +132,8 @@ class CommunityController extends Controller
             }
 
             DB::commit();
-            $data = $this->getDataResponse($community);
 
-            return $this->sendSuccess('Community updated successfully.', $data);
+            return $this->sendSuccess('Community updated successfully.', new CommunityResource($community->load('tags', 'admins')));
         } catch (\Throwable $e) {
             DB::rollBack();
             \Log::error('Error updating community', ['error' => $e->getMessage()]);
@@ -181,14 +179,16 @@ class CommunityController extends Controller
         $communities = Community::with([
             'attachment:id,public_url',
             ...($isAdmin ? ['address', 'tags'] : []),
-        ])->when($search, function ($q) use ($search, $isAdmin) {
-            $q->where(function ($query) use ($search, $isAdmin) {
-                $query->where('name', 'ILIKE', "%{$search}%");
-                if ($isAdmin && Str::isUuid($search)) {
-                    $query->orWhere('id', $search);
-                }
-            });
-        })
+        ])
+            ->withCount('members')
+            ->when($search, function ($q) use ($search, $isAdmin) {
+                $q->where(function ($query) use ($search, $isAdmin) {
+                    $query->where('name', 'ILIKE', "%{$search}%");
+                    if ($isAdmin && Str::isUuid($search)) {
+                        $query->orWhere('id', $search);
+                    }
+                });
+            })
             ->when($tagId, function ($q) use ($tagId) {
                 $q->whereHas('tags', fn ($query) => $query->where('mt_all_tag.id', $tagId));
             })
@@ -200,7 +200,8 @@ class CommunityController extends Controller
                 'id' => $community->id,
                 'name' => $community->name,
                 'description' => $community->description,
-                'image_url' => $community->attachment?->public_url,
+                'image_url' => optional($community->attachment)->public_url,
+                'members_count' => $community->members_count,
                 'created_at' => $community->created_at,
                 'updated_at' => $community->updated_at,
             ];
@@ -215,23 +216,5 @@ class CommunityController extends Controller
         });
 
         return $communities;
-    }
-
-    public function getDataResponse(Community $community): array
-    {
-        return [
-            'id' => $community->id,
-            'name' => $community->name,
-            'description' => $community->description,
-            'website' => $community->website,
-            'image_url' => optional($community->attachment)->public_url,
-            'attachment_id' => $community->attachment_id,
-            'address_id' => $community->address_id,
-            'tags' => $community->tags->pluck('id'),
-            'admins' => $community->admins->pluck('user_id'),
-            'created_by_id' => $community->created_by,
-            'created_at' => $community->created_at,
-            'updated_at' => $community->updated_at,
-        ];
     }
 }

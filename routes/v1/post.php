@@ -12,6 +12,7 @@ Route::prefix('posts')->group(function () {
     Route::middleware(['auth:api', 'check.token.version'])->group(function () {
         Route::post('/', [PostController::class, 'createPost']);
         Route::post('/{post}/comments', [CommentController::class, 'createComment']);
+        Route::post('/{post}/likes', [PostController::class, 'likePost']);
         Route::delete('/{post}/comments/{comment}', [CommentController::class, 'deleteComment'])
             ->middleware(['comment.owner']);
 
