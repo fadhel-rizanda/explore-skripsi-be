@@ -51,7 +51,7 @@ class CommunityController extends Controller
                 'image_url' => $community->attachment?->public_url,
                 'address' => $community->address,
                 'tags' => $community->tags,
-                'members_count' => $community->members->count(),
+                'members_count' => $community->members_count,
                 'created_at' => $community->created_at,
                 'updated_at' => $community->updated_at,
             ];
@@ -92,7 +92,7 @@ class CommunityController extends Controller
 
             DB::commit();
 
-            return $this->sendSuccess('Community created successfully.', new CommunityResource($community));
+            return $this->sendSuccess('Community created successfully.', new CommunityResource($community->load('tags', 'admins')));
         } catch (\Throwable $e) {
             DB::rollBack();
             \Log::error('Error creating community', ['error' => $e->getMessage()]);
@@ -133,7 +133,7 @@ class CommunityController extends Controller
 
             DB::commit();
 
-            return $this->sendSuccess('Community updated successfully.', new CommunityResource($community));
+            return $this->sendSuccess('Community updated successfully.', new CommunityResource($community->load('tags', 'admins')));
         } catch (\Throwable $e) {
             DB::rollBack();
             \Log::error('Error updating community', ['error' => $e->getMessage()]);
@@ -201,7 +201,7 @@ class CommunityController extends Controller
                 'name' => $community->name,
                 'description' => $community->description,
                 'image_url' => optional($community->attachment)->public_url,
-                'members_count' => $community->members->count(),
+                'members_count' => $community->members_count,
                 'created_at' => $community->created_at,
                 'updated_at' => $community->updated_at,
             ];
