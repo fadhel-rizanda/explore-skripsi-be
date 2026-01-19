@@ -30,7 +30,7 @@ class CreateAddressRequest extends FormRequest
     public static function prefixedRules(string $prefix = 'address'): array
     {
         return collect(self::baseRules())
-            ->mapWithKeys(fn ($rule, $key) => ["{$prefix}.{$key}" => $rule])
+            ->mapWithKeys(fn ($rule, $key) => [($prefix ? "{$prefix}." : '') . $key => $rule])
             ->toArray();
     }
 

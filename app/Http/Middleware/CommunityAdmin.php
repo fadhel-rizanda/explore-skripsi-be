@@ -19,7 +19,7 @@ class CommunityAdmin
     public function handle(Request $request, Closure $next): Response
     {
         try {
-            $community = $request->route()->parameter('community')->load('admins');
+            $community = $request->route()->parameter('community');
             $user = auth('api')->user();
 
             if (! $user) {
