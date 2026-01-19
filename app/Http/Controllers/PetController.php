@@ -9,6 +9,7 @@ use App\Models\Status;
 use App\Traits\ResponseAPI;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+
 class PetController extends Controller
 {
     use ResponseAPI;
@@ -165,6 +166,7 @@ class PetController extends Controller
             );
         }
     }
+
     /**
      * Update the specified pet in storage.
      */
@@ -207,13 +209,14 @@ class PetController extends Controller
             );
         }
     }
+
     /**
      * Display the specified pet detail.
      */
     public function show($id)
     {
         try {
-           $pet = Pet::with([
+            $pet = Pet::with([
                 'typeOfAnimal:id,name',
                 'profilePictures:id',
                 'physiqueTags:id',
@@ -240,6 +243,7 @@ class PetController extends Controller
             return $this->sendError('Pet not found', 404);
         } catch (\Exception $e) {
             Log::error('Failed to retrieve pet detail: ' . $e->getMessage());
+
             return $this->sendError(
                 config('app.debug') ? $e->getMessage() : 'Failed to retrieve pet detail',
                 500

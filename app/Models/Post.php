@@ -49,7 +49,7 @@ class Post extends Model
         return $this->belongsToMany(AllTag::class, 'tr_tag_post_record', 'post_id', 'tag_id');
     }
 
-    public function likedByUsers(): BelongsToMany
+    public function likes(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'tr_like_post', 'post_id', 'user_id');
     }

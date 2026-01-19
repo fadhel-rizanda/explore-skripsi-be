@@ -27,7 +27,7 @@ class CommentController extends Controller
 
             $comments->getCollection()->transform(fn ($comment) => new CommentResource($comment));
 
-            return $this->sendSuccessPagination('Comments retrieved successfully.', CommentResource::collection($comments));
+            return $this->sendSuccessPagination('Comments retrieved successfully.', $comments);
         } catch (\Throwable $e) {
             \Log::error('Error fetching comments', ['error' => $e->getMessage()]);
 

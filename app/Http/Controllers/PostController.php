@@ -138,6 +138,26 @@ class PostController extends Controller
         }
     }
 
+    public function likePost(Post $post)
+    {
+        try {
+            $user = auth('api')->user();
+            if ($post->likes()->where('user_id', $user->id)->exists()) {
+                $post->likes()->detach($user->id);
+                $message = 'Post unliked successfully.';
+            } else {
+                $post->likes()->attach($user->id);
+                $message = 'Post liked successfully.';
+            }
+
+            return $this->sendSuccess($message);
+        } catch (\Throwable $e) {
+            \Log::error('Error liking/unliking post', ['error' => $e->getMessage()]);
+
+            return $this->sendError('Error liking/unliking post.');
+        }
+    }
+
     private function getPostsQuery(GetAllRequest $request, bool $isAdmin)
     {
         $perPage = min((int) $request->query('per_page', 15), 100);
@@ -156,6 +176,7 @@ class PostController extends Controller
             'createdBy:id,name,email',
             'tags:id,name,type',
         ])
+            ->withCount(['likes', 'comments'])
             ->when($search, function ($q) use ($search, $isAdmin) {
                 $q->where(function ($query) use ($search, $isAdmin) {
                     $query->where('title', 'ILIKE', "%{$search}%")
@@ -171,9 +192,7 @@ class PostController extends Controller
             })
             ->orderBy($sortBy, 'desc')->paginate($perPage);
 
-        $posts->getCollection()->transform(fn ($post) => new PostResource($post));
-
-        return $posts;
+        return PostResource::collection($posts);
     }
 
     private function getDataResponse(Post $post)
