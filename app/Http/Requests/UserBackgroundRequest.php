@@ -33,10 +33,10 @@ class UserBackgroundRequest extends FormRequest
         ];
     }
 
-    public static function prefixedRules(string $prefix = 'address'): array
+    public static function prefixedRules(string $prefix = 'background'): array
     {
         return collect(self::baseRules())
-            ->mapWithKeys(fn ($rule, $key) => ["{$prefix}.{$key}" => $rule])
+            ->mapWithKeys(fn ($rule, $key) => [($prefix ? "{$prefix}." : '') . $key => $rule])
             ->toArray();
     }
 

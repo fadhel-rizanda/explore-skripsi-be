@@ -107,7 +107,7 @@ class CommunityController extends Controller
         try {
             DB::beginTransaction();
 
-            if ($request->has('address')) {
+            if ($request->has('address') && $community->address) {
                 $community->address->update($request->input('address'));
             }
 
@@ -209,9 +209,8 @@ class CommunityController extends Controller
     }
 
     /**
-     * @param  UpdateCommunityRequest  $request
-     *
-     * @throws \Throwable
+     * @param Community $community
+     * @return array
      */
     public function getDataResponse(Community $community): array
     {

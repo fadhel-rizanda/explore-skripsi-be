@@ -30,7 +30,7 @@ class CreateCommunityRequest extends FormRequest
                 'description' => 'sometimes|string|max:1000',
                 'website' => 'sometimes|url|max:255',
                 'attachment_id' => 'sometimes|uuid|exists:' . (new Attachment())->getTable() . ',id',
-                'tag_ids' => 'required|array',
+                'tag_ids' => 'required|array|min:1',
                 'tag_ids.*' => 'uuid|exists:' . (new AllTag())->getTable() . ',id',
                 'admin_ids' => 'sometimes|array|min:1',
                 'admin_ids.*' => 'uuid|exists:' . (new \App\Models\User())->getTable() . ',id',

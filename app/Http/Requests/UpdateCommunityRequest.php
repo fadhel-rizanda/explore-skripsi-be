@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Models\AllTag;
 use App\Models\Attachment;
 use App\Models\Community;
+use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateCommunityRequest extends FormRequest
@@ -32,6 +33,8 @@ class UpdateCommunityRequest extends FormRequest
                 'attachment_id' => 'sometimes|uuid|exists:' . (new Attachment())->getTable() . ',id',
                 'tag_ids' => 'sometimes|array|min:1',
                 'tag_ids.*' => 'uuid|exists:' . (new AllTag())->getTable() . ',id',
+                'admin_ids' => 'sometimes|array|min:1',
+                'admin_ids.*' => 'uuid|exists:' . (new User())->getTable() . ',id',
             ],
             UpdateAddressRequest::prefixedRules(),
         );

@@ -46,9 +46,9 @@ return new class() extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('mt_community');
-        Schema::dropIfExists('tr_community_admin');
-        Schema::dropIfExists('tr_follow_community');
         Schema::dropIfExists('tr_tag_community_record');
+        Schema::dropIfExists('tr_follow_community');
+        Schema::dropIfExists('tr_community_admin');
+        Schema::dropIfExists('mt_community');
     }
 };
