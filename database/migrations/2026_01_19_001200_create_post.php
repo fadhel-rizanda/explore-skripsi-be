@@ -52,9 +52,9 @@ return new class() extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('mt_post');
-        Schema::dropIfExists('tr_like_post');
-        Schema::dropIfExists('tr_tag_post_record');
         Schema::dropIfExists('mt_comment');
+        Schema::dropIfExists('tr_tag_post_record');
+        Schema::dropIfExists('tr_like_post');
+        Schema::dropIfExists('mt_post');
     }
 };

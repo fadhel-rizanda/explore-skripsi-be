@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\CreatePostRequest;
 use App\Http\Requests\GetAllRequest;
+use App\Http\Requests\UpdatePostRequest;
+use App\Http\Resources\PostResource;
 use App\Models\Post;
 use App\Traits\ResponseAPI;
 use Illuminate\Support\Facades\DB;
@@ -40,24 +42,7 @@ class PostController extends Controller
                 'tags:id,name,type',
             ]);
 
-            $data = [
-                'id' => $post->id,
-                'title' => $post->title,
-                'content' => $post->content,
-                'image_url' => optional($post->attachment)->public_url,
-                'attachment' => $post->attachment,
-                'created_at' => $post->created_at,
-                'updated_at' => $post->updated_at,
-                'tags' => $post->tags,
-                'created_by' => [
-                    'id' => $post->createdBy->id,
-                    'name' => $post->createdBy->name,
-                    'email' => $post->createdBy->email,
-                    'avatar' => $post->createdBy->avatar ?? optional($post->createdBy->attachment)->public_url,
-                ],
-            ];
-
-            return $this->sendSuccess('Post details retrieved successfully.', $data);
+            return $this->sendSuccess('Post details retrieved successfully.', new PostResource($post));
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return $this->sendError('Post not found.', 404);
         } catch (\Throwable $e) {
@@ -96,15 +81,15 @@ class PostController extends Controller
         }
     }
 
-    public function updatePost(CreatePostRequest $request, Post $post)
+    public function updatePost(UpdatePostRequest $request, Post $post)
     {
         try {
             DB::beginTransaction();
 
             if ($request->filled('attachment_id') && $request->attachment_id !== $post->attachment_id) {
                 $oldAttachment = $post->attachment;
-                if ($oldAttachment->attachment) {
-                    $oldAttachment->attachment->deleteFromStorage();
+                if ($oldAttachment) {
+                    $oldAttachment->deleteFromStorage();
                 }
             }
 
@@ -182,27 +167,11 @@ class PostController extends Controller
             })
             ->when($communityId, fn ($q) => $q->where('community_id', $communityId))
             ->when($tagId, function ($q) use ($tagId) {
-                $q->whereHas('tags', fn ($query) => $query->where('mt_all_tag.id', $tagId));
+                $q->whereHas('tags', fn ($query) => $query->where($query->getModel()->getTable() . '.id', $tagId));
             })
             ->orderBy($sortBy, 'desc')->paginate($perPage);
 
-        $posts->getCollection()->transform(function ($post) {
-            return [
-                'id' => $post->id,
-                'title' => $post->title,
-                'content' => $post->content,
-                'image_url' => optional($post->attachment)->public_url,
-                'attachment' => $post->attachment,
-                'created_at' => $post->created_at,
-                'updated_at' => $post->updated_at,
-                'tags' => $post->tags,
-                'created_by' => [
-                    'id' => $post->createdBy->id,
-                    'name' => $post->createdBy->name,
-                    'email' => $post->createdBy->email,
-                ],
-            ];
-        });
+        $posts->getCollection()->transform(fn ($post) => new PostResource($post));
 
         return $posts;
     }
