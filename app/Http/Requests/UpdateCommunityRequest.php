@@ -27,7 +27,7 @@ class UpdateCommunityRequest extends FormRequest
     {
         return array_merge(
             [
-                'name' => 'sometimes|filled|string|max:255|unique:' . (new Community())->getTable() . ',name' . ($this->route('community') ? ',' . $this->route('community')->id : ''),
+                'name' => 'sometimes|string|max:255|unique:' . (new Community())->getTable() . ',name' . ($this->route('community') ? ',' . $this->route('community')->id : ''),
                 'description' => 'sometimes|string|max:1000',
                 'website' => 'sometimes|url|max:255',
                 'attachment_id' => 'sometimes|uuid|exists:' . (new Attachment())->getTable() . ',id',

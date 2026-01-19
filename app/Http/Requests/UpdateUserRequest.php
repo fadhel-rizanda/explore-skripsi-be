@@ -25,7 +25,7 @@ class UpdateUserRequest extends FormRequest
     {
         return array_merge(
             [
-                'name' => 'sometimes|filled|string|max:255',
+                'name' => 'sometimes|string|max:255',
                 'phone' => 'sometimes|string|max:20|unique:' . (new User())->getTable() . ',phone,' . $this->user()->id . ',id',
                 'about_me' => 'sometimes|string|max:1000',
                 'open_to_special_needs' => 'sometimes|boolean',
