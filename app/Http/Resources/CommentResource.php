@@ -1,0 +1,31 @@
+<?php
+
+namespace App\Http\Resources;
+
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
+
+class CommentResource extends JsonResource
+{
+    /**
+     * Transform the resource into an array.
+     *
+     * @return array<string, mixed>
+     */
+    public function toArray(Request $request): array
+    {
+        return [
+            'id' => $this->id,
+            'content' => $this->content,
+            'parent_id' => $this->parent_id,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
+            'created_by' => [
+                'id' => $this->createdBy->id,
+                'name' => $this->createdBy->name,
+                'email' => $this->createdBy->email,
+                'avatar' => $this->createdBy->avatar ?? optional($this->createdBy->attachment)->public_url,
+            ],
+        ];
+    }
+}

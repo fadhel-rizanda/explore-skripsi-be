@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\CreateCommentRequest;
 use App\Http\Requests\GetAllRequest;
+use App\Http\Resources\CommentResource;
 use App\Models\Comment;
 use App\Models\Post;
 use App\Traits\ResponseAPI;
@@ -24,23 +25,9 @@ class CommentController extends Controller
                 },
             ])->latest()->paginate($perPage);
 
-            $comments->getCollection()->transform(function ($item) {
-                return [
-                    'id' => $item->id,
-                    'content' => $item->content,
-                    'parent_id' => $item->parent_id,
-                    'created_at' => $item->created_at,
-                    'updated_at' => $item->updated_at,
-                    'created_by' => [
-                        'id' => $item->createdBy->id,
-                        'name' => $item->createdBy->name,
-                        'email' => $item->createdBy->email,
-                        'avatar' => $item->createdBy->avatar ?? optional($item->createdBy->attachment)->public_url,
-                    ],
-                ];
-            });
+            $comments->getCollection()->transform(fn ($comment) => new CommentResource($comment));
 
-            return $this->sendSuccessPagination('Comments retrieved successfully.', $comments);
+            return $this->sendSuccessPagination('Comments retrieved successfully.', CommentResource::collection($comments));
         } catch (\Throwable $e) {
             \Log::error('Error fetching comments', ['error' => $e->getMessage()]);
 

@@ -27,7 +27,7 @@ class CommentOwner
             }
 
             if ($comment->created_by !== $user->id) {
-                return $this->sendError('You do not have admin access to this comment.', 403);
+                return $this->sendError('You do not have permission to modify this comment.', 403);
             }
 
             return $next($request);
