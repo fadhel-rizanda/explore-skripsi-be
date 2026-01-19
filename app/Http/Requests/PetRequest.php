@@ -25,12 +25,12 @@ class PetRequest extends FormRequest
             'breed' => 'required|string|max:255',
             'special_needs' => 'required|boolean',
             // Profile pictures
-            'profile_picture_ids' => 'required|array',
+            'profile_picture_ids' => 'required|array|min:1',
             'profile_picture_ids.*' => 'uuid|exists:' . (new Attachment())->getTable() . ',id',
             // Arrays for tags - REQUIRED
-            'physique_ids' => 'required|array',
+            'physique_ids' => 'required|array|min:1',
             'physique_ids.*' => 'uuid|exists:' . (new AllTag())->getTable() . ',id',
-            'personality_ids' => 'required|array',
+            'personality_ids' => 'required|array|min:1',
             'personality_ids.*' => 'uuid|exists:' . (new AllTag())->getTable() . ',id',
             'additional_record_ids' => 'array',
             'additional_record_ids.*' => 'uuid|exists:' . (new Attachment())->getTable() . ',id',

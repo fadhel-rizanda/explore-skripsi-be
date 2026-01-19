@@ -2,11 +2,13 @@
 
 namespace App\Http\Requests;
 
+use App\Models\AllTag;
 use App\Models\Attachment;
+use App\Models\Community;
 use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 
-class UpdateUserRequest extends FormRequest
+class UpdateCommunityRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -25,14 +27,16 @@ class UpdateUserRequest extends FormRequest
     {
         return array_merge(
             [
-                'name' => 'sometimes|string|max:255',
-                'phone' => 'sometimes|string|max:20|unique:' . (new User())->getTable() . ',phone,' . $this->user()->id . ',id',
-                'about_me' => 'sometimes|string|max:1000',
-                'open_to_special_needs' => 'sometimes|boolean',
+                'name' => 'sometimes|string|max:255|unique:' . (new Community())->getTable() . ',name' . ($this->route('community') ? ',' . $this->route('community')->id : ''),
+                'description' => 'sometimes|string|max:1000',
+                'website' => 'sometimes|url|max:255',
                 'attachment_id' => 'sometimes|uuid|exists:' . (new Attachment())->getTable() . ',id',
+                'tag_ids' => 'sometimes|array|min:1',
+                'tag_ids.*' => 'uuid|exists:' . (new AllTag())->getTable() . ',id',
+                'admin_ids' => 'sometimes|array|min:1',
+                'admin_ids.*' => 'uuid|exists:' . (new User())->getTable() . ',id',
             ],
             UpdateAddressRequest::prefixedRules(),
-            UserBackgroundRequest::prefixedRules()
         );
     }
 }
