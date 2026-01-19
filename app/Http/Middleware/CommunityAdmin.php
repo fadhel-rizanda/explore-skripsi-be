@@ -6,9 +6,8 @@ use App\Traits\ResponseAPI;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Tymon\JWTAuth\Facades\JWTAuth;
 
-class CheckTokenVersion
+class CommunityAdmin
 {
     use ResponseAPI;
 
@@ -20,25 +19,24 @@ class CheckTokenVersion
     public function handle(Request $request, Closure $next): Response
     {
         try {
-            // Get token from request
-            $token = JWTAuth::parseToken();
-            $payload = $token->getPayload();
-
-            $tokenVersion = $payload->get('token_version', 0);
-
+            $community = $request->route()->parameter('community')->load('admins');
             $user = auth('api')->user();
 
             if (! $user) {
                 return $this->sendError('Unauthorized', 401);
             }
 
-            if ($tokenVersion !== $user->token_version) {
-                return $this->sendError('Token has been invalidated. Please login again.', 401);
+            $isAdmin = $community->admins()
+                ->where('user_id', $user->id)
+                ->exists();
+
+            if (! $isAdmin && $community->created_by !== $user->id) {
+                return $this->sendError('You do not have admin access to this community.', 403);
             }
 
             return $next($request);
         } catch (\Exception $e) {
-            return $this->sendError('Invalid token', 401);
+            return $this->sendError('An error occurred while checking community admin access.', 500);
         }
     }
 }
