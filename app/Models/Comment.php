@@ -1,0 +1,38 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class Comment extends Model
+{
+    use HasUuids;
+
+    protected $table = 'mt_comment';
+
+    public $incrementing = false;
+
+    protected $keyType = 'string';
+
+    protected $primaryKey = 'id';
+
+    protected $fillable = [
+        'id',
+        'content',
+        'post_id',
+        'created_by',
+        'parent_id',
+    ];
+
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by', 'id');
+    }
+
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(Comment::class, 'parent_id', 'id');
+    }
+}
