@@ -15,12 +15,7 @@ class UserBackgroundRequest extends FormRequest
         return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
-     */
-    public function rules(): array
+    public static function baseRules(): array
     {
         return [
             'personality' => 'sometimes|string|max:1000',
@@ -36,5 +31,22 @@ class UserBackgroundRequest extends FormRequest
             'pet_preferences_tags' => 'sometimes|array',
             'pet_preferences_tags.*' => 'uuid|exists:' . (new AllTag())->getTable() . ',id',
         ];
+    }
+
+    public static function prefixedRules(string $prefix = 'background'): array
+    {
+        return collect(self::baseRules())
+            ->mapWithKeys(fn ($rule, $key) => [($prefix ? "{$prefix}." : '') . $key => $rule])
+            ->toArray();
+    }
+
+    /**
+     * Get the validation rules that apply to the request.
+     *
+     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     */
+    public function rules(): array
+    {
+        return self::baseRules();
     }
 }
