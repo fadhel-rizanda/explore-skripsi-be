@@ -34,10 +34,15 @@ class PostController extends Controller
 
     public function postDetail(Post $post)
     {
+        $isAdmin = auth('api')->user()?->hasRole('admin') ?? false;
+        if (! $isAdmin && ! $post->is_active) {
+            return $this->sendError('Post not found.', 404);
+        }
+
         try {
             $post->load([
                 'attachment:id,public_url',
-                'createdBy:id,name,email,avatar',
+                'createdBy:id,name,email,avatar,is_active',
                 'createdBy.attachment:id,public_url',
                 'tags:id,name,type',
             ]);
@@ -64,7 +69,7 @@ class PostController extends Controller
                 'created_by' => auth('api')->user()->id,
             ]);
 
-            if ($request->filled('tag_ids')) {
+            if ($request->has('tag_ids')) {
                 $post->tags()->sync($request->input('tag_ids'));
             }
 
@@ -83,6 +88,11 @@ class PostController extends Controller
 
     public function updatePost(UpdatePostRequest $request, Post $post)
     {
+        $isAdmin = auth('api')->user()?->hasRole('admin') ?? false;
+        if (! $isAdmin && ! $post->is_active) {
+            return $this->sendError('Post not found.', 404);
+        }
+
         try {
             DB::beginTransaction();
 
@@ -99,7 +109,7 @@ class PostController extends Controller
                 'attachment_id',
             ]));
 
-            if ($request->filled('tag_ids')) {
+            if ($request->has('tag_ids')) {
                 $post->tags()->sync($request->input('tag_ids'));
             }
 
@@ -161,17 +171,19 @@ class PostController extends Controller
         $communityId = $request->query('community_id');
         $tagId = $request->query('tag_id');
 
-        $allowedSorts = ['title', 'content', 'created_at', 'updated_at'];
+        $allowedSorts = ['title', 'created_at', 'updated_at'];
         if (! in_array($sortBy, $allowedSorts)) {
             $sortBy = 'created_at';
         }
 
         $posts = Post::with([
             'attachment:id,public_url',
-            'createdBy:id,name,email',
+            'createdBy:id,name,email,avatar,is_active',
+            'createdBy.attachment:id,public_url',
             'tags:id,name,type',
         ])
             ->withCount(['likes', 'comments'])
+            ->when(! $isAdmin, fn ($q) => $q->where('is_active', true))
             ->when($search, function ($q) use ($search, $isAdmin) {
                 $q->where(function ($query) use ($search, $isAdmin) {
                     $query->where('title', 'ILIKE', "%{$search}%")
@@ -182,10 +194,9 @@ class PostController extends Controller
                 });
             })
             ->when($communityId, fn ($q) => $q->where('community_id', $communityId))
-            ->when($tagId, function ($q) use ($tagId) {
-                $q->whereHas('tags', fn ($query) => $query->where($query->getModel()->getTable() . '.id', $tagId));
-            })
-            ->orderBy($sortBy, 'desc')->paginate($perPage);
+            ->when($tagId, fn ($q) => $q->whereHas('tags', fn ($t) => $t->where('mt_all_tag.id', $tagId)))
+            ->orderBy($sortBy, 'desc')
+            ->paginate($perPage);
 
         return PostResource::collection($posts);
     }

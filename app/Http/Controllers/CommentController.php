@@ -20,7 +20,7 @@ class CommentController extends Controller
 
             $comments = $post->comments()->with([
                 'createdBy' => function ($query) {
-                    $query->select('id', 'name', 'email', 'avatar')
+                    $query->select('id', 'name', 'email', 'avatar', 'is_active')
                         ->with('attachment:id,user_id,public_url');
                 },
             ])->latest()->paginate($perPage);

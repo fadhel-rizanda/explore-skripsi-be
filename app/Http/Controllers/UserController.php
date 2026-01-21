@@ -36,7 +36,9 @@ class UserController extends Controller
         $roleId = $request->query('role_id');
         $sortBy = $request->query('sort_by', 'created_at');
 
-        $allowedSorts = ['name', 'email', 'created_at', 'updated_at'];
+        $allowedSorts = $isAdmin
+            ? ['name', 'email', 'created_at', 'updated_at']
+            : ['name', 'created_at', 'updated_at'];
         if (! in_array($sortBy, $allowedSorts)) {
             $sortBy = 'created_at';
         }
@@ -87,6 +89,11 @@ class UserController extends Controller
 
     public function userDetails(User $user)
     {
+        $isAdmin = auth('api')->user()?->hasRole('admin') ?? false;
+        if (! $isAdmin && ! $user->is_active) {
+            return $this->sendError('User not found.', 404);
+        }
+
         try {
             $user->load([
                 'attachment:id,public_url',

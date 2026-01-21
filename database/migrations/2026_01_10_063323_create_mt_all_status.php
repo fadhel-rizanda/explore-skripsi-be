@@ -14,6 +14,7 @@ return new class() extends Migration
         Schema::create('mt_all_status', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('name');
+            $table->string('color_code')->nullable();
             $table->string('type');
         });
     }
