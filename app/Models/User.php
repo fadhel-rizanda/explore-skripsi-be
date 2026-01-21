@@ -52,6 +52,7 @@ class User extends Authenticatable implements JWTSubject
         'token_version',
         'provider',
         'provider_id',
+        'is_active',
     ];
 
     /**
@@ -77,7 +78,13 @@ class User extends Authenticatable implements JWTSubject
             'password' => 'hashed',
             'token_version' => 'integer',
             'open_to_special_needs' => 'boolean',
+            'is_active' => 'boolean',
         ];
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
     }
 
     public function getJWTIdentifier(): mixed

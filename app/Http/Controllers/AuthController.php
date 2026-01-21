@@ -78,9 +78,10 @@ class AuthController extends BaseController
     {
         try {
             $credentials = $request->only('email', 'password');
+            $credentials['is_active'] = true;
 
             if (! $token = auth('api')->attempt($credentials)) {
-                return $this->sendError('Wrong credentials', 401);
+                return $this->sendError('Wrong credentials or account inactive', 401);
             }
 
             $user = auth('api')->user();
@@ -119,31 +120,39 @@ class AuthController extends BaseController
     public function refresh(RefreshTokenRequest $request)
     {
         try {
+            DB::beginTransaction();
+
             $refreshToken = $request->input('refresh_token');
 
             $tokenModel = RefreshToken::findByToken($refreshToken);
 
             if (! $tokenModel) {
+                DB::commit();
+
                 return $this->sendError('Invalid or expired refresh token', 401);
             }
 
             if ($tokenModel->used_at) {
                 RefreshToken::where('user_id', $tokenModel->user_id)->delete();
+                DB::commit();
 
                 return $this->sendError('Refresh token has already been used. For security, all sessions have been logged out.', 401);
             }
 
-            $tokenModel->update(['used_at' => now()]);
-
             $user = $tokenModel->user;
 
-            if (! $user) {
-                return $this->sendError('User not found', 401);
+            if (! $user || ! $user->is_active) {
+                DB::commit();
+
+                return $this->sendError('Invalid credentials', 401);
             }
 
-            $newAccessToken = auth('api')->login($user);
+            $tokenModel->update(['used_at' => now()]);
 
+            $newAccessToken = auth('api')->login($user);
             $newRefreshToken = RefreshToken::createToken($user->id);
+
+            DB::commit();
 
             $data = [
                 'access_token' => $newAccessToken,
@@ -155,6 +164,7 @@ class AuthController extends BaseController
 
             return $this->sendSuccess('Token refreshed successfully', $data, 200);
         } catch (\Exception $ex) {
+            DB::rollBack();
             Log::error('Token refresh error: ', [
                 'message' => $ex->getMessage(),
             ]);
@@ -166,15 +176,18 @@ class AuthController extends BaseController
     public function logout()
     {
         try {
+            DB::beginTransaction();
             $user = auth('api')->user();
 
             RefreshToken::where('user_id', $user->id)->delete();
 
             $user->token_version = ($user->token_version ?? 0) + 1;
             $user->save();
+            DB::commit();
 
             return $this->sendSuccess('Successfully logged out from all devices', null, 200);
         } catch (\Exception $ex) {
+            DB::rollBack();
             Log::error('Logout all devices error: ', [
                 'user_id' => auth('api')->id(),
                 'message' => $ex->getMessage(),
@@ -184,6 +197,7 @@ class AuthController extends BaseController
         }
     }
 
+    #[\Deprecated]
     public function redirectToProvider(string $provider)
     {
         try {
@@ -210,6 +224,7 @@ class AuthController extends BaseController
         }
     }
 
+    #[\Deprecated]
     public function handleProviderCallback(string $provider, Request $request)
     {
         DB::beginTransaction();
@@ -297,6 +312,12 @@ class AuthController extends BaseController
                 ]);
                 $user->assignRole($validated['role']);
             } else {
+                if (! $user->is_active) {
+                    DB::rollBack();
+
+                    return $this->sendError('Your account has been deactivated. Please contact support.', 403);
+                }
+
                 $user->update([
                     'provider' => $validated['provider'],
                     'provider_id' => $socialUser->getId(),
@@ -345,7 +366,7 @@ class AuthController extends BaseController
     public function forgotPassword(ForgotPasswordRequest $request)
     {
         try {
-            $user = User::where('email', $request->email)->first();
+            $user = User::active()->where('email', $request->email)->first();
             if ($user) {
                 $token = Str::upper(Str::random(8));
                 DB::table(config('auth.passwords.users.table'))->updateOrInsert(
@@ -394,7 +415,14 @@ class AuthController extends BaseController
             if (! $user) {
                 return $this->sendError('User not found', 404);
             }
+            if (! $user->is_active) {
+                return $this->sendError(
+                    'Your account has been deactivated. Please contact support.',
+                    403
+                );
+            }
             $user->password = Hash::make($request->password);
+            $user->token_version = ($user->token_version ?? 0) + 1;
             $user->save();
 
             DB::table(config('auth.passwords.users.table'))
@@ -421,6 +449,10 @@ class AuthController extends BaseController
         try {
             $user = auth('api')->user();
 
+            if (! $user->is_active) {
+                return $this->sendError('Your account has been deactivated.', 403);
+            }
+
             if (! Hash::check($request->current_password, $user->password)) {
                 return $this->sendError('Current password is incorrect', 400);
             }
@@ -446,6 +478,11 @@ class AuthController extends BaseController
     {
         try {
             $user = auth('api')->user();
+
+            if (! $user->is_active) {
+                return $this->sendError('Your account has been deactivated.', 403);
+            }
+
             $this->sendActivationCode($user);
 
             return $this->sendSuccess('Activation code resent successfully', null, 200);
@@ -479,6 +516,10 @@ class AuthController extends BaseController
     {
         try {
             $user = auth('api')->user();
+
+            if (! $user->is_active) {
+                return $this->sendError('Your account has been deactivated.', 403);
+            }
 
             $activationRecord = DB::table('tr_user_activation')->where('user_id', $user->id)->first();
             if (! $activationRecord || ! Hash::check($request->token, $activationRecord->activation_token)) {

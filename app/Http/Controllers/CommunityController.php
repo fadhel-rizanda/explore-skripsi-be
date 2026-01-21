@@ -36,12 +36,16 @@ class CommunityController extends Controller
     public function communityDetail(Community $community)
     {
         try {
+            $isAdmin = auth('api')->user()?->hasRole('admin') ?? false;
+            if (! $isAdmin && ! $community->is_active) {
+                return $this->sendError('Community not found.', 404);
+            }
+
             $community->load([
                 'attachment:id,public_url',
                 'address',
                 'tags',
-                'members',
-            ]);
+            ])->loadCount('members');
 
             $data = [
                 'id' => $community->id,
@@ -83,10 +87,10 @@ class CommunityController extends Controller
                 'created_by' => auth('api')->id(),
             ]);
 
-            if ($request->filled('tag_ids')) {
+            if ($request->has('tag_ids')) {
                 $community->tags()->sync($request->tag_ids);
             }
-            if ($request->filled('admin_ids')) {
+            if ($request->has('admin_ids')) {
                 $community->admins()->sync($request->admin_ids);
             }
 
@@ -103,6 +107,11 @@ class CommunityController extends Controller
 
     public function updateCommunity(UpdateCommunityRequest $request, Community $community)
     {
+        $isAdmin = auth('api')->user()?->hasRole('admin') ?? false;
+        if (! $isAdmin && ! $community->is_active) {
+            return $this->sendError('Community not found.', 404);
+        }
+
         try {
             DB::beginTransaction();
 
@@ -124,10 +133,10 @@ class CommunityController extends Controller
                 'attachment_id',
             ]));
 
-            if ($request->filled('tag_ids')) {
+            if ($request->has('tag_ids')) {
                 $community->tags()->sync($request->tag_ids);
             }
-            if ($request->filled('admin_ids')) {
+            if ($request->has('admin_ids')) {
                 $community->admins()->sync($request->admin_ids);
             }
 
@@ -176,22 +185,26 @@ class CommunityController extends Controller
             $sortBy = 'created_at';
         }
 
-        $communities = Community::with([
-            'attachment:id,public_url',
-            ...($isAdmin ? ['address', 'tags'] : []),
-        ])
+        $communities = Community::query()
+            ->when(! $isAdmin, fn ($q) => $q->where('is_active', true))
+            ->with([
+                'attachment:id,public_url',
+                ...($isAdmin ? ['address', 'tags'] : []),
+            ])
             ->withCount('members')
             ->when($search, function ($q) use ($search, $isAdmin) {
                 $q->where(function ($query) use ($search, $isAdmin) {
                     $query->where('name', 'ILIKE', "%{$search}%");
+
                     if ($isAdmin && Str::isUuid($search)) {
                         $query->orWhere('id', $search);
                     }
                 });
             })
-            ->when($tagId, function ($q) use ($tagId) {
-                $q->whereHas('tags', fn ($query) => $query->where('mt_all_tag.id', $tagId));
-            })
+            ->when(
+                $tagId,
+                fn ($q) => $q->whereHas('tags', fn ($query) => $query->where('mt_all_tag.id', $tagId))
+            )
             ->orderBy($sortBy, 'desc')
             ->paginate($perPage);
 

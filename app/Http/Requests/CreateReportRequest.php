@@ -2,13 +2,13 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\ReportReferenceEnum;
 use App\Models\AllTag;
-use App\Models\Attachment;
-use App\Models\Community;
+use App\Models\Status;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class CreatePostRequest extends FormRequest
+class CreateReportRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -26,16 +26,11 @@ class CreatePostRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title' => 'sometimes|string|max:255',
-            'content' => 'required|string|max:5000',
-            'community_id' => [
-                'sometimes',
-                'uuid',
-                Rule::exists((new Community())->getTable(), 'id')
-                    ->where('is_active', true),
-            ],
-            'attachment_id' => 'sometimes|uuid|exists:' . (new Attachment())->getTable() . ',id',
-            'tag_ids' => 'sometimes|array|min:1',
+            'reference_type' => ['required', Rule::in(ReportReferenceEnum::allValues())],
+            'reference_id' => 'required|uuid',
+            'notes' => 'required|string|max:2000',
+            'status_id' => 'sometimes|uuid|exists:' . (new Status())->getTable() . ',id',
+            'tag_ids' => 'sometimes|array',
             'tag_ids.*' => 'uuid|exists:' . (new AllTag())->getTable() . ',id',
         ];
     }
