@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('pets')->group(function () {
     Route::get('/', [PetController::class, 'index']);
+    Route::get('/monitor', [PetController::class, 'monitor']);
     Route::get('/{id}', [PetController::class, 'show']);
     Route::middleware(['auth:api', 'check.token.version'])->group(function () {
         Route::post('/', [PetController::class, 'store']);

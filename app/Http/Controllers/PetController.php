@@ -250,4 +250,50 @@ class PetController extends Controller
             );
         }
     }
+
+    /**
+     * Get list pet for monitor page.
+     */
+    public function monitor(GetAllRequest $request){
+        try {
+            $isAdmin = auth('api')->user()?->hasRole('admin') ?? false;
+            if (! $isAdmin) {
+                return $this->sendError('Forbidden: Only admin can access this resource.', 403);
+            }
+
+            $perPage = $request->query('per_page', 15);
+            $search = $request->query('search');
+            $typeOfAnimalId = $request->query('type_of_animal_id');
+
+            $pets = Pet::with(['typeOfAnimal:id,name'])
+                ->when($search, function ($q, $search) {
+                    $q->where('name', 'ILIKE', "%{$search}%");
+                })
+                ->when($typeOfAnimalId, function ($q) use ($typeOfAnimalId) {
+                    $q->where('type_of_animal_id', $typeOfAnimalId);
+                })
+                ->orderBy('created_at', 'desc')
+                ->paginate($perPage);
+
+            $transformedData = $pets->getCollection()->map(function ($pet) {
+                return [
+                    'animal_id' => $pet->id,
+                    'name' => $pet->name,
+                    'breed' => $pet->breed,
+                    'tag' => $pet->typeOfAnimal?->name,
+                    'provider_id' => $pet->user_id,
+                    'created_at' => $pet->created_at,
+                ];
+            });
+            $pets->setCollection($transformedData);
+
+            return $this->sendSuccessPagination('Monitor pet list retrieved successfully', $pets);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve monitor pet list: ' . $e->getMessage());
+            return $this->sendError(
+                config('app.debug') ? $e->getMessage() : 'Failed to retrieve monitor pet list',
+                500
+            );
+        }
+    }
 }
