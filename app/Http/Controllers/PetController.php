@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\GetAllRequest;
 use App\Http\Requests\PetRequest;
+use App\Http\Resources\PetMonitorResource;
 use App\Models\Pet;
 use App\Models\Status;
 use App\Traits\ResponseAPI;
@@ -275,19 +276,10 @@ class PetController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->paginate($perPage);
 
-            $transformedData = $pets->getCollection()->map(function ($pet) {
-                return [
-                    'animal_id' => $pet->id,
-                    'name' => $pet->name,
-                    'breed' => $pet->breed,
-                    'tag' => $pet->typeOfAnimal?->name,
-                    'provider_id' => $pet->user_id,
-                    'created_at' => $pet->created_at,
-                ];
-            });
-            $pets->setCollection($transformedData);
-
-            return $this->sendSuccessPagination('Monitor pet list retrieved successfully', $pets);
+            return $this->sendSuccessPagination(
+                'Monitor pet list retrieved successfully',
+                PetMonitorResource::collection($pets)
+            );
         } catch (\Exception $e) {
             Log::error('Failed to retrieve monitor pet list: ' . $e->getMessage());
             return $this->sendError(
