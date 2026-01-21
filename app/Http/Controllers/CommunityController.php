@@ -193,11 +193,13 @@ class CommunityController extends Controller
             ])
             ->withCount('members')
             ->when($search, function ($q) use ($search, $isAdmin) {
-                $q->where('name', 'ILIKE', "%{$search}%");
+                $q->where(function ($query) use ($search, $isAdmin) {
+                    $query->where('name', 'ILIKE', "%{$search}%");
 
-                if ($isAdmin && Str::isUuid($search)) {
-                    $q->orWhere('id', $search);
-                }
+                    if ($isAdmin && Str::isUuid($search)) {
+                        $query->orWhere('id', $search);
+                    }
+                });
             })
             ->when(
                 $tagId,

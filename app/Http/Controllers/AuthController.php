@@ -126,11 +126,17 @@ class AuthController extends BaseController
 
             $tokenModel = RefreshToken::findByToken($refreshToken);
 
-            if (! $tokenModel || $tokenModel->used_at) {
-                RefreshToken::where('user_id', optional($tokenModel)->user_id)->delete();
+            if (! $tokenModel) {
                 DB::commit();
 
                 return $this->sendError('Invalid or expired refresh token', 401);
+            }
+
+            if ($tokenModel->used_at) {
+                RefreshToken::where('user_id', $tokenModel->user_id)->delete();
+                DB::commit();
+
+                return $this->sendError('Refresh token has already been used. For security, all sessions have been logged out.', 401);
             }
 
             $user = $tokenModel->user;

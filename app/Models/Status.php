@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Cache;
 
 class Status extends Model
 {
-    use HasFactory, HasUuids;
+    use HasUuids;
 
     protected $table = 'mt_all_status';
 
@@ -31,7 +31,7 @@ class Status extends Model
         'id',
         'name',
         'type',
-        'color',
+        'color_code',
     ];
 
     /**

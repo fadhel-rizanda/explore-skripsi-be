@@ -18,7 +18,7 @@ class StatusController extends Controller
         $search = $request->search;
 
         $query = Status::query()
-            ->select('id', 'name', 'type', 'color')
+            ->select('id', 'name', 'type', 'color_code')
             ->when($type, fn ($q) => $q->where('type', $type))
             ->orderBy('name');
 
