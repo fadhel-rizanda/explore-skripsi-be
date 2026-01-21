@@ -33,8 +33,7 @@ class ReportController extends Controller
     public function listReports(GetAllRequest $request)
     {
         try {
-            $isAdmin = auth('api')->user()?->hasRole('admin') ?? false;
-            $reports = $this->getReportsQuery($request, $isAdmin);
+            $reports = $this->getReportsQuery($request);
 
             return $this->sendSuccessPagination(
                 'Report retrieved successfully.',
@@ -120,38 +119,55 @@ class ReportController extends Controller
         }
     }
 
-    public function deactivateUser(Report $report, User $user)
+    private function processModerationAction($entity, Report $report, $isActive, $action, $referenceType, $entityName, $recipients)
     {
-        try {
-            DB::beginTransaction();
+        DB::beginTransaction();
 
-            $statusResolved = Status::report('resolved');
+        $entity->update(['is_active' => $isActive]);
+        $report->update(['status_id' => Status::report('resolved')->id]);
 
-            $user->update(['is_active' => false]);
-            $report->update(['status_id' => $statusResolved->id]);
+        DB::commit();
 
-            DB::commit();
+        $title = $isActive ? ucfirst($referenceType) . ' Restored' : ucfirst($referenceType) . ' Taken Down';
+        $message = $isActive
+            ? "Your {$referenceType} has been restored after review of the report: " . Str::limit($report->notes, 100)
+            : "Your {$referenceType} has been taken down due to a report: " . Str::limit($report->notes, 100);
 
+        foreach ($recipients as $user) {
             $this->notificationService->create([
-                'title' => 'Account Deactivated',
-                'message' => 'Your account has been deactivated due to a report: ' . Str::limit($report->notes, 100),
+                'title' => $title,
+                'message' => $message,
                 'user_id' => $user->id,
-                'reference_type' => ReportReferenceEnum::USER->value,
-                'reference_id' => $user->id,
+                'reference_type' => $referenceType,
+                'reference_id' => $entity->id,
             ]);
 
             $user->notify(new ReportActionNotification(
-                action: ReportActionEnum::DEACTIVATED->value,
-                entityName: $user->name ?? $user->email,
-                entityType: ReportReferenceEnum::USER->value,
-                notes: 'Your account has been deactivated due to a report: ' . Str::limit($report->notes, 100)
+                action: $action,
+                entityName: $entityName,
+                entityType: $referenceType,
+                notes: $message
             ));
+        }
+    }
+
+    public function deactivateUser(Report $report, User $user)
+    {
+        try {
+            $this->processModerationAction(
+                $user,
+                $report,
+                false,
+                ReportActionEnum::DEACTIVATED->value,
+                ReportReferenceEnum::USER->value,
+                $user->name ?? $user->email,
+                [$user]
+            );
 
             return $this->sendSuccess('User deactivated and report resolved successfully.');
         } catch (\Throwable $e) {
             DB::rollBack();
-            \Log::error('Error deactivating user and resolving report', ['error' => $e->getMessage()]);
-
+            \Log::error('Error deactivating user', ['error' => $e->getMessage()]);
             return $this->sendError('Error deactivating user and resolving report.');
         }
     }
@@ -159,34 +175,20 @@ class ReportController extends Controller
     public function activateUser(Report $report, User $user)
     {
         try {
-            DB::beginTransaction();
-
-            $user->update(['is_active' => true]);
-            $statusResolved = Status::report('resolved');
-            $report->update(['status_id' => $statusResolved->id]);
-
-            DB::commit();
-
-            $this->notificationService->create([
-                'title' => 'Account Reactivated',
-                'message' => 'Your account has been reactivated after review of the report: ' . Str::limit($report->notes, 100),
-                'user_id' => $user->id,
-                'reference_type' => ReportReferenceEnum::USER->value,
-                'reference_id' => $user->id,
-            ]);
-
-            $user->notify(new ReportActionNotification(
-                action: ReportActionEnum::ACTIVATED->value,
-                entityName: $user->name ?? $user->email,
-                entityType: ReportReferenceEnum::USER->value,
-                notes: 'Your account has been reactivated after review of the report: ' . Str::limit($report->notes, 100)
-            ));
+            $this->processModerationAction(
+                $user,
+                $report,
+                true,
+                ReportActionEnum::ACTIVATED->value,
+                ReportReferenceEnum::USER->value,
+                $user->name ?? $user->email,
+                [$user]
+            );
 
             return $this->sendSuccess('User activated and report resolved successfully.');
         } catch (\Throwable $e) {
             DB::rollBack();
-            \Log::error('Error activating user and resolving report', ['error' => $e->getMessage()]);
-
+            \Log::error('Error activating user', ['error' => $e->getMessage()]);
             return $this->sendError('Error activating user and resolving report.');
         }
     }
@@ -194,38 +196,25 @@ class ReportController extends Controller
     public function takeDownPost(Report $report, Post $post)
     {
         try {
-            DB::beginTransaction();
-
-            $post->update(['is_active' => false]);
-            $statusResolved = Status::report('resolved');
-            $report->update(['status_id' => $statusResolved->id]);
-
-            DB::commit();
-
             $user = $post->createdBy;
-
-            if ($user) {
-                $this->notificationService->create([
-                    'title' => 'Post Taken Down',
-                    'message' => 'Your post has been taken down due to a report: ' . Str::limit($report->notes, 100),
-                    'user_id' => $user->id,
-                    'reference_type' => ReportReferenceEnum::POST->value,
-                    'reference_id' => $post->id,
-                ]);
-
-                $user->notify(new ReportActionNotification(
-                    action: ReportActionEnum::TAKEDOWN->value,
-                    entityName: $post->title ?? 'your post',
-                    entityType: ReportReferenceEnum::POST->value,
-                    notes: 'Your post has been taken down due to a report: ' . Str::limit($report->notes, 100)
-                ));
+            if (!$user) {
+                return $this->sendError('Post owner not found.');
             }
+
+            $this->processModerationAction(
+                $post,
+                $report,
+                false,
+                ReportActionEnum::TAKEDOWN->value,
+                ReportReferenceEnum::POST->value,
+                $post->title ?? 'your post',
+                [$user]
+            );
 
             return $this->sendSuccess('Post taken down and report resolved successfully.');
         } catch (\Throwable $e) {
             DB::rollBack();
-            \Log::error('Error taking down post and resolving report', ['error' => $e->getMessage()]);
-
+            \Log::error('Error taking down post', ['error' => $e->getMessage()]);
             return $this->sendError('Error taking down post and resolving report.');
         }
     }
@@ -233,38 +222,25 @@ class ReportController extends Controller
     public function restorePost(Report $report, Post $post)
     {
         try {
-            DB::beginTransaction();
-
-            $post->update(['is_active' => true]);
-            $statusResolved = Status::report('resolved');
-            $report->update(['status_id' => $statusResolved->id]);
-
-            DB::commit();
-
             $user = $post->createdBy;
-
-            if ($user) {
-                $this->notificationService->create([
-                    'title' => 'Post Restored',
-                    'message' => 'Your post has been restored after review of the report: ' . Str::limit($report->notes, 100),
-                    'user_id' => $user->id,
-                    'reference_type' => ReportReferenceEnum::POST->value,
-                    'reference_id' => $post->id,
-                ]);
-
-                $user->notify(new ReportActionNotification(
-                    action: ReportActionEnum::RESTORED->value,
-                    entityName: $post->title ?? 'your post',
-                    entityType: ReportReferenceEnum::POST->value,
-                    notes: 'Your post has been restored after review of the report: ' . Str::limit($report->notes, 100)
-                ));
+            if (!$user) {
+                return $this->sendError('Post owner not found.');
             }
+
+            $this->processModerationAction(
+                $post,
+                $report,
+                true,
+                ReportActionEnum::RESTORED->value,
+                ReportReferenceEnum::POST->value,
+                $post->title ?? 'your post',
+                [$user]
+            );
 
             return $this->sendSuccess('Post restored and report resolved successfully.');
         } catch (\Throwable $e) {
             DB::rollBack();
-            \Log::error('Error restoring post and resolving report', ['error' => $e->getMessage()]);
-
+            \Log::error('Error restoring post', ['error' => $e->getMessage()]);
             return $this->sendError('Error restoring post and resolving report.');
         }
     }
@@ -272,41 +248,26 @@ class ReportController extends Controller
     public function takeDownCommunity(Report $report, Community $community)
     {
         try {
-            DB::beginTransaction();
-
-            $community->update(['is_active' => false]);
-            $statusResolved = Status::report('resolved');
-            $report->update(['status_id' => $statusResolved->id]);
-
-            DB::commit();
-
             $recipients = collect()
                 ->merge($community->admins()->get())
                 ->push($community->createdBy()->first())
                 ->filter()
                 ->unique('id');
-            $recipients->each(function ($user) use ($community, $report) {
-                $this->notificationService->create([
-                    'title' => 'Community Taken Down',
-                    'message' => 'Your community has been taken down due to a report: ' . Str::limit($report->notes, 100),
-                    'user_id' => $user->id,
-                    'reference_type' => ReportReferenceEnum::COMMUNITY->value,
-                    'reference_id' => $community->id,
-                ]);
 
-                $user->notify(new ReportActionNotification(
-                    action: ReportActionEnum::TAKEDOWN->value,
-                    entityName: $community->name,
-                    entityType: ReportReferenceEnum::COMMUNITY->value,
-                    notes: 'Your community has been taken down due to a report: ' . Str::limit($report->notes, 100)
-                ));
-            });
+            $this->processModerationAction(
+                $community,
+                $report,
+                false,
+                ReportActionEnum::TAKEDOWN->value,
+                ReportReferenceEnum::COMMUNITY->value,
+                $community->name,
+                $recipients
+            );
 
             return $this->sendSuccess('Community taken down and report resolved successfully.');
         } catch (\Throwable $e) {
             DB::rollBack();
-            \Log::error('Error taking down community and resolving report', ['error' => $e->getMessage()]);
-
+            \Log::error('Error taking down community', ['error' => $e->getMessage()]);
             return $this->sendError('Error taking down community and resolving report.');
         }
     }
@@ -314,41 +275,26 @@ class ReportController extends Controller
     public function restoreCommunity(Report $report, Community $community)
     {
         try {
-            DB::beginTransaction();
-
-            $community->update(['is_active' => true]);
-            $statusResolved = Status::report('resolved');
-            $report->update(['status_id' => $statusResolved->id]);
-
-            DB::commit();
-
             $recipients = collect()
                 ->merge($community->admins()->get())
                 ->push($community->createdBy()->first())
                 ->filter()
                 ->unique('id');
-            $recipients->each(function ($user) use ($community, $report) {
-                $this->notificationService->create([
-                    'title' => 'Community Restored',
-                    'message' => 'Your community has been restored after review of the report: ' . Str::limit($report->notes, 100),
-                    'user_id' => $user->id,
-                    'reference_type' => ReportReferenceEnum::COMMUNITY->value,
-                    'reference_id' => $community->id,
-                ]);
 
-                $user->notify(new ReportActionNotification(
-                    action: ReportActionEnum::RESTORED->value,
-                    entityName: $community->name,
-                    entityType: ReportReferenceEnum::COMMUNITY->value,
-                    notes: 'Your community has been restored after review of the report: ' . Str::limit($report->notes, 100)
-                ));
-            });
+            $this->processModerationAction(
+                $community,
+                $report,
+                true,
+                ReportActionEnum::RESTORED->value,
+                ReportReferenceEnum::COMMUNITY->value,
+                $community->name,
+                $recipients
+            );
 
             return $this->sendSuccess('Community restored and report resolved successfully.');
         } catch (\Throwable $e) {
             DB::rollBack();
-            \Log::error('Error restoring community and resolving report', ['error' => $e->getMessage()]);
-
+            \Log::error('Error restoring community', ['error' => $e->getMessage()]);
             return $this->sendError('Error restoring community and resolving report.');
         }
     }
@@ -356,37 +302,25 @@ class ReportController extends Controller
     public function takeDownPet(Report $report, Pet $pet)
     {
         try {
-            DB::beginTransaction();
-
-            $pet->update(['is_active' => false]);
-            $statusResolved = Status::report('resolved');
-            $report->update(['status_id' => $statusResolved->id]);
-
             $user = $pet->user;
-            if ($user) {
-                $this->notificationService->create([
-                    'title' => 'Pet Listing Taken Down',
-                    'message' => 'Your pet listing has been taken down due to a report: ' . Str::limit($report->notes, 100),
-                    'user_id' => $user->id,
-                    'reference_type' => ReportReferenceEnum::PET->value,
-                    'reference_id' => $pet->id,
-                ]);
-
-                $user->notify(new ReportActionNotification(
-                    action: ReportActionEnum::TAKEDOWN->value,
-                    entityName: $pet->name ?? 'your pet',
-                    entityType: ReportReferenceEnum::PET->value,
-                    notes: 'Your pet listing has been taken down due to a report: ' . Str::limit($report->notes, 100)
-                ));
+            if (!$user) {
+                return $this->sendError('Pet owner not found.');
             }
 
-            DB::commit();
+            $this->processModerationAction(
+                $pet,
+                $report,
+                false,
+                ReportActionEnum::TAKEDOWN->value,
+                ReportReferenceEnum::PET->value,
+                $pet->name ?? 'your pet',
+                [$user]
+            );
 
             return $this->sendSuccess('Pet taken down and report resolved successfully.');
         } catch (\Throwable $e) {
             DB::rollBack();
-            \Log::error('Error taking down pet and resolving report', ['error' => $e->getMessage()]);
-
+            \Log::error('Error taking down pet', ['error' => $e->getMessage()]);
             return $this->sendError('Error taking down pet and resolving report.');
         }
     }
@@ -394,37 +328,25 @@ class ReportController extends Controller
     public function restorePet(Report $report, Pet $pet)
     {
         try {
-            DB::beginTransaction();
-
-            $pet->update(['is_active' => true]);
-            $statusResolved = Status::report('resolved');
-            $report->update(['status_id' => $statusResolved->id]);
-
-            DB::commit();
-
             $user = $pet->user;
-            if ($user) {
-                $this->notificationService->create([
-                    'title' => 'Pet Listing Restored',
-                    'message' => 'Your pet listing has been restored after review of the report: ' . Str::limit($report->notes, 100),
-                    'user_id' => $user?->id,
-                    'reference_type' => ReportReferenceEnum::PET->value,
-                    'reference_id' => $pet->id,
-                ]);
-
-                $user->notify(new ReportActionNotification(
-                    action: ReportActionEnum::RESTORED->value,
-                    entityName: $pet->name ?? 'your pet',
-                    entityType: ReportReferenceEnum::PET->value,
-                    notes: 'Your pet listing has been restored after review of the report: ' . Str::limit($report->notes, 100)
-                ));
+            if (!$user) {
+                return $this->sendError('Pet owner not found.');
             }
+
+            $this->processModerationAction(
+                $pet,
+                $report,
+                true,
+                ReportActionEnum::RESTORED->value,
+                ReportReferenceEnum::PET->value,
+                $pet->name ?? 'your pet',
+                [$user]
+            );
 
             return $this->sendSuccess('Pet restored and report resolved successfully.');
         } catch (\Throwable $e) {
             DB::rollBack();
-            \Log::error('Error restoring pet and resolving report', ['error' => $e->getMessage()]);
-
+            \Log::error('Error restoring pet', ['error' => $e->getMessage()]);
             return $this->sendError('Error restoring pet and resolving report.');
         }
     }

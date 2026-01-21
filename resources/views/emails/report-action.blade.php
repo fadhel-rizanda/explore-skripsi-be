@@ -18,7 +18,6 @@
                             Moderation Action Notice
                         </h2>
 
-                        ```
                         <p>
                             This email is to inform you that a moderation action has been taken
                             related to your account or content on our platform.
