@@ -256,7 +256,7 @@ class PetController extends Controller
      */
     public function monitor(GetAllRequest $request){
         try {
-            $isAdmin = auth('api')->user()?->hasRole('admin') ?? false;
+            $isAdmin = auth('api')->user()->hasRole(\App\Enums\RoleEnum::ADMIN->value);
             if (! $isAdmin) {
                 return $this->sendError('Forbidden: Only admin can access this resource.', 403);
             }
