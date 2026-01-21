@@ -2,28 +2,26 @@
 
 namespace App\Http\Resources;
 
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class PostResource extends JsonResource
+class ReportResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
      *
      * @return array<string, mixed>
      */
-    public function toArray($request): array
+    public function toArray(Request $request): array
     {
         return [
             'id' => $this->id,
-            'title' => $this->title,
-            'content' => $this->content,
-            'image_url' => optional($this->attachment)->public_url,
-            'attachment' => $this->attachment,
+            'reference_type' => $this->reference_type,
+            'reference_id' => $this->reference_id,
+            'status' => $this->status,
+            'notes' => $this->notes,
             'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
             'tags' => $this->tags,
-            'likes_count' => $this->whenCounted('likes'),
-            'comments_count' => $this->whenCounted('comments'),
             'created_by' => [
                 'id' => $this->createdBy->id,
                 'name' => $this->createdBy->name,

@@ -27,6 +27,7 @@ class Post extends Model
         'attachment_id',
         'community_id',
         'created_by',
+        'is_active',
     ];
 
     public function community(): BelongsTo

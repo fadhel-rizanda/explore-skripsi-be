@@ -24,6 +24,7 @@ return new class() extends Migration
             $table->string('breed');
             $table->boolean('special_needs')->default(false);
             $table->timestamps();
+            $table->boolean('is_active')->default(true);
         });
     }
 

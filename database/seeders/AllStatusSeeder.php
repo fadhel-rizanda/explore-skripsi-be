@@ -19,6 +19,11 @@ class AllStatusSeeder extends Seeder
             ['name' => 'adopted', 'type' => 'pet'],
             ['name' => 'pending', 'type' => 'pet'],
             ['name' => 'unavailable', 'type' => 'pet'],
+
+            ['name' => 'active', 'type' => 'report'], // report baru
+            ['name' => 'resolved', 'type' => 'report'], // report sudah ditangani
+            ['name' => 'closed', 'type' => 'report'], // report tidak memenuhi syarat
+            ['name' => 'in_progress', 'type' => 'report'], // report sedang ditangani
         ];
 
         // Fetch all existing status pairs in a single query

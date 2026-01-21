@@ -37,6 +37,7 @@ class Pet extends Model
         'about',
         'breed',
         'special_needs',
+        'is_active',
     ];
 
     /**

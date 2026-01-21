@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class CreateChatRequest extends FormRequest
 {
@@ -26,7 +27,10 @@ class CreateChatRequest extends FormRequest
             'name' => 'nullable|string|max:255',
             'type' => 'required|in:private,group',
             'user_ids' => 'required|array|min:1',
-            'user_ids.*' => 'uuid|exists:' . (new User())->getTable() . ',id',
+            'user_ids.*' => [
+                'uuid',
+                Rule::exists((new User())->getTable(), 'id')->where('is_active', true),
+            ],
         ];
     }
 }

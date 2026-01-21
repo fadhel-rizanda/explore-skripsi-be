@@ -10,7 +10,7 @@ class NotificationController extends Controller
 {
     use ResponseAPI;
 
-    protected $notificationService;
+    protected NotificationService $notificationService;
 
     public function __construct(NotificationService $notificationService)
     {
