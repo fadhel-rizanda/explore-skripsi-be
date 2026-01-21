@@ -32,6 +32,10 @@ class CheckTokenVersion
                 return $this->sendError('Unauthorized', 401);
             }
 
+            if (! $user->is_active) {
+                return $this->sendError('User account is deactivated.', 403);
+            }
+
             if ($tokenVersion !== $user->token_version) {
                 return $this->sendError('Token has been invalidated. Please login again.', 401);
             }

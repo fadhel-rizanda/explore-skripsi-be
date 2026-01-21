@@ -20,6 +20,7 @@ return new class() extends Migration
             $table->foreignUuid('address_id')->nullable()->constrained('mt_address')->onDelete('set null');
             $table->foreignUuid('created_by')->nullable()->constrained('mt_user')->onDelete('set null');
             $table->timestamps();
+            $table->boolean('is_active')->default(true);
         });
 
         Schema::create('tr_community_admin', function (Blueprint $table) {

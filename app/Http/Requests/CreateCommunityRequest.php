@@ -5,7 +5,9 @@ namespace App\Http\Requests;
 use App\Models\AllTag;
 use App\Models\Attachment;
 use App\Models\Community;
+use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class CreateCommunityRequest extends FormRequest
 {
@@ -33,7 +35,10 @@ class CreateCommunityRequest extends FormRequest
                 'tag_ids' => 'required|array|min:1',
                 'tag_ids.*' => 'uuid|exists:' . (new AllTag())->getTable() . ',id',
                 'admin_ids' => 'sometimes|array|min:1',
-                'admin_ids.*' => 'uuid|exists:' . (new \App\Models\User())->getTable() . ',id',
+                'admin_ids.*' => [
+                    'uuid',
+                    Rule::exists((new User())->getTable(), 'id')->where('is_active', true),
+                ],
             ],
             CreateAddressRequest::prefixedRules(),
         );

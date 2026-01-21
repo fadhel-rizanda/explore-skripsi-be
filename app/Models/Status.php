@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Cache;
 
 class Status extends Model
 {
@@ -30,6 +31,7 @@ class Status extends Model
         'id',
         'name',
         'type',
+        'color',
     ];
 
     /**
@@ -38,5 +40,17 @@ class Status extends Model
     public function pets(): HasMany
     {
         return $this->hasMany(Pet::class, 'status_id');
+    }
+
+    public static function report(string $name): self
+    {
+        return Cache::remember(
+            "status:report:{$name}",
+            now()->addHours(6),
+            fn () => static::where([
+                'name' => $name,
+                'type' => 'report',
+            ])->firstOrFail()
+        );
     }
 }

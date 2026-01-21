@@ -27,6 +27,7 @@ class Community extends Model
         'attachment_id',
         'address_id',
         'created_by',
+        'is_active',
     ];
 
     public function address(): BelongsTo
@@ -52,5 +53,10 @@ class Community extends Model
     public function members(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'tr_follow_community', 'community_id', 'user_id');
+    }
+
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by', 'id');
     }
 }
