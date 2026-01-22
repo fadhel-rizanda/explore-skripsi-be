@@ -272,6 +272,12 @@ class PetController extends Controller
         $typeOfAnimalId = $request->query('type_of_animal_id');
         $petId = $request->query('pet_id');
 
+        // Validasi UUID manual untuk pet_id
+        $isValidUuid = true;
+        if ($petId) {
+            $isValidUuid = preg_match('/^[0-9a-fA-F-]{36}$/', $petId);
+        }
+
         return Pet::with(['typeOfAnimal:id,name'])
             ->when($search, function ($q, $search) {
                 $q->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($search) . '%']);
@@ -279,7 +285,7 @@ class PetController extends Controller
             ->when($typeOfAnimalId, function ($q) use ($typeOfAnimalId) {
                 $q->where('type_of_animal_id', $typeOfAnimalId);
             })
-            ->when($petId, function ($q) use ($petId) {
+            ->when($petId && $isValidUuid, function ($q) use ($petId) {
                 $q->where('id', $petId);
             });
     }
