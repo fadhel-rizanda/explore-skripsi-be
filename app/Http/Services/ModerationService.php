@@ -23,6 +23,7 @@ class ModerationService
         ReportReferenceEnum $referenceType,
         ReportActionEnum $action,
         array $recipients,
+        string $moderatorId,
         ?string $reportId = null,
         ?string $notes = null
     ): void {
@@ -33,7 +34,8 @@ class ModerationService
             $action,
             $recipients,
             $reportId,
-            $notes
+            $notes,
+            $moderatorId
         ) {
             $reportStatus = Status::report('resolved');
 
@@ -52,7 +54,7 @@ class ModerationService
                     'reference_id' => $entity->id,
                     'notes' => $notes,
                     'status_id' => $reportStatus->id,
-                    'created_by' => auth('api')->id(),
+                    'created_by' => $moderatorId,
                 ]);
             }
 

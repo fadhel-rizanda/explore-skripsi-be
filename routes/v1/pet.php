@@ -10,6 +10,7 @@ Route::prefix('pets')->group(function () {
     Route::middleware(['auth:api', 'check.token.version'])->group(function () {
         Route::post('/', [PetController::class, 'store']);
         Route::put('/{id}', [PetController::class, 'update']);
+        Route::delete('/{id}', [PetController::class, 'destroy']);
 
         Route::middleware(['role:admin'])->group(function () {
             Route::post('/{pet}/takedown', [ModerationController::class, 'takeDownPet']);
