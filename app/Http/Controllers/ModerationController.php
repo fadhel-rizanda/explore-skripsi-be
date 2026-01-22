@@ -28,8 +28,9 @@ class ModerationController extends Controller
             referenceType: ReportReferenceEnum::USER,
             action: ReportActionEnum::DEACTIVATED,
             recipients: [$user],
+            moderatorId: auth('api')->id(),
             reportId: $request->report_id,
-            notes: $request->notes
+            notes: $request->notes,
         );
 
         return $this->sendSuccess('User deactivated successfully.');
@@ -43,6 +44,7 @@ class ModerationController extends Controller
             referenceType: ReportReferenceEnum::USER,
             action: ReportActionEnum::ACTIVATED,
             recipients: [$user],
+            moderatorId: auth('api')->id(),
             reportId: $request->report_id,
             notes: $request->notes
         );
@@ -64,6 +66,7 @@ class ModerationController extends Controller
             referenceType: ReportReferenceEnum::POST,
             action: ReportActionEnum::TAKEDOWN,
             recipients: [$owner],
+            moderatorId: auth('api')->id(),
             reportId: $request->report_id,
             notes: $request->notes
         );
@@ -85,6 +88,7 @@ class ModerationController extends Controller
             referenceType: ReportReferenceEnum::POST,
             action: ReportActionEnum::RESTORED,
             recipients: [$owner],
+            moderatorId: auth('api')->id(),
             reportId: $request->report_id,
             notes: $request->notes
         );
@@ -94,13 +98,7 @@ class ModerationController extends Controller
 
     public function takeDownCommunity(ModerationActionRequest $request, Community $community)
     {
-        $recipients = collect()
-            ->merge($community->admins()->get())
-            ->push($community->createdBy()->first())
-            ->filter()
-            ->unique('id')
-            ->values()
-            ->all();
+        $recipients = $community->getCommunityRecipients();
 
         if (empty($recipients)) {
             return $this->sendError('Community owners not found.');
@@ -112,6 +110,7 @@ class ModerationController extends Controller
             referenceType: ReportReferenceEnum::COMMUNITY,
             action: ReportActionEnum::TAKEDOWN,
             recipients: $recipients,
+            moderatorId: auth('api')->id(),
             reportId: $request->report_id,
             notes: $request->notes
         );
@@ -121,13 +120,7 @@ class ModerationController extends Controller
 
     public function restoreCommunity(ModerationActionRequest $request, Community $community)
     {
-        $recipients = collect()
-            ->merge($community->admins()->get())
-            ->push($community->createdBy()->first())
-            ->filter()
-            ->unique('id')
-            ->values()
-            ->all();
+        $recipients = $community->getCommunityRecipients();
 
         if (empty($recipients)) {
             return $this->sendError('Community owners not found.');
@@ -139,6 +132,7 @@ class ModerationController extends Controller
             referenceType: ReportReferenceEnum::COMMUNITY,
             action: ReportActionEnum::RESTORED,
             recipients: $recipients,
+            moderatorId: auth('api')->id(),
             reportId: $request->report_id,
             notes: $request->notes
         );
@@ -160,6 +154,7 @@ class ModerationController extends Controller
             referenceType: ReportReferenceEnum::PET,
             action: ReportActionEnum::TAKEDOWN,
             recipients: [$owner],
+            moderatorId: auth('api')->id(),
             reportId: $request->report_id,
             notes: $request->notes
         );
@@ -181,6 +176,7 @@ class ModerationController extends Controller
             referenceType: ReportReferenceEnum::PET,
             action: ReportActionEnum::RESTORED,
             recipients: [$owner],
+            moderatorId: auth('api')->id(),
             reportId: $request->report_id,
             notes: $request->notes
         );
