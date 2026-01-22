@@ -21,6 +21,12 @@ class PetController extends Controller
     public function index(GetAllRequest $request)
     {
         try {
+            $isAdmin = auth('api')->user()?->hasRole('admin') ?? false;
+            if ($isAdmin) {
+                // Admin akses monitor
+                return $this->monitor($request);
+            }
+
             $perPage = $request->query('per_page', 15);
             $search = $request->query('search');
             $typeOfAnimalId = $request->query('type_of_animal_id');
@@ -62,7 +68,7 @@ class PetController extends Controller
                         $subQuery->where('mt_all_tag.id', $tagPersonalityId);
                     });
                 })
-                ->orderBy('created_at', 'desc') // Default sorting
+                ->orderBy('created_at', 'desc')
                 ->paginate($perPage);
 
             // Transform data using map. For more complex transformations, consider using API Resources.
@@ -255,16 +261,12 @@ class PetController extends Controller
     /**
      * Get list pet for monitor page.
      */
-    public function monitor(GetAllRequest $request){
+    private function monitor(GetAllRequest $request){
         try {
-            $isAdmin = auth('api')->user()->hasRole(\App\Enums\RoleEnum::ADMIN->value);
-            if (! $isAdmin) {
-                return $this->sendError('Forbidden: Only admin can access this resource.', 403);
-            }
-
-            $perPage = $request->query('per_page', 15);
+            $perPage = min((int) $request->query('per_page', 15), 100);
             $search = $request->query('search');
             $typeOfAnimalId = $request->query('type_of_animal_id');
+            $petId = $request->query('pet_id');
 
             $pets = Pet::with(['typeOfAnimal:id,name'])
                 ->when($search, function ($q, $search) {
@@ -272,6 +274,9 @@ class PetController extends Controller
                 })
                 ->when($typeOfAnimalId, function ($q) use ($typeOfAnimalId) {
                     $q->where('type_of_animal_id', $typeOfAnimalId);
+                })
+                ->when($petId, function ($q) use ($petId) {
+                    $q->where('id', $petId);
                 })
                 ->orderBy('created_at', 'desc')
                 ->paginate($perPage);
