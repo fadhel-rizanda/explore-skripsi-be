@@ -2,16 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\generatePresignedUrlRequest;
+use App\Http\Requests\GeneratePresignedUrlRequest;
 use App\Models\Attachment;
 use App\Traits\ResponseAPI;
 use Aws\S3\S3Client;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
-class UploadController extends Controller
+class AttachmentController extends Controller
 {
     use ResponseAPI;
 
@@ -25,7 +24,7 @@ class UploadController extends Controller
         $this->bucket = config('filesystems.disks.s3.bucket');
     }
 
-    public function generatePresignedUrl(generatePresignedUrlRequest $request)
+    public function generatePresignedUrl(GeneratePresignedUrlRequest $request)
     {
         $allowedTypes = [
             'image/jpeg' => ['jpg', 'jpeg'],
@@ -36,9 +35,9 @@ class UploadController extends Controller
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => ['docx'],
         ];
 
-        $contentType = $request->input('content_type');
+        $mimeType = $request->input('mime_type');
 
-        if (! isset($allowedTypes[$contentType])) {
+        if (! isset($allowedTypes[$mimeType])) {
             return $this->sendError('Unsupported file type.', 400);
         }
 
@@ -50,8 +49,8 @@ class UploadController extends Controller
             return $this->sendError('Filename must include a file extension (e.g., document.pdf, image.jpg).', 400);
         }
 
-        if (! in_array($extension, $allowedTypes[$contentType])) {
-            return $this->sendError("File extension '{$extension}' does not match content type '{$contentType}'. Expected: " . implode(', ', $allowedTypes[$contentType]), 400);
+        if (! in_array($extension, $allowedTypes[$mimeType])) {
+            return $this->sendError("File extension '{$extension}' does not match content type '{$mimeType}'. Expected: " . implode(', ', $allowedTypes[$mimeType]), 400);
         }
 
         try {
@@ -66,7 +65,7 @@ class UploadController extends Controller
             $command = $this->s3Client->getCommand('PutObject', [
                 'Bucket' => $this->bucket,
                 'Key' => $path,
-                'ContentType' => $contentType,
+                'ContentType' => $mimeType,
             ]);
 
             // Create presigned request (valid 15 menit)
@@ -83,7 +82,7 @@ class UploadController extends Controller
                 'filename' => $filename,
                 'path' => $path,
                 'file_size' => $request->input('file_size'),
-                'mime_type' => $contentType,
+                'mime_type' => $mimeType,
                 'status' => 'pending',
                 'uploaded_by' => $user->id,
                 'is_public' => $isPublic,
@@ -92,9 +91,9 @@ class UploadController extends Controller
 
             $responseData = [
                 'upload_url' => $uploadUrl,
-                'attachment_id' => $document->id,
+                'id' => $document->id,
                 'path' => $path,
-                'content_type' => $contentType,
+                'mime_type' => $mimeType,
                 'expires_in' => 900,
             ];
 
@@ -117,10 +116,8 @@ class UploadController extends Controller
         }
     }
 
-    public function confirmUpload($documentId)
+    public function confirmUpload(Attachment $document)
     {
-        $document = Attachment::find($documentId);
-
         if (! Storage::disk('s3')->exists($document->path)) {
             return $this->sendError('File not found in storage.', 404);
         }
@@ -131,7 +128,7 @@ class UploadController extends Controller
                 'uploaded_at' => now(),
             ]);
 
-            return $this->sendSuccess('Upload confirmed successfully.', ['attachment' => $document]);
+            return $this->sendSuccess('Upload confirmed successfully.', $document);
         } catch (\Exception $exception) {
             Log::error('confirmUpload failed', [
                 'exception' => $exception->getMessage(),
@@ -142,10 +139,8 @@ class UploadController extends Controller
         }
     }
 
-    public function generateDownloadUrl($documentId)
+    public function generateDownloadUrl(Attachment $document)
     {
-        $document = Attachment::findOrFail($documentId);
-
         if ($document->status !== 'completed' || ! Storage::disk('s3')->exists($document->path)) {
             return $this->sendError('File not found in storage.', 404);
         }
@@ -162,6 +157,8 @@ class UploadController extends Controller
             return $this->sendSuccess('Download URL generated successfully.', [
                 'download_url' => $url,
                 'expires_in' => 3600, // seconds
+                'id' => $document->id,
+                'mime_type' => $document->mime_type,
             ]);
         } catch (\Exception $exception) {
             Log::error('generateDownloadUrl failed', [
@@ -173,10 +170,8 @@ class UploadController extends Controller
         }
     }
 
-    public function deleteDocument($documentId)
+    public function deleteDocument(Attachment $document)
     {
-        $document = Attachment::findOrFail($documentId);
-
         try {
             if (Storage::disk('s3')->exists($document->path)) {
                 Storage::disk('s3')->delete($document->path);
