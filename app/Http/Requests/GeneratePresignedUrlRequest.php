@@ -4,7 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class generatePresignedUrlRequest extends FormRequest
+class GeneratePresignedUrlRequest extends FormRequest
 {
     /**
      * Get the validation rules that apply to the request.
@@ -15,7 +15,7 @@ class generatePresignedUrlRequest extends FormRequest
     {
         return [
             'filename' => 'required|string',
-            'content_type' => 'required|string',
+            'mime_type' => 'required|string',
             'file_size' => 'required|integer|max:10485760', // Max 10MB
             'is_public' => 'nullable|boolean',
         ];

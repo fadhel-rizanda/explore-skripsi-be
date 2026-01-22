@@ -59,4 +59,15 @@ class Community extends Model
     {
         return $this->belongsTo(User::class, 'created_by', 'id');
     }
+
+    public function getCommunityRecipients(): array
+    {
+        return collect()
+            ->merge($this->admins()->get())
+            ->push($this->createdBy()->first())
+            ->filter()
+            ->unique('id')
+            ->values()
+            ->all();
+    }
 }

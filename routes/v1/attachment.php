@@ -1,14 +1,14 @@
 <?php
 
-use App\Http\Controllers\UploadController;
+use App\Http\Controllers\AttachmentController;
 use Illuminate\Support\Facades\Route;
 
 Route::group([
     'prefix' => 'attachments',
     'middleware' => ['auth:api', 'check.token.version'],
 ], function () {
-    Route::post('/presigned', [UploadController::class, 'generatePresignedUrl']);
-    Route::post('/confirm/{documentId}', [UploadController::class, 'confirmUpload']);
-    Route::get('/download/{documentId}', [UploadController::class, 'generateDownloadUrl']);
-    Route::delete('/{documentId}', [UploadController::class, 'deleteDocument']);
+    Route::post('/presigned', [AttachmentController::class, 'generatePresignedUrl']);
+    Route::post('/{document}/confirm', [AttachmentController::class, 'confirmUpload']);
+    Route::get('/{document}/download', [AttachmentController::class, 'generateDownloadUrl']);
+    Route::delete('/{document}', [AttachmentController::class, 'deleteDocument']);
 });
