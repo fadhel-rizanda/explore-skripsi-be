@@ -46,19 +46,21 @@ class UserController extends Controller
         $users = User::with([
             'attachment:id,public_url',
             'roles:id,name',
-        ])->when($search, function ($q) use ($search, $isAdmin) {
-            $q->where(function ($query) use ($search, $isAdmin) {
-                $query->where('name', 'ILIKE', "%{$search}%");
+        ])
+            ->when(! $isAdmin, fn ($q) => $q->where('is_active', true))
+            ->when($search, function ($q) use ($search, $isAdmin) {
+                $q->where(function ($query) use ($search, $isAdmin) {
+                    $query->where('name', 'ILIKE', "%{$search}%");
 
-                if ($isAdmin) {
-                    $query->orWhere('email', 'ILIKE', "%{$search}%")
-                        ->orWhere('phone', 'ILIKE', "%{$search}%");
-                    if (Str::isUuid($search)) {
-                        $query->orWhere('id', $search);
+                    if ($isAdmin) {
+                        $query->orWhere('email', 'ILIKE', "%{$search}%")
+                            ->orWhere('phone', 'ILIKE', "%{$search}%");
+                        if (Str::isUuid($search)) {
+                            $query->orWhere('id', $search);
+                        }
                     }
-                }
-            });
-        })
+                });
+            })
             ->when(
                 $roleId,
                 fn ($q, $roleId) => $q->whereHas('roles', fn ($query) => $query->where('id', $roleId))

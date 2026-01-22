@@ -18,7 +18,7 @@ return new class() extends Migration
             $table->string('website')->nullable();
             $table->foreignUuid('attachment_id')->nullable()->constrained('mt_attachment')->onDelete('set null');
             $table->foreignUuid('address_id')->nullable()->constrained('mt_address')->onDelete('set null');
-            $table->foreignUuid('created_by')->nullable()->constrained('mt_user')->onDelete('set null');
+            $table->foreignUuid('created_by')->constrained('mt_user')->onDelete('set null');
             $table->timestamps();
             $table->boolean('is_active')->default(true);
         });
