@@ -17,7 +17,7 @@ return new class() extends Migration
             $table->text('content');
             $table->foreignUuid('community_id')->nullable()->constrained('mt_community')->onDelete('set null');
             $table->foreignUuid('attachment_id')->nullable()->constrained('mt_attachment')->onDelete('set null');
-            $table->foreignUuid('created_by')->nullable()->constrained('mt_user')->onDelete('set null');
+            $table->foreignUuid('created_by')->constrained('mt_user')->onDelete('set null');
             $table->timestamps();
             $table->boolean('is_active')->default(true);
         });
@@ -38,7 +38,7 @@ return new class() extends Migration
             $table->uuid('id')->primary();
             $table->text('content');
             $table->foreignUuid('post_id')->constrained('mt_post')->onDelete('cascade');
-            $table->foreignUuid('created_by')->nullable()->constrained('mt_user')->onDelete('set null');
+            $table->foreignUuid('created_by')->constrained('mt_user')->onDelete('set null');
             $table->uuid('parent_id')->nullable();
             $table->timestamps();
         });
