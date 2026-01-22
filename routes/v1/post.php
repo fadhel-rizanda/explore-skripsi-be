@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\ModerationController;
 use App\Http\Controllers\PostController;
 use Illuminate\Support\Facades\Route;
 
@@ -19,6 +20,11 @@ Route::prefix('posts')->group(function () {
         Route::middleware(['post.owner'])->group(function () {
             Route::put('/{post}', [PostController::class, 'updatePost']);
             Route::delete('/{post}', [PostController::class, 'deletePost']);
+        });
+
+        Route::middleware(['role:admin'])->group(function () {
+            Route::post('/{post}/takedown', [ModerationController::class, 'takeDownPost']);
+            Route::post('/{post}/restore', [ModerationController::class, 'restorePost']);
         });
     });
 });
