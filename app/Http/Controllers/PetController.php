@@ -261,7 +261,7 @@ class PetController extends Controller
             );
         }
     }
-    
+
     /**
      * Build base pet query with common filters.
      */
@@ -273,7 +273,7 @@ class PetController extends Controller
 
         return Pet::with(['typeOfAnimal:id,name'])
             ->when($search, function ($q, $search) {
-                $q->where('name', 'ILIKE', "%{$search}%");
+                $q->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($search) . '%']);
             })
             ->when($typeOfAnimalId, function ($q) use ($typeOfAnimalId) {
                 $q->where('type_of_animal_id', $typeOfAnimalId);
