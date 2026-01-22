@@ -31,6 +31,7 @@ class PetController extends Controller
             $tagPersonalityId = $request->query('tag_personality_id');
 
             $pets = $this->buildPetQuery($request)
+                ->where('is_active', true)
                 ->with(['profilePicture:id,filename,mime_type,public_url,path'])
                 ->when($age !== null, function ($q) use ($age) {
                     $now = now();
