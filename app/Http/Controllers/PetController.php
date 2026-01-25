@@ -260,7 +260,6 @@ class PetController extends Controller
             
             \Log::error("Error deleting pet ID {$id}: " . $e->getMessage());
 
-            // Pesan error umum ke user (jangan tampilkan raw error SQL)
             return $this->sendError('Internal server error', 500);
         }
     }
