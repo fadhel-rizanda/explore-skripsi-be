@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\GetAllRequest;
 use App\Http\Requests\PetRequest;
+use App\Http\Resources\PetMonitorResource;
 use App\Models\Pet;
 use App\Models\Status;
 use App\Traits\ResponseAPI;
@@ -20,39 +21,30 @@ class PetController extends Controller
     public function index(GetAllRequest $request)
     {
         try {
+            $isAdmin = auth('api')->user()?->hasRole('admin') ?? false;
+            if ($isAdmin) {
+                return $this->monitor($request);
+            }
+
             $perPage = $request->query('per_page', 15);
-            $search = $request->query('search');
-            $typeOfAnimalId = $request->query('type_of_animal_id');
             $age = $request->query('age');
             $tagPersonalityId = $request->query('tag_personality_id');
 
-            // Eager load only used relationships for efficiency
-            $pets = Pet::with([
-                'typeOfAnimal:id,name',
-                'profilePicture:id,filename,mime_type,public_url,path',
-            ])
-                ->when($search, function ($q, $search) {
-                    $q->where('name', 'ILIKE', "%{$search}%");
-                })
-                ->when($typeOfAnimalId, function ($q) use ($typeOfAnimalId) {
-                    $q->where('type_of_animal_id', $typeOfAnimalId);
-                })
+            $pets = $this->buildPetQuery($request)
+                ->where('is_active', true)
+                ->with(['profilePicture:id,filename,mime_type,public_url,path'])
                 ->when($age !== null, function ($q) use ($age) {
                     $now = now();
                     if ($age === 'baby') {
-                        // < 6 months
                         $q->where('date_of_birth', '>', $now->copy()->subMonths(6))
                             ->where('date_of_birth', '<=', $now);
                     } elseif ($age === 'young') {
-                        // 6 months to < 1 year
                         $q->where('date_of_birth', '<=', $now->copy()->subMonths(6))
                             ->where('date_of_birth', '>', $now->copy()->subYear());
                     } elseif ($age === 'adult') {
-                        // 1 year to < 7 years
                         $q->where('date_of_birth', '<=', $now->copy()->subYear())
                             ->where('date_of_birth', '>', $now->copy()->subYears(7));
                     } elseif ($age === 'senior') {
-                        // >= 7 years
                         $q->where('date_of_birth', '<=', $now->copy()->subYears(7));
                     }
                 })
@@ -61,12 +53,10 @@ class PetController extends Controller
                         $subQuery->where('mt_all_tag.id', $tagPersonalityId);
                     });
                 })
-                ->orderBy('created_at', 'desc') // Default sorting
+                ->orderBy('created_at', 'desc')
                 ->paginate($perPage);
 
-            // Transform data using map. For more complex transformations, consider using API Resources.
             $transformedData = $pets->getCollection()->map(function ($pet) {
-                // Calculate age
                 $dateOfBirth = $pet->date_of_birth;
                 $ageInYears = $dateOfBirth->age;
                 if ($ageInYears >= 1) {
@@ -77,7 +67,6 @@ class PetController extends Controller
                     $ageUnit = $age === 1 ? 'month old' : 'months old';
                 }
 
-                // Use eager loaded profilePicture relation (hasOne, but returns collection)
                 $profilePicture = $pet->profilePicture->first();
                 $profilePictureData = $profilePicture ? $profilePicture->public_url : null;
 
@@ -92,7 +81,6 @@ class PetController extends Controller
                 ];
             });
 
-            // Set transformed data back to collection
             $pets->setCollection($transformedData);
 
             return $this->sendSuccessPagination(
@@ -250,4 +238,56 @@ class PetController extends Controller
             );
         }
     }
+
+    /**
+     * Get list pet for monitor page.
+     */
+    private function monitor(GetAllRequest $request)
+    {
+        try {
+            $perPage = min((int) $request->query('per_page', 15), 100);
+            $pets = $this->buildPetQuery($request)
+                ->orderBy('created_at', 'desc')
+                ->paginate($perPage);
+
+            return $this->sendSuccessPagination(
+                'Monitor pet list retrieved successfully',
+                PetMonitorResource::collection($pets)
+            );
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve monitor pet list: ' . $e->getMessage());
+            return $this->sendError(
+                config('app.debug') ? $e->getMessage() : 'Failed to retrieve monitor pet list',
+                500
+            );
+        }
+    }
+
+    /**
+     * Build base pet query with common filters.
+     */
+    private function buildPetQuery(GetAllRequest $request)
+    {
+        $search = $request->query('search');
+        $typeOfAnimalId = $request->query('type_of_animal_id');
+        $petId = $request->query('pet_id');
+
+        // Validasi UUID manual untuk pet_id
+        $isValidUuid = true;
+        if ($petId) {
+            $isValidUuid = preg_match('/^[0-9a-fA-F-]{36}$/', $petId);
+        }
+
+        return Pet::with(['typeOfAnimal:id,name'])
+            ->when($search, function ($q, $search) {
+                $q->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($search) . '%']);
+            })
+            ->when($typeOfAnimalId, function ($q) use ($typeOfAnimalId) {
+                $q->where('type_of_animal_id', $typeOfAnimalId);
+            })
+            ->when($petId && $isValidUuid, function ($q) use ($petId) {
+                $q->where('id', $petId);
+            });
+    }
 }
+
