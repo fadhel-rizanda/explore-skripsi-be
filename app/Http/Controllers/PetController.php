@@ -245,27 +245,25 @@ class PetController extends Controller
     public function destroy($id)
     {
         try {
-            DB::beginTransaction();
-
+            
             $pet = Pet::findOrFail($id);
+            
             $pet->delete();
 
-            DB::commit();
-
             return $this->sendSuccess('Pet deleted successfully');
+
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            DB::rollBack();
-
-            return $this->sendError('Pet not found', 404);
-        } catch (\Exception $e) {
-            DB::rollBack();
-
-            \Log::error('Error deleting pet', ['error' => $e->getMessage()]);
             
-            return $this->sendError('Error deleting post.');
+            return $this->sendError('Pet not found', 404);
+
+        } catch (\Exception $e) {
+            
+            \Log::error("Error deleting pet ID {$id}: " . $e->getMessage());
+
+            // Pesan error umum ke user (jangan tampilkan raw error SQL)
+            return $this->sendError('Internal server error', 500);
         }
     }
-
     /**
      * Get list pet for monitor page.
      */
