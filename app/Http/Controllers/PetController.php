@@ -240,6 +240,33 @@ class PetController extends Controller
     }
 
     /**
+     * Remove the specified pet from storage.
+     */
+    public function destroy($id)
+    {
+        try {
+            DB::beginTransaction();
+
+            $pet = Pet::findOrFail($id);
+            $pet->delete();
+
+            DB::commit();
+
+            return $this->sendSuccess('Pet deleted successfully');
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            DB::rollBack();
+
+            return $this->sendError('Pet not found', 404);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            \Log::error('Error deleting pet', ['error' => $e->getMessage()]);
+            
+            return $this->sendError('Error deleting post.');
+        }
+    }
+
+    /**
      * Get list pet for monitor page.
      */
     private function monitor(GetAllRequest $request)
