@@ -240,6 +240,29 @@ class PetController extends Controller
     }
 
     /**
+     * Remove the specified pet from storage.
+     */
+    public function destroy($id)
+    {
+         try {
+            $pet = Pet::findOrFail($id);
+
+            $user = auth('api')->user();
+            if (!$user->hasRole('admin') && $pet->user_id !== $user->id) {
+                return $this->sendError('You are not authorized to delete this pet.', 403);
+            }
+
+            $pet->delete();
+
+            return $this->sendSuccess('Pet deleted successfully');
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return $this->sendError('Pet not found', 404);
+        } catch (\Exception $e) {
+            Log::error("Error deleting pet ID {$id}: " . $e->getMessage());
+            return $this->sendError('Internal server error', 500);
+        }
+    }
+    /**
      * Get list pet for monitor page.
      */
     private function monitor(GetAllRequest $request)
