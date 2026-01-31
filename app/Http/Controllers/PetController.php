@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\PetStatusEnum;
+use App\Enums\StatusTypeEnum;
 use App\Http\Requests\GetAllRequest;
 use App\Http\Requests\PetRequest;
 use App\Models\Pet;
@@ -117,7 +119,7 @@ class PetController extends Controller
     {
         try {
             $pet = DB::transaction(function () use ($request) {
-                $availableStatus = Status::where('name', 'available')->firstOrFail();
+                $availableStatus = Status::getCache(StatusTypeEnum::PET->value, PetStatusEnum::AVAILABLE->value);
 
                 $pet = Pet::create([
                     'user_id' => auth('api')->user()->id,

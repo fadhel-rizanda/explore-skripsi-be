@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests;
 
-use App\Enums\ReportReferenceEnum;
+use App\Enums\ModelReferenceEnum;
 use App\Models\AllTag;
 use App\Models\Status;
 use Illuminate\Foundation\Http\FormRequest;
@@ -26,7 +26,7 @@ class CreateReportRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'reference_type' => ['required', Rule::in(ReportReferenceEnum::allValues())],
+            'reference_type' => ['required', Rule::in(ModelReferenceEnum::allValues())],
             'reference_id' => 'required|uuid',
             'notes' => 'required|string|max:2000',
             'status_id' => 'sometimes|uuid|exists:' . (new Status())->getTable() . ',id',

@@ -22,6 +22,18 @@ class MessageSent implements ShouldBroadcast
         $this->message->load('user');
     }
 
+    /**
+     * Get the channels the event should broadcast on.
+     *
+     * @return array<int, \Illuminate\Broadcasting\Channel>
+     */
+    public function broadcastOn(): array
+    {
+        return [
+            new PrivateChannel('chat.' . $this->message->chat_id),
+        ];
+    }
+
     public function broadcastAs(): string
     {
         return 'message.sent';
@@ -46,18 +58,6 @@ class MessageSent implements ShouldBroadcast
                 'file_size' => $this->message->attachment->file_size,
             ] : null,
             'created_at' => $this->message->created_at->toDateTimeString(),
-        ];
-    }
-
-    /**
-     * Get the channels the event should broadcast on.
-     *
-     * @return array<int, \Illuminate\Broadcasting\Channel>
-     */
-    public function broadcastOn(): array
-    {
-        return [
-            new PrivateChannel('chat.' . $this->message->chat_id),
         ];
     }
 }

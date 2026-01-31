@@ -2,8 +2,10 @@
 
 namespace App\Http\Services;
 
-use App\Enums\ReportActionEnum;
-use App\Enums\ReportReferenceEnum;
+use App\Enums\ActionEnum;
+use App\Enums\ModelReferenceEnum;
+use App\Enums\ReportStatusEnum;
+use App\Enums\StatusTypeEnum;
 use App\Models\Report;
 use App\Models\Status;
 use App\Notifications\ReportActionNotification;
@@ -20,9 +22,9 @@ class ModerationService
     public function execute(
         Model $entity,
         bool $isActive,
-        ReportReferenceEnum $referenceType,
-        ReportActionEnum $action,
-        array $recipients,
+        ModelReferenceEnum $referenceType,
+        ActionEnum $action,
+        array $recipientIds,
         string $moderatorId,
         ?string $reportId = null,
         ?string $notes = null
@@ -32,12 +34,12 @@ class ModerationService
             $isActive,
             $referenceType,
             $action,
-            $recipients,
+            $recipientIds,
             $reportId,
             $notes,
             $moderatorId
         ) {
-            $reportStatus = Status::report('resolved');
+            $reportStatus = Status::getCache(StatusTypeEnum::REPORT->value, ReportStatusEnum::RESOLVED->value);
 
             $report = null;
 
@@ -65,7 +67,7 @@ class ModerationService
                 isActive: $isActive,
                 referenceType: $referenceType,
                 action: $action,
-                recipients: $recipients,
+                recipientIds: $recipientIds,
                 report: $report
             );
         });
@@ -74,9 +76,9 @@ class ModerationService
     private function notify(
         Model $entity,
         bool $isActive,
-        ReportReferenceEnum $referenceType,
-        ReportActionEnum $action,
-        array $recipients,
+        ModelReferenceEnum $referenceType,
+        ActionEnum $action,
+        array $recipientIds,
         Report $report
     ): void {
         $title = $isActive
@@ -89,23 +91,19 @@ class ModerationService
 
         $message .= Str::limit($report->notes, 100);
 
-        foreach ($recipients as $user) {
-            $this->notificationService->create([
-                'title' => $title,
-                'message' => $message,
-                'user_id' => $user->id,
-                'reference_type' => $referenceType->value,
-                'reference_id' => $entity->id,
-            ]);
-
-            $user->notify(
-                new ReportActionNotification(
-                    action: $action->value,
-                    entityName: $entity->name ?? $entity->title ?? $entity->email ?? 'your ' . strtolower($referenceType->value),
-                    entityType: $referenceType->value,
-                    notes: $message
-                )
-            );
-        }
+        $this->notificationService->createBulk(
+            userIds: $recipientIds,
+            title: $title,
+            message: $message,
+            referenceType: $referenceType->value,
+            referenceId: $entity->id,
+        )->broadcast()->notifyUsers(
+            new ReportActionNotification(
+                action: $action->value,
+                entityName: $entity->name ?? $entity->title ?? $entity->email ?? 'your ' . strtolower($referenceType->value),
+                entityType: $referenceType->value,
+                notes: $message
+            )
+        );
     }
 }

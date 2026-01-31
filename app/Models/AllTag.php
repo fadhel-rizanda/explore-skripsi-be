@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 
 class AllTag extends Model
 {
@@ -30,4 +31,16 @@ class AllTag extends Model
         'name',
         'type',
     ];
+
+    public static function getCache(string $type, string $name): self
+    {
+        return Cache::remember(
+            "tag:{$type}:{$name}",
+            now()->addHours(6),
+            fn () => static::where([
+                'name' => $name,
+                'type' => $type,
+            ])->firstOrFail()
+        );
+    }
 }
