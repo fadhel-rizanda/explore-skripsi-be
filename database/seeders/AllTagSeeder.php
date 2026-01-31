@@ -43,6 +43,13 @@ class AllTagSeeder extends Seeder
             ['name' => 'Protective', 'type' => 'personality'],
             ['name' => 'Curious', 'type' => 'personality'],
             ['name' => 'Trainable', 'type' => 'personality'],
+
+            ['name' => 'Submitted', 'type' => 'adoption.stage'],
+            ['name' => 'Requirement', 'type' => 'adoption.stage'],
+            ['name' => 'Meet & Greet', 'type' => 'adoption.stage'],
+            ['name' => 'Handover', 'type' => 'adoption.stage'],
+            ['name' => 'Completed', 'type' => 'adoption.stage'],
+            ['name' => 'Rejected', 'type' => 'adoption.stage'],
         ];
 
         foreach ($tags as $tag) {

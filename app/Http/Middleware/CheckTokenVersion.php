@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Traits\ResponseAPI;
 use Closure;
 use Illuminate\Http\Request;
+use Spatie\Permission\Exceptions\UnauthorizedException;
 use Symfony\Component\HttpFoundation\Response;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
@@ -29,7 +30,7 @@ class CheckTokenVersion
             $user = auth('api')->user();
 
             if (! $user) {
-                return $this->sendError('Unauthorized', 401);
+                throw UnauthorizedException::notLoggedIn();
             }
 
             if (! $user->is_active) {

@@ -24,6 +24,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'community.admin' => \App\Http\Middleware\CommunityAdmin::class,
             'post.owner' => \App\Http\Middleware\PostOwner::class,
             'comment.owner' => \App\Http\Middleware\CommentOwner::class,
+            'adoption.owner' => \App\Http\Middleware\AdoptionOwner::class,
+            'adoption.stage' => \App\Http\Middleware\AdoptionStage::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
