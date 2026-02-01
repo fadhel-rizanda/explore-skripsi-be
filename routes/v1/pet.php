@@ -17,7 +17,8 @@ Route::prefix('pets')->group(function () {
             Route::delete('/{id}', [PetController::class, 'destroy']);
         });
         Route::post('/{pet}/adopt', [AdoptionController::class, 'adopt'])->middleware(['role:' . RoleEnum::ADOPTER->value . '|' . RoleEnum::ADMIN->value]);
-        Route::post('/{pet}/adopt/{adoption}/reject', [AdoptionController::class, 'reject']);
+        Route::post('/{pet}/adopt/{adoption}/reject', [AdoptionController::class, 'reject'])->middleware(['adoption.access:' . RoleEnum::PROVIDER->value]);
+        Route::post('/{pet}/adopt/{adoption}/cancel', [AdoptionController::class, 'cancel'])->middleware(['adoption.access:' . RoleEnum::ADOPTER->value]);
 
         Route::middleware(['role:' . RoleEnum::ADMIN->value])->group(function () {
             Route::post('/{pet}/takedown', [ModerationController::class, 'takeDownPet']);

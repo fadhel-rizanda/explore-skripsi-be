@@ -10,4 +10,5 @@ enum AdoptionStageEnum: string
     case HANDOVER = 'Handover';
     case COMPLETED = 'Completed';
     case REJECTED = 'Rejected';
+    case CANCELLED = 'Cancelled';
 }

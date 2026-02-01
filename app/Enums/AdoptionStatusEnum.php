@@ -9,4 +9,5 @@ enum AdoptionStatusEnum: string
     case IN_PROGRESS = 'In Progress';
     case COMPLETED = 'Completed';
     case REJECTED = 'Rejected';
+    case CANCELLED = 'Cancelled';
 }

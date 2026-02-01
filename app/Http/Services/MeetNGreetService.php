@@ -101,7 +101,7 @@ class MeetNGreetService
             $adoption->status->name !== AdoptionStatusEnum::NEED_AN_ACTION->value
             || $meetNGreet->status->name !== AdoptionStatusEnum::IN_PROGRESS->value
         ) {
-            throw new \Exception('Adoption is not in a valid state to approve Meet and Greet.' . $adoption->status->name . '-' . $meetNGreet->status->name);
+            throw new \Exception('Adoption is not in a valid state to approve Meet and Greet.');
         }
 
         $statusId = Status::getCache(

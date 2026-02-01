@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\AdoptionStageEnum;
 use App\Enums\AdoptionStatusEnum;
 use App\Enums\ModelReferenceEnum;
+use App\Enums\PetStatusEnum;
 use App\Enums\RoleEnum;
 use App\Enums\StatusTypeEnum;
 use App\Events\AdoptionUpdated;
@@ -265,7 +266,7 @@ class HandoverController extends Controller
                 $adoption->pet()->update([
                     'status_id' => Status::getCache(
                         StatusTypeEnum::PET->value,
-                        'Adopted'
+                        PetStatusEnum::ADOPTED->value
                     )->id,
                 ]);
             }

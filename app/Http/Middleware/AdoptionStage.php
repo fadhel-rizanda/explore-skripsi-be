@@ -41,6 +41,7 @@ class AdoptionStage
             [
                 AdoptionStatusEnum::COMPLETED->value,
                 AdoptionStatusEnum::REJECTED->value,
+                AdoptionStatusEnum::CANCELLED->value,
             ],
             true
         )) {
