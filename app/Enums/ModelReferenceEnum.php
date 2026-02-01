@@ -2,13 +2,16 @@
 
 namespace App\Enums;
 
-enum ReportReferenceEnum: string
+enum ModelReferenceEnum: string
 {
     case USER = 'user';
     case POST = 'post';
     case COMMUNITY = 'community';
     case PET = 'pet';
     case ADOPTION = 'adoption';
+    case ADOPTION_HANDOVER = 'adoption.handover';
+    case ADOPTION_MEETNGREET = 'adoption.meetngreet';
+    case ADOPTION_REQUIREMENT = 'adoption.requirement';
     case REPORT = 'report';
 
     public static function allValues(): array

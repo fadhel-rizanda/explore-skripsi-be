@@ -15,15 +15,22 @@ class AllStatusSeeder extends Seeder
     {
         $statuses = [
             // Pet statuses
-            ['name' => 'available', 'type' => 'pet'],
-            ['name' => 'adopted', 'type' => 'pet'],
-            ['name' => 'pending', 'type' => 'pet'],
-            ['name' => 'unavailable', 'type' => 'pet'],
+            ['name' => 'Available', 'type' => 'pet'],
+            ['name' => 'Adopted', 'type' => 'pet'],
+            ['name' => 'Pending', 'type' => 'pet'],
+            ['name' => 'Not Available', 'type' => 'pet'],
 
-            ['name' => 'active', 'type' => 'report'], // report baru
-            ['name' => 'resolved', 'type' => 'report'], // report sudah ditangani
-            ['name' => 'closed', 'type' => 'report'], // report tidak memenuhi syarat
-            ['name' => 'in_progress', 'type' => 'report'], // report sedang ditangani
+            ['name' => 'Active', 'type' => 'report'], // report baru
+            ['name' => 'Resolved', 'type' => 'report'], // report sudah ditangani
+            ['name' => 'Closed', 'type' => 'report'], // report tidak memenuhi syarat
+            ['name' => 'In Progress', 'type' => 'report'],
+
+            ['name' => 'Pending', 'type' => 'adoption'],
+            ['name' => 'Need an Action', 'type' => 'adoption'],
+            ['name' => 'In Progress', 'type' => 'adoption'],
+            ['name' => 'Completed', 'type' => 'adoption'],
+            ['name' => 'Rejected', 'type' => 'adoption'],
+            ['name' => 'Cancelled', 'type' => 'adoption'],
         ];
 
         // Fetch all existing status pairs in a single query

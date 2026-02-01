@@ -10,12 +10,9 @@ class NotificationController extends Controller
 {
     use ResponseAPI;
 
-    protected NotificationService $notificationService;
-
-    public function __construct(NotificationService $notificationService)
-    {
-        $this->notificationService = $notificationService;
-    }
+    public function __construct(
+        private NotificationService $notificationService
+    ) {}
 
     public function getNotifications(Request $request)
     {

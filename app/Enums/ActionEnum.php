@@ -2,7 +2,7 @@
 
 namespace App\Enums;
 
-enum ReportActionEnum: string
+enum ActionEnum: string
 {
     case DEACTIVATED = 'deactivated';
     case ACTIVATED = 'activated';
