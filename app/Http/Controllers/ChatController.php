@@ -68,6 +68,7 @@ class ChatController extends Controller
         }
     }
 
+    // TODO: tambahin notif
     public function createChat(CreateChatRequest $request)
     {
         $currentUser = auth('api')->user();

@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\ReportReferenceEnum;
+use App\Enums\ModelReferenceEnum;
+use App\Enums\ReportStatusEnum;
+use App\Enums\StatusTypeEnum;
 use App\Http\Requests\CreateReportRequest;
 use App\Http\Requests\GetAllRequest;
 use App\Http\Resources\ReportResource;
-use App\Http\Services\NotificationService;
 use App\Models\Report;
 use App\Models\Status;
 use App\Traits\ResponseAPI;
@@ -15,13 +16,6 @@ use Illuminate\Support\Facades\DB;
 class ReportController extends Controller
 {
     use ResponseAPI;
-
-    protected NotificationService $notificationService;
-
-    public function __construct(NotificationService $notificationService)
-    {
-        $this->notificationService = $notificationService;
-    }
 
     public function listReports(GetAllRequest $request)
     {
@@ -63,7 +57,7 @@ class ReportController extends Controller
     {
         try {
             DB::beginTransaction();
-            $status = Status::report('active');
+            $status = Status::getCache(StatusTypeEnum::REPORT->value, ReportStatusEnum::ACTIVE->value);
 
             $report = Report::create([
                 'reference_type' => $request->input('reference_type'),
@@ -125,7 +119,7 @@ class ReportController extends Controller
             $sortBy = 'created_at';
         }
 
-        if ($referenceType && ! in_array($referenceType, ReportReferenceEnum::allValues())) {
+        if ($referenceType && ! in_array($referenceType, ModelReferenceEnum::allValues())) {
             $referenceType = null;
         }
 

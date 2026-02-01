@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Traits\ResponseAPI;
 use Closure;
 use Illuminate\Http\Request;
+use Spatie\Permission\Exceptions\UnauthorizedException;
 use Symfony\Component\HttpFoundation\Response;
 
 class CommentOwner
@@ -23,7 +24,11 @@ class CommentOwner
             $user = auth('api')->user();
 
             if (! $user) {
-                return $this->sendError('Unauthorized', 401);
+                throw UnauthorizedException::notLoggedIn();
+            }
+
+            if ($user->hasRole('admin')) {
+                return $next($request);
             }
 
             if ($comment->created_by !== $user->id) {

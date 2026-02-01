@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\ReportActionEnum;
-use App\Enums\ReportReferenceEnum;
+use App\Enums\ActionEnum;
+use App\Enums\ModelReferenceEnum;
 use App\Http\Requests\ModerationActionRequest;
 use App\Http\Services\ModerationService;
 use App\Models\Community;
@@ -25,9 +25,9 @@ class ModerationController extends Controller
         $this->moderationService->execute(
             entity: $user,
             isActive: false,
-            referenceType: ReportReferenceEnum::USER,
-            action: ReportActionEnum::DEACTIVATED,
-            recipients: [$user],
+            referenceType: ModelReferenceEnum::USER,
+            action: ActionEnum::DEACTIVATED,
+            recipientIds: [$user->id],
             moderatorId: auth('api')->id(),
             reportId: $request->report_id,
             notes: $request->notes,
@@ -41,9 +41,9 @@ class ModerationController extends Controller
         $this->moderationService->execute(
             entity: $user,
             isActive: true,
-            referenceType: ReportReferenceEnum::USER,
-            action: ReportActionEnum::ACTIVATED,
-            recipients: [$user],
+            referenceType: ModelReferenceEnum::USER,
+            action: ActionEnum::ACTIVATED,
+            recipientIds: [$user->id],
             moderatorId: auth('api')->id(),
             reportId: $request->report_id,
             notes: $request->notes
@@ -63,9 +63,9 @@ class ModerationController extends Controller
         $this->moderationService->execute(
             entity: $post,
             isActive: false,
-            referenceType: ReportReferenceEnum::POST,
-            action: ReportActionEnum::TAKEDOWN,
-            recipients: [$owner],
+            referenceType: ModelReferenceEnum::POST,
+            action: ActionEnum::TAKEDOWN,
+            recipientIds: [$owner->id],
             moderatorId: auth('api')->id(),
             reportId: $request->report_id,
             notes: $request->notes
@@ -85,9 +85,9 @@ class ModerationController extends Controller
         $this->moderationService->execute(
             entity: $post,
             isActive: true,
-            referenceType: ReportReferenceEnum::POST,
-            action: ReportActionEnum::RESTORED,
-            recipients: [$owner],
+            referenceType: ModelReferenceEnum::POST,
+            action: ActionEnum::RESTORED,
+            recipientIds: [$owner->id],
             moderatorId: auth('api')->id(),
             reportId: $request->report_id,
             notes: $request->notes
@@ -98,7 +98,7 @@ class ModerationController extends Controller
 
     public function takeDownCommunity(ModerationActionRequest $request, Community $community)
     {
-        $recipients = $community->getCommunityRecipients();
+        $recipients = collect($community->getCommunityRecipients())->pluck('id')->all();
 
         if (empty($recipients)) {
             return $this->sendError('Community owners not found.');
@@ -107,9 +107,9 @@ class ModerationController extends Controller
         $this->moderationService->execute(
             entity: $community,
             isActive: false,
-            referenceType: ReportReferenceEnum::COMMUNITY,
-            action: ReportActionEnum::TAKEDOWN,
-            recipients: $recipients,
+            referenceType: ModelReferenceEnum::COMMUNITY,
+            action: ActionEnum::TAKEDOWN,
+            recipientIds: $recipients,
             moderatorId: auth('api')->id(),
             reportId: $request->report_id,
             notes: $request->notes
@@ -120,7 +120,7 @@ class ModerationController extends Controller
 
     public function restoreCommunity(ModerationActionRequest $request, Community $community)
     {
-        $recipients = $community->getCommunityRecipients();
+        $recipients = collect($community->getCommunityRecipients())->pluck('id')->all();
 
         if (empty($recipients)) {
             return $this->sendError('Community owners not found.');
@@ -129,9 +129,9 @@ class ModerationController extends Controller
         $this->moderationService->execute(
             entity: $community,
             isActive: true,
-            referenceType: ReportReferenceEnum::COMMUNITY,
-            action: ReportActionEnum::RESTORED,
-            recipients: $recipients,
+            referenceType: ModelReferenceEnum::COMMUNITY,
+            action: ActionEnum::RESTORED,
+            recipientIds: $recipients,
             moderatorId: auth('api')->id(),
             reportId: $request->report_id,
             notes: $request->notes
@@ -151,9 +151,9 @@ class ModerationController extends Controller
         $this->moderationService->execute(
             entity: $pet,
             isActive: false,
-            referenceType: ReportReferenceEnum::PET,
-            action: ReportActionEnum::TAKEDOWN,
-            recipients: [$owner],
+            referenceType: ModelReferenceEnum::PET,
+            action: ActionEnum::TAKEDOWN,
+            recipientIds: [$owner->id],
             moderatorId: auth('api')->id(),
             reportId: $request->report_id,
             notes: $request->notes
@@ -173,9 +173,9 @@ class ModerationController extends Controller
         $this->moderationService->execute(
             entity: $pet,
             isActive: true,
-            referenceType: ReportReferenceEnum::PET,
-            action: ReportActionEnum::RESTORED,
-            recipients: [$owner],
+            referenceType: ModelReferenceEnum::PET,
+            action: ActionEnum::RESTORED,
+            recipientIds: [$owner->id],
             moderatorId: auth('api')->id(),
             reportId: $request->report_id,
             notes: $request->notes
