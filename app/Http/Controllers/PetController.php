@@ -272,20 +272,18 @@ class PetController extends Controller
         $typeOfAnimalId = $request->query('type_of_animal_id');
         $age = $request->query('age');
         $tagPersonalityId = $request->query('tag_personality_id');
-        $petId = $request->query('pet_id');
 
         $isAdmin = auth('api')->user()?->hasRole('admin') ?? false;
 
-        // Validasi UUID manual untuk pet_id
-        $isValidUuid = true;
-        if ($petId) {
-            $isValidUuid = preg_match('/^[0-9a-fA-F-]{36}$/', $petId);
-        }
-
         return Pet::with(['typeOfAnimal:id,name', 'profilePicture:id,filename,mime_type,public_url,path'])
             ->where('is_active', true)
-            ->when($search, function ($q, $search) {
-                $q->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($search) . '%']);
+            ->when($search, function ($q) use ($search, $isAdmin) {
+                $q->where(function ($query) use ($search, $isAdmin) {
+                    $query->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($search) . '%']);
+                    if ($isAdmin && preg_match('/^[0-9a-fA-F-]{36}$/', $search)) {
+                        $query->orWhere('id', $search);
+                    }
+                });
             })
             ->when($typeOfAnimalId, function ($q) use ($typeOfAnimalId) {
                 $q->where('type_of_animal_id', $typeOfAnimalId);
@@ -309,10 +307,6 @@ class PetController extends Controller
                 $q->whereHas('personalityTags', function ($subQuery) use ($tagPersonalityId) {
                     $subQuery->where('tr_all_tag_pet_personality_record.all_tag_id', $tagPersonalityId);
                 });
-            })
-            // hanya admin yang bisa filter petId
-            ->when($isAdmin && $petId && $isValidUuid, function ($q) use ($petId) {
-                $q->where('id', $petId);
             });
     }
 }
