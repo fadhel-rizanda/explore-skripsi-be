@@ -310,7 +310,7 @@ class PetController extends Controller
             })
             ->when($tagPersonalityId, function ($q) use ($tagPersonalityId) {
                 $q->whereHas('personalityTags', function ($subQuery) use ($tagPersonalityId) {
-                    $subQuery->where('id', $tagPersonalityId);
+                    $subQuery->where('mt_all_tag.id', $tagPersonalityId);
                 });
             });
     }
