@@ -26,7 +26,7 @@ class PetController extends Controller
             $isAdmin = auth('api')->user()?->hasRole('admin') ?? false;
             
             $perPage = $request->query('per_page', 15);
-            $pets = $this->buildPetQuery($request)
+            $pets = $this->buildPetQuery($request, $isAdmin)
                 ->orderBy('created_at', 'desc')
                 ->paginate($perPage);
 
@@ -273,14 +273,12 @@ class PetController extends Controller
     /**
      * Build base pet query with common filters.
      */
-    private function buildPetQuery(GetAllRequest $request)
+    private function buildPetQuery(GetAllRequest $request, bool $isAdmin)
     {
         $search = $request->query('search');
         $typeOfAnimalId = $request->query('type_of_animal_id');
         $age = $request->query('age');
         $tagPersonalityId = $request->query('tag_personality_id');
-
-        $isAdmin = auth('api')->user()?->hasRole('admin') ?? false;
 
         return Pet::with('typeOfAnimal:id,name')->when(! $isAdmin, fn ($q) => $q->with('profilePicture:id,public_url'))
             ->when(! $isAdmin, fn ($q) => $q->where('is_active', true))
