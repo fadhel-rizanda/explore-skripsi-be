@@ -26,7 +26,7 @@ class PetController extends Controller
         try {
             $isAdmin = auth('api')->user()?->hasRole('admin') ?? false;
             
-            $perPage = $request->query('per_page', 15);
+            $perPage = min((int) $request->query('per_page', 15), 100);
             $pets = $this->buildPetQuery($request, $isAdmin)
                 ->orderBy('created_at', 'desc')
                 ->paginate($perPage);
