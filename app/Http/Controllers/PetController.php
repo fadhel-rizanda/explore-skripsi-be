@@ -12,6 +12,7 @@ use App\Models\Status;
 use App\Traits\ResponseAPI;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class PetController extends Controller
 {
@@ -285,7 +286,7 @@ class PetController extends Controller
             ->when($search, function ($q) use ($search, $isAdmin) {
                 $q->where(function ($query) use ($search, $isAdmin) {
                     $query->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($search) . '%']);
-                    if ($isAdmin && \Illuminate\Support\Str::isUuid($search)) {
+                    if ($isAdmin && Str::isUuid($search)) {
                         $query->orWhere('id', $search);
                     }
                 });
