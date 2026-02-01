@@ -279,7 +279,7 @@ class PetController extends Controller
         $isAdmin = auth('api')->user()?->hasRole('admin') ?? false;
 
         return Pet::with(['typeOfAnimal:id,name', 'profilePicture:id,filename,mime_type,public_url,path'])
-            ->where('is_active', true)
+            ->when(! $isAdmin, fn ($q) => $q->where('is_active', true))
             ->when($search, function ($q) use ($search, $isAdmin) {
                 $q->where(function ($query) use ($search, $isAdmin) {
                     $query->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($search) . '%']);
