@@ -22,14 +22,18 @@ class PetController extends Controller
     {
         try {
             $isAdmin = auth('api')->user()?->hasRole('admin') ?? false;
-            if ($isAdmin) {
-                return $this->monitor($request);
-            }
-
+            
             $perPage = $request->query('per_page', 15);
             $pets = $this->buildPetQuery($request)
                 ->orderBy('created_at', 'desc')
                 ->paginate($perPage);
+
+            if ($isAdmin) {
+                return $this->sendSuccessPagination(
+                    'Monitor pet list retrieved successfully',
+                    PetMonitorResource::collection($pets)
+                );
+            }
 
             $transformedData = $pets->getCollection()->map(function ($pet) {
                 $dateOfBirth = $pet->date_of_birth;
@@ -181,10 +185,10 @@ class PetController extends Controller
         try {
             $pet = Pet::with([
                 'typeOfAnimal:id,name',
-                'profilePictures:id',
-                'physiqueTags:id',
-                'personalityTags:id',
-                'additionalRecords', // ambil semua kolom attachment
+                'profilePictures',
+                'physiqueTags',
+                'personalityTags',
+                'additionalRecords',
             ])->findOrFail($id);
 
             $data = [
@@ -195,15 +199,32 @@ class PetController extends Controller
                 'gender' => $pet->gender,
                 'about' => $pet->about,
                 'breed' => $pet->breed,
-                'profile_picture_ids' => $pet->profilePictures->pluck('id')->all(),
+                'profile_pictures' => $pet->profilePictures->map(function($picture) {
+                    return [
+                        'id' => $picture->id,
+                        'public_url' => $picture->public_url,
+                    ];
+                }),
                 'special_needs' => $pet->special_needs,
-                'physique_ids' => $pet->physiqueTags->pluck('id')->all(),
-                'personality_ids' => $pet->personalityTags->pluck('id')->all(),
-                'additional_record_ids' => $pet->additionalRecords->pluck('id')->all(),
+                'physique_tags' => $pet->physiqueTags->map(function($tag) {
+                    return [
+                        'id' => $tag->id,
+                        'name' => $tag->name,
+                    ];
+                }),
+                'personality_tags' => $pet->personalityTags->map(function($tag) {
+                    return [
+                        'id' => $tag->id,
+                        'name' => $tag->name,
+                    ];
+                }),
                 'additional_records' => $pet->additionalRecords->map(function($record) {
                     return [
                         'id' => $record->id,
                         'public_url' => $record->public_url,
+                        'filename' => $record->filename,
+                        'mime_type' => $record->mime_type,
+                        'path' => $record->path,
                     ];
                 }),
             ];
@@ -245,30 +266,6 @@ class PetController extends Controller
             return $this->sendError('Internal server error', 500);
         }
     }
-    /**
-     * Get list pet for monitor page.
-     */
-    private function monitor(GetAllRequest $request)
-    {
-        try {
-            $perPage = min((int) $request->query('per_page', 15), 100);
-            $pets = $this->buildPetQuery($request)
-                ->orderBy('created_at', 'desc')
-                ->paginate($perPage);
-
-            return $this->sendSuccessPagination(
-                'Monitor pet list retrieved successfully',
-                PetMonitorResource::collection($pets)
-            );
-        } catch (\Exception $e) {
-            Log::error('Failed to retrieve monitor pet list: ' . $e->getMessage());
-            return $this->sendError(
-                config('app.debug') ? $e->getMessage() : 'Failed to retrieve monitor pet list',
-                500
-            );
-        }
-    }
-
     /**
      * Build base pet query with common filters.
      */
