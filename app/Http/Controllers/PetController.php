@@ -271,31 +271,6 @@ class PetController extends Controller
     }
 
     /**
-     * Get list pet for monitor page.
-     */
-    private function monitor(GetAllRequest $request)
-    {
-        try {
-            $perPage = min((int) $request->query('per_page', 15), 100);
-            $pets = $this->buildPetQuery($request)
-                ->orderBy('created_at', 'desc')
-                ->paginate($perPage);
-
-            return $this->sendSuccessPagination(
-                'Monitor pet list retrieved successfully',
-                PetMonitorResource::collection($pets)
-            );
-        } catch (\Exception $e) {
-            Log::error('Failed to retrieve monitor pet list: ' . $e->getMessage());
-
-            return $this->sendError(
-                config('app.debug') ? $e->getMessage() : 'Failed to retrieve monitor pet list',
-                500
-            );
-        }
-    }
-
-    /**
      * Build base pet query with common filters.
      */
     private function buildPetQuery(GetAllRequest $request)
