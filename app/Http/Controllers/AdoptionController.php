@@ -126,22 +126,53 @@ class AdoptionController extends Controller
 
     public function reject(Pet $pet, Adoption $adoption)
     {
+        return $this->terminateAdoption(
+            $pet,
+            $adoption,
+            AdoptionStatusEnum::REJECTED,
+            'rejected',
+        );
+    }
+
+    public function cancel(Pet $pet, Adoption $adoption)
+    {
+        return $this->terminateAdoption(
+            $pet,
+            $adoption,
+            AdoptionStatusEnum::CANCELLED,
+            'cancelled',
+        );
+    }
+
+    private function terminateAdoption(Pet $pet, Adoption $adoption, AdoptionStatusEnum $status, string $action)
+    {
         $user = auth('api')->user();
-        if (($adoption->stageTag->name === AdoptionStageEnum::HANDOVER->value ||
-            $adoption->status->name === AdoptionStatusEnum::COMPLETED->value ||
-            $adoption->status->name === AdoptionStatusEnum::REJECTED->value) &&
-            ! $user->hasRole(RoleEnum::ADMIN->value)
-        ) {
-            return $this->sendError('This adoption application cannot be rejected at its current stage.');
+
+        if ($adoption->pet_id !== $pet->id) {
+            return $this->sendError('The adoption application does not belong to this pet.', 400);
+        }
+
+        $restrictedStatuses = [
+            AdoptionStageEnum::HANDOVER->value,
+            AdoptionStatusEnum::COMPLETED->value,
+            AdoptionStatusEnum::REJECTED->value,
+            AdoptionStatusEnum::CANCELLED->value,
+        ];
+
+        $isRestricted = in_array($adoption->stageTag->name, $restrictedStatuses)
+            || in_array($adoption->status->name, $restrictedStatuses);
+
+        if ($isRestricted && ! $user->hasRole(RoleEnum::ADMIN->value)) {
+            return $this->sendError("This adoption application cannot be {$action} at its current stage.");
         }
 
         try {
             DB::beginTransaction();
 
             $adoption->update([
-                'status_id' => Status::getCache(StatusTypeEnum::ADOPTION->value, AdoptionStatusEnum::REJECTED->value)->id,
-                'stage_tag_id' => AllTag::getCache(TagTypeEnum::ADOPTION_STAGE->value, AdoptionStageEnum::REJECTED->value)->id,
-                'updated_by' => auth('api')->user()->id,
+                'status_id' => Status::getCache(StatusTypeEnum::ADOPTION->value, $status->value)->id,
+                'stage_tag_id' => AllTag::getCache(TagTypeEnum::ADOPTION_STAGE->value, $status->value)->id,
+                'updated_by' => $user->id,
                 'is_active' => false,
             ]);
 
@@ -154,28 +185,28 @@ class AdoptionController extends Controller
             $usersToNotify = [$adoption->adopter->id, $adoption->provider->id];
             $notification = $this->notificationService->createBulk(
                 userIds: $usersToNotify,
-                title: 'Adoption Application Rejected',
-                message: 'The adoption application for the pet: ' . ($adoption->pet->name ?? 'Unnamed Pet') . ' has been rejected.',
+                title: 'Adoption Application ' . ucfirst($action),
+                message: 'The adoption application for the pet: ' . ($adoption->pet->name ?? 'Unnamed Pet') . " has been {$action}.",
                 referenceType: ModelReferenceEnum::ADOPTION->value,
                 referenceId: $adoption->id,
             )->notifyUsers(
                 new AdoptionMailNotification(
-                    action: AdoptionStageEnum::REJECTED->value,
+                    action: $status->value,
                     adoption: $adoption,
-                    notes: 'The adoption application has been rejected.'
+                    notes: "The adoption application has been {$action}."
                 )
             )->getNotifications()->first();
             broadcast(new AdoptionUpdated($notification));
 
             return $this->sendSuccess(
-                'Adoption application rejected successfully.',
+                "Adoption application {$action} successfully.",
                 new AdoptionResource($adoption)
             );
         } catch (\Throwable $e) {
             DB::rollBack();
-            \Log::error('Error rejecting adoption application', ['error' => $e->getMessage()]);
+            \Log::error("Error {$action} adoption application", ['error' => $e->getMessage()]);
 
-            return $this->sendError('Error rejecting adoption application.');
+            return $this->sendError("Error {$action} adoption application.");
         }
     }
 
@@ -202,7 +233,7 @@ class AdoptionController extends Controller
             'status:id,name,color_code',
             'stageTag:id,name',
         ])
-            ->when(! $isAdmin, fn ($q) => $q->where('adopter_id', $userId))
+            ->when(! $isAdmin, fn ($q) => $q->where('adopter_id', $userId)->orWhereHas('pet', fn ($p) => $p->where('user_id', $userId)))
             ->when($search, function ($q) use ($search, $isAdmin) {
                 $q->where(function ($query) use ($search, $isAdmin) {
                     $query

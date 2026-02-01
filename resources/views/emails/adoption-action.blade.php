@@ -28,7 +28,7 @@
                             border:1px dashed #d1d5db;
                             color:#111827;
                         ">
-                            <p style="margin:0 0 8px;"><strong>Adoption ID:</strong> {{ $action }}</p>
+                            <p style="margin:0 0 8px;"><strong>Adoption ID:</strong> {{ $adoptionId }}</p>
                             <p style="margin:0 0 8px;"><strong>Action:</strong> {{ $action }}</p>
                             <p style="margin:0 0 8px;"><strong>Status:</strong> {{ $status }}</p>
                             <p style="margin:0 0 8px;"><strong>Pet:</strong> {{ $petId }} - {{ $petName }}</p>

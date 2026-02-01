@@ -50,6 +50,7 @@ class AllTagSeeder extends Seeder
             ['name' => 'Handover', 'type' => 'adoption.stage'],
             ['name' => 'Completed', 'type' => 'adoption.stage'],
             ['name' => 'Rejected', 'type' => 'adoption.stage'],
+            ['name' => 'Cancelled', 'type' => 'adoption.stage'],
         ];
 
         foreach ($tags as $tag) {

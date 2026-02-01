@@ -19,13 +19,13 @@ Route::group([
         Route::get('/{adoption}/requirements', [RequirementController::class, 'listRequirements']);
 
         Route::middleware(['adoption.stage:' . AdoptionStageEnum::REQUIREMENT->value])->group(function () {
-            Route::middleware(['role:' . RoleEnum::PROVIDER->value . '|' . RoleEnum::ADMIN->value])->group(function () {
+            Route::middleware(['adoption.access:' . RoleEnum::PROVIDER->value])->group(function () {
                 Route::post('/{adoption}/requirements', [RequirementController::class, 'setRequirements']);
                 Route::delete('/{adoption}/requirements/{requirement}', [RequirementController::class, 'deleteRequirement']);
                 Route::patch('/{adoption}/requirements/{requirement}/approve', [RequirementController::class, 'approveRequirement']);
                 Route::patch('/{adoption}/requirements/{requirement}/reject', [RequirementController::class, 'rejectRequirement']);
             });
-            Route::post('/{adoption}/requirements/{requirement}/fill', [RequirementController::class, 'fillRequirement'])->middleware(['role:' . RoleEnum::ADOPTER->value . '|' . RoleEnum::ADMIN->value]);
+            Route::post('/{adoption}/requirements/{requirement}/fill', [RequirementController::class, 'fillRequirement'])->middleware(['adoption.access:' . RoleEnum::ADOPTER->value]);
             Route::patch('/{adoption}/requirements/finalize', [RequirementController::class, 'finalizedRequirements']);
         });
 

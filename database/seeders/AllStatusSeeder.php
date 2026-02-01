@@ -30,6 +30,7 @@ class AllStatusSeeder extends Seeder
             ['name' => 'In Progress', 'type' => 'adoption'],
             ['name' => 'Completed', 'type' => 'adoption'],
             ['name' => 'Rejected', 'type' => 'adoption'],
+            ['name' => 'Cancelled', 'type' => 'adoption'],
         ];
 
         // Fetch all existing status pairs in a single query

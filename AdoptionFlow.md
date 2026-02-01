@@ -36,13 +36,13 @@
 
 ### Approve / Reject Requirement
 
-**PATCH**
-- `/requirements/approve`
-- `/requirements/reject`
+**PATCH** `/requirements/approve`
+**PATCH** `/requirements/reject`
+**PATCH** `/requirements/cancel`
 
 - `adoption.status_id` → need_action
 - `adoption.stage_id` → requirement
-- `requirements.status_id` → completed **OR** rejected
+- `requirements.status_id` → completed **OR** rejected **OR** cancelled
 
 ---
 
