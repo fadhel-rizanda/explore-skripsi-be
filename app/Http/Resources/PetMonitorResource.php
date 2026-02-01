@@ -12,7 +12,7 @@ class PetMonitorResource extends JsonResource
             'animal_id' => $this->id,
             'name' => $this->name,
             'breed' => $this->breed,
-            'tag' => $this->whenLoaded('typeOfAnimal', fn() => $this->typeOfAnimal?->name),
+            'tag' => $this->whenLoaded('typeOfAnimal', fn () => $this->typeOfAnimal?->name),
             'provider_id' => $this->user_id,
             'created_at' => $this->created_at,
         ];

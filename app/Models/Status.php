@@ -41,14 +41,14 @@ class Status extends Model
         return $this->hasMany(Pet::class, 'status_id');
     }
 
-    public static function report(string $name): self
+    public static function getCache(string $type, string $name): self
     {
         return Cache::remember(
-            "status:report:{$name}",
+            "status:{$type}:{$name}",
             now()->addHours(6),
             fn () => static::where([
                 'name' => $name,
-                'type' => 'report',
+                'type' => $type,
             ])->firstOrFail()
         );
     }

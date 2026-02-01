@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\PetStatusEnum;
+use App\Enums\StatusTypeEnum;
 use App\Http\Requests\GetAllRequest;
 use App\Http\Requests\PetRequest;
 use App\Http\Resources\PetMonitorResource;
@@ -84,7 +86,7 @@ class PetController extends Controller
     {
         try {
             $pet = DB::transaction(function () use ($request) {
-                $availableStatus = Status::where('name', 'available')->firstOrFail();
+                $availableStatus = Status::getCache(StatusTypeEnum::PET->value, PetStatusEnum::AVAILABLE->value);
 
                 $pet = Pet::create([
                     'user_id' => auth('api')->user()->id,
@@ -248,11 +250,11 @@ class PetController extends Controller
      */
     public function destroy($id)
     {
-         try {
+        try {
             $pet = Pet::findOrFail($id);
 
             $user = auth('api')->user();
-            if (!$user->hasRole('admin') && $pet->user_id !== $user->id) {
+            if (! $user->hasRole('admin') && $pet->user_id !== $user->id) {
                 return $this->sendError('You are not authorized to delete this pet.', 403);
             }
 
@@ -263,9 +265,36 @@ class PetController extends Controller
             return $this->sendError('Pet not found', 404);
         } catch (\Exception $e) {
             Log::error("Error deleting pet ID {$id}: " . $e->getMessage());
+
             return $this->sendError('Internal server error', 500);
         }
     }
+
+    /**
+     * Get list pet for monitor page.
+     */
+    private function monitor(GetAllRequest $request)
+    {
+        try {
+            $perPage = min((int) $request->query('per_page', 15), 100);
+            $pets = $this->buildPetQuery($request)
+                ->orderBy('created_at', 'desc')
+                ->paginate($perPage);
+
+            return $this->sendSuccessPagination(
+                'Monitor pet list retrieved successfully',
+                PetMonitorResource::collection($pets)
+            );
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve monitor pet list: ' . $e->getMessage());
+
+            return $this->sendError(
+                config('app.debug') ? $e->getMessage() : 'Failed to retrieve monitor pet list',
+                500
+            );
+        }
+    }
+
     /**
      * Build base pet query with common filters.
      */
@@ -313,4 +342,3 @@ class PetController extends Controller
             });
     }
 }
-
