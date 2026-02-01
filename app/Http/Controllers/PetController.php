@@ -187,10 +187,10 @@ class PetController extends Controller
         try {
             $pet = Pet::with([
                 'typeOfAnimal:id,name',
-                'profilePictures',
-                'physiqueTags',
-                'personalityTags',
-                'additionalRecords',
+                'profilePictures:id,public_url',
+                'physiqueTags:id,name',
+                'personalityTags:id,name',
+                'additionalRecords:id,public_url,filename,mime_type,path',
             ])->findOrFail($id);
 
             $data = [
