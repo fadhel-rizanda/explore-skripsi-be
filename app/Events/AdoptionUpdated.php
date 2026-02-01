@@ -9,7 +9,7 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class NotificationSent implements ShouldBroadcast
+class AdoptionUpdated implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
@@ -32,19 +32,20 @@ class NotificationSent implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('notification.' . $this->notification->user_id),
+            new PrivateChannel('adoption.' . $this->notification->reference_id),
         ];
     }
 
+    //    broadcastAs buat ngasih nama custom event pas di broadcast
     public function broadcastAs(): string
     {
-        return 'notification.sent';
+        return 'adoption.updated';
     }
 
     public function broadcastWith(): array
     {
         return [
-            'id' => $this->notification->id,
+            'adoption_id' => $this->notification->reference_id,
         ];
     }
 }
