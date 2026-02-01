@@ -29,10 +29,14 @@ class PetController extends Controller
             $perPage = $request->query('per_page', 15);
             $age = $request->query('age');
             $tagPersonalityId = $request->query('tag_personality_id');
+            $name = $request->query('name');
 
             $pets = $this->buildPetQuery($request)
                 ->where('is_active', true)
                 ->with(['profilePicture:id,filename,mime_type,public_url,path'])
+                ->when($name, function ($q) use ($name) {
+                    $q->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($name) . '%']);
+                })
                 ->when($age !== null, function ($q) use ($age) {
                     $now = now();
                     if ($age === 'baby') {
@@ -50,7 +54,7 @@ class PetController extends Controller
                 })
                 ->when($tagPersonalityId, function ($q) use ($tagPersonalityId) {
                     $q->whereHas('personalityTags', function ($subQuery) use ($tagPersonalityId) {
-                        $subQuery->where('mt_all_tag.id', $tagPersonalityId);
+                        $subQuery->where('tr_all_tag_pet_personality_record.all_tag_id', $tagPersonalityId);
                     });
                 })
                 ->orderBy('created_at', 'desc')
