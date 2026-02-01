@@ -27,36 +27,7 @@ class PetController extends Controller
             }
 
             $perPage = $request->query('per_page', 15);
-            $age = $request->query('age');
-            $tagPersonalityId = $request->query('tag_personality_id');
-            $name = $request->query('name');
-
             $pets = $this->buildPetQuery($request)
-                ->where('is_active', true)
-                ->with(['profilePicture:id,filename,mime_type,public_url,path'])
-                ->when($name, function ($q) use ($name) {
-                    $q->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($name) . '%']);
-                })
-                ->when($age !== null, function ($q) use ($age) {
-                    $now = now();
-                    if ($age === 'baby') {
-                        $q->where('date_of_birth', '>', $now->copy()->subMonths(6))
-                            ->where('date_of_birth', '<=', $now);
-                    } elseif ($age === 'young') {
-                        $q->where('date_of_birth', '<=', $now->copy()->subMonths(6))
-                            ->where('date_of_birth', '>', $now->copy()->subYear());
-                    } elseif ($age === 'adult') {
-                        $q->where('date_of_birth', '<=', $now->copy()->subYear())
-                            ->where('date_of_birth', '>', $now->copy()->subYears(7));
-                    } elseif ($age === 'senior') {
-                        $q->where('date_of_birth', '<=', $now->copy()->subYears(7));
-                    }
-                })
-                ->when($tagPersonalityId, function ($q) use ($tagPersonalityId) {
-                    $q->whereHas('personalityTags', function ($subQuery) use ($tagPersonalityId) {
-                        $subQuery->where('tr_all_tag_pet_personality_record.all_tag_id', $tagPersonalityId);
-                    });
-                })
                 ->orderBy('created_at', 'desc')
                 ->paginate($perPage);
 
@@ -213,6 +184,7 @@ class PetController extends Controller
                 'profilePictures:id',
                 'physiqueTags:id',
                 'personalityTags:id',
+                'additionalRecords:id',
             ])->findOrFail($id);
 
             $data = [
@@ -227,6 +199,7 @@ class PetController extends Controller
                 'special_needs' => $pet->special_needs,
                 'physique_ids' => $pet->physiqueTags->pluck('id')->all(),
                 'personality_ids' => $pet->personalityTags->pluck('id')->all(),
+                'additional_record_ids' => $pet->additionalRecords->pluck('id')->all(),
             ];
 
             return $this->sendSuccess('Pet detail retrieved successfully', $data);
@@ -297,7 +270,11 @@ class PetController extends Controller
     {
         $search = $request->query('search');
         $typeOfAnimalId = $request->query('type_of_animal_id');
+        $age = $request->query('age');
+        $tagPersonalityId = $request->query('tag_personality_id');
         $petId = $request->query('pet_id');
+
+        $isAdmin = auth('api')->user()?->hasRole('admin') ?? false;
 
         // Validasi UUID manual untuk pet_id
         $isValidUuid = true;
@@ -305,14 +282,36 @@ class PetController extends Controller
             $isValidUuid = preg_match('/^[0-9a-fA-F-]{36}$/', $petId);
         }
 
-        return Pet::with(['typeOfAnimal:id,name'])
+        return Pet::with(['typeOfAnimal:id,name', 'profilePicture:id,filename,mime_type,public_url,path'])
+            ->where('is_active', true)
             ->when($search, function ($q, $search) {
                 $q->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($search) . '%']);
             })
             ->when($typeOfAnimalId, function ($q) use ($typeOfAnimalId) {
                 $q->where('type_of_animal_id', $typeOfAnimalId);
             })
-            ->when($petId && $isValidUuid, function ($q) use ($petId) {
+            ->when($age !== null, function ($q) use ($age) {
+                $now = now();
+                if ($age === 'baby') {
+                    $q->where('date_of_birth', '>', $now->copy()->subMonths(6))
+                        ->where('date_of_birth', '<=', $now);
+                } elseif ($age === 'young') {
+                    $q->where('date_of_birth', '<=', $now->copy()->subMonths(6))
+                        ->where('date_of_birth', '>', $now->copy()->subYear());
+                } elseif ($age === 'adult') {
+                    $q->where('date_of_birth', '<=', $now->copy()->subYear())
+                        ->where('date_of_birth', '>', $now->copy()->subYears(7));
+                } elseif ($age === 'senior') {
+                    $q->where('date_of_birth', '<=', $now->copy()->subYears(7));
+                }
+            })
+            ->when($tagPersonalityId, function ($q) use ($tagPersonalityId) {
+                $q->whereHas('personalityTags', function ($subQuery) use ($tagPersonalityId) {
+                    $subQuery->where('tr_all_tag_pet_personality_record.all_tag_id', $tagPersonalityId);
+                });
+            })
+            // hanya admin yang bisa filter petId
+            ->when($isAdmin && $petId && $isValidUuid, function ($q) use ($petId) {
                 $q->where('id', $petId);
             });
     }
