@@ -184,7 +184,7 @@ class PetController extends Controller
                 'profilePictures:id',
                 'physiqueTags:id',
                 'personalityTags:id',
-                'additionalRecords:id',
+                'additionalRecords', // ambil semua kolom attachment
             ])->findOrFail($id);
 
             $data = [
@@ -200,6 +200,12 @@ class PetController extends Controller
                 'physique_ids' => $pet->physiqueTags->pluck('id')->all(),
                 'personality_ids' => $pet->personalityTags->pluck('id')->all(),
                 'additional_record_ids' => $pet->additionalRecords->pluck('id')->all(),
+                'additional_records' => $pet->additionalRecords->map(function($record) {
+                    return [
+                        'id' => $record->id,
+                        'public_url' => $record->public_url,
+                    ];
+                }),
             ];
 
             return $this->sendSuccess('Pet detail retrieved successfully', $data);
