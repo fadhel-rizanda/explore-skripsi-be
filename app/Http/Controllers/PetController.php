@@ -280,7 +280,7 @@ class PetController extends Controller
             ->when($search, function ($q) use ($search, $isAdmin) {
                 $q->where(function ($query) use ($search, $isAdmin) {
                     $query->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($search) . '%']);
-                    if ($isAdmin && preg_match('/^[0-9a-fA-F-]{36}$/', $search)) {
+                    if ($isAdmin && \Illuminate\Support\Str::isUuid($search)) {
                         $query->orWhere('id', $search);
                     }
                 });
@@ -305,7 +305,7 @@ class PetController extends Controller
             })
             ->when($tagPersonalityId, function ($q) use ($tagPersonalityId) {
                 $q->whereHas('personalityTags', function ($subQuery) use ($tagPersonalityId) {
-                    $subQuery->where('tr_all_tag_pet_personality_record.all_tag_id', $tagPersonalityId);
+                    $subQuery->where('id', $tagPersonalityId);
                 });
             });
     }
