@@ -91,7 +91,9 @@ class CommunityController extends Controller
                 $community->tags()->sync($request->tag_ids);
             }
             if ($request->has('admin_ids')) {
-                $community->admins()->sync($request->admin_ids);
+                $adminIds = array_merge($request->admin_ids, [auth('api')->id()]);
+                $community->admins()->sync($adminIds);
+                $community->members()->syncWithoutDetaching($adminIds);
             }
 
             DB::commit();
@@ -137,7 +139,9 @@ class CommunityController extends Controller
                 $community->tags()->sync($request->tag_ids);
             }
             if ($request->has('admin_ids')) {
-                $community->admins()->sync($request->admin_ids);
+                $adminIds = array_merge($request->admin_ids, [auth('api')->id()]);
+                $community->admins()->sync($adminIds);
+                $community->members()->syncWithoutDetaching($adminIds);
             }
 
             DB::commit();
@@ -230,4 +234,41 @@ class CommunityController extends Controller
 
         return $communities;
     }
+
+    public function followCommunity(Community $community)
+    {
+        try {
+            $user = auth('api')->user();
+
+            $isAdmin = $community->admins()
+                ->where('user_id', $user->id)
+                ->exists();
+
+            if ($isAdmin) {
+                return $this->sendError(
+                    'Admin cannot unfollow the community. Remove admin role first.',
+                    403
+                );
+            }
+
+            $isMember = $community->members()
+                ->where('user_id', $user->id)
+                ->exists();
+
+            if ($isMember) {
+                $community->members()->detach($user->id);
+                return $this->sendSuccess('Community unfollowed successfully.');
+            }
+
+            $community->members()->attach($user->id);
+            return $this->sendSuccess('Community followed successfully.');
+        } catch (\Throwable $e) {
+            \Log::error('Error follow/unfollow community', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return $this->sendError('Error toggling follow for community.');
+        }
+    }
+
 }

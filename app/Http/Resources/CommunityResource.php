@@ -24,7 +24,7 @@ class CommunityResource extends JsonResource
             'members_count' => $this->members_count,
             'address' => $this->address,
             'tags' => $this->whenLoaded('tags', fn () => $this->tags->pluck('id')),
-            'admins' => $this->whenLoaded('admins', fn () => $this->admins->pluck('user_id')),
+            'admins' => $this->whenLoaded('admins', fn () => $this->admins->pluck('id')),
             'created_by_id' => $this->created_by,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,

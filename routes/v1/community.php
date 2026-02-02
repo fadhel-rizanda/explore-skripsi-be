@@ -10,6 +10,7 @@ Route::prefix('communities')->group(function () {
 
     Route::middleware(['auth:api', 'check.token.version'])->group(function () {
         Route::post('/', [CommunityController::class, 'createCommunity']);
+        Route::post('/{community}/follow', [CommunityController::class, 'followCommunity']);
 
         Route::middleware(['community.admin'])->group(function () {
             Route::put('/{community}', [CommunityController::class, 'updateCommunity']);
