@@ -162,7 +162,7 @@ class User extends Authenticatable implements JWTSubject
             return $this->adoptionsAsProvider();
         }
 
-        return $this->hasMany(Adoption::class)->whereRaw('1 = 0');
+        return Adoption::query()->whereRaw('1 = 0');
     }
 
     public function communities(): BelongsToMany
