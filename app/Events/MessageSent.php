@@ -2,6 +2,7 @@
 
 namespace App\Events;
 
+use App\Enums\ChannelPrefixEnum;
 use App\Models\Message;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
@@ -30,13 +31,8 @@ class MessageSent implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('chat.' . $this->message->chat_id),
+            new PrivateChannel(ChannelPrefixEnum::CHAT->value . $this->message->chat_id),
         ];
-    }
-
-    public function broadcastAs(): string
-    {
-        return 'message.sent';
     }
 
     public function broadcastWith(): array
