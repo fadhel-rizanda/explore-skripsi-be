@@ -12,6 +12,7 @@ use App\Models\Status;
 use App\Traits\ResponseAPI;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class PetController extends Controller
 {
@@ -24,39 +25,18 @@ class PetController extends Controller
     {
         try {
             $isAdmin = auth('api')->user()?->hasRole('admin') ?? false;
-            if ($isAdmin) {
-                return $this->monitor($request);
-            }
-
-            $perPage = $request->query('per_page', 15);
-            $age = $request->query('age');
-            $tagPersonalityId = $request->query('tag_personality_id');
-
-            $pets = $this->buildPetQuery($request)
-                ->where('is_active', true)
-                ->with(['profilePicture:id,filename,mime_type,public_url,path'])
-                ->when($age !== null, function ($q) use ($age) {
-                    $now = now();
-                    if ($age === 'baby') {
-                        $q->where('date_of_birth', '>', $now->copy()->subMonths(6))
-                            ->where('date_of_birth', '<=', $now);
-                    } elseif ($age === 'young') {
-                        $q->where('date_of_birth', '<=', $now->copy()->subMonths(6))
-                            ->where('date_of_birth', '>', $now->copy()->subYear());
-                    } elseif ($age === 'adult') {
-                        $q->where('date_of_birth', '<=', $now->copy()->subYear())
-                            ->where('date_of_birth', '>', $now->copy()->subYears(7));
-                    } elseif ($age === 'senior') {
-                        $q->where('date_of_birth', '<=', $now->copy()->subYears(7));
-                    }
-                })
-                ->when($tagPersonalityId, function ($q) use ($tagPersonalityId) {
-                    $q->whereHas('personalityTags', function ($subQuery) use ($tagPersonalityId) {
-                        $subQuery->where('mt_all_tag.id', $tagPersonalityId);
-                    });
-                })
+            
+            $perPage = min((int) $request->query('per_page', 15), 100);
+            $pets = $this->buildPetQuery($request, $isAdmin)
                 ->orderBy('created_at', 'desc')
                 ->paginate($perPage);
+
+            if ($isAdmin) {
+                return $this->sendSuccessPagination(
+                    'Monitor pet list retrieved successfully',
+                    PetMonitorResource::collection($pets)
+                );
+            }
 
             $transformedData = $pets->getCollection()->map(function ($pet) {
                 $dateOfBirth = $pet->date_of_birth;
@@ -208,9 +188,10 @@ class PetController extends Controller
         try {
             $pet = Pet::with([
                 'typeOfAnimal:id,name',
-                'profilePictures:id',
-                'physiqueTags:id',
-                'personalityTags:id',
+                'profilePictures:id,public_url',
+                'physiqueTags:id,name',
+                'personalityTags:id,name',
+                'additionalRecords:id,public_url,filename,mime_type,path',
             ])->findOrFail($id);
 
             $data = [
@@ -221,10 +202,34 @@ class PetController extends Controller
                 'gender' => $pet->gender,
                 'about' => $pet->about,
                 'breed' => $pet->breed,
-                'profile_picture_ids' => $pet->profilePictures->pluck('id')->all(),
+                'profile_pictures' => $pet->profilePictures->map(function($picture) {
+                    return [
+                        'id' => $picture->id,
+                        'public_url' => $picture->public_url,
+                    ];
+                }),
                 'special_needs' => $pet->special_needs,
-                'physique_ids' => $pet->physiqueTags->pluck('id')->all(),
-                'personality_ids' => $pet->personalityTags->pluck('id')->all(),
+                'physique_tags' => $pet->physiqueTags->map(function($tag) {
+                    return [
+                        'id' => $tag->id,
+                        'name' => $tag->name,
+                    ];
+                }),
+                'personality_tags' => $pet->personalityTags->map(function($tag) {
+                    return [
+                        'id' => $tag->id,
+                        'name' => $tag->name,
+                    ];
+                }),
+                'additional_records' => $pet->additionalRecords->map(function($record) {
+                    return [
+                        'id' => $record->id,
+                        'public_url' => $record->public_url,
+                        'filename' => $record->filename,
+                        'mime_type' => $record->mime_type,
+                        'path' => $record->path,
+                    ];
+                }),
             ];
 
             return $this->sendSuccess('Pet detail retrieved successfully', $data);
@@ -267,54 +272,47 @@ class PetController extends Controller
     }
 
     /**
-     * Get list pet for monitor page.
-     */
-    private function monitor(GetAllRequest $request)
-    {
-        try {
-            $perPage = min((int) $request->query('per_page', 15), 100);
-            $pets = $this->buildPetQuery($request)
-                ->orderBy('created_at', 'desc')
-                ->paginate($perPage);
-
-            return $this->sendSuccessPagination(
-                'Monitor pet list retrieved successfully',
-                PetMonitorResource::collection($pets)
-            );
-        } catch (\Exception $e) {
-            Log::error('Failed to retrieve monitor pet list: ' . $e->getMessage());
-
-            return $this->sendError(
-                config('app.debug') ? $e->getMessage() : 'Failed to retrieve monitor pet list',
-                500
-            );
-        }
-    }
-
-    /**
      * Build base pet query with common filters.
      */
-    private function buildPetQuery(GetAllRequest $request)
+    private function buildPetQuery(GetAllRequest $request, bool $isAdmin)
     {
         $search = $request->query('search');
         $typeOfAnimalId = $request->query('type_of_animal_id');
-        $petId = $request->query('pet_id');
+        $age = $request->query('age');
+        $tagPersonalityId = $request->query('tag_personality_id');
 
-        // Validasi UUID manual untuk pet_id
-        $isValidUuid = true;
-        if ($petId) {
-            $isValidUuid = preg_match('/^[0-9a-fA-F-]{36}$/', $petId);
-        }
-
-        return Pet::with(['typeOfAnimal:id,name'])
-            ->when($search, function ($q, $search) {
-                $q->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($search) . '%']);
+        return Pet::with('typeOfAnimal:id,name')->when(! $isAdmin, fn ($q) => $q->with('profilePicture:id,public_url'))
+            ->when(! $isAdmin, fn ($q) => $q->where('is_active', true))
+            ->when($search, function ($q) use ($search, $isAdmin) {
+                $q->where(function ($query) use ($search, $isAdmin) {
+                    $query->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($search) . '%']);
+                    if ($isAdmin && Str::isUuid($search)) {
+                        $query->orWhere('id', $search);
+                    }
+                });
             })
             ->when($typeOfAnimalId, function ($q) use ($typeOfAnimalId) {
                 $q->where('type_of_animal_id', $typeOfAnimalId);
             })
-            ->when($petId && $isValidUuid, function ($q) use ($petId) {
-                $q->where('id', $petId);
+            ->when($age !== null, function ($q) use ($age) {
+                $now = now();
+                if ($age === 'baby') {
+                    $q->where('date_of_birth', '>', $now->copy()->subMonths(6))
+                        ->where('date_of_birth', '<=', $now);
+                } elseif ($age === 'young') {
+                    $q->where('date_of_birth', '<=', $now->copy()->subMonths(6))
+                        ->where('date_of_birth', '>', $now->copy()->subYear());
+                } elseif ($age === 'adult') {
+                    $q->where('date_of_birth', '<=', $now->copy()->subYear())
+                        ->where('date_of_birth', '>', $now->copy()->subYears(7));
+                } elseif ($age === 'senior') {
+                    $q->where('date_of_birth', '<=', $now->copy()->subYears(7));
+                }
+            })
+            ->when($tagPersonalityId, function ($q) use ($tagPersonalityId) {
+                $q->whereHas('personalityTags', function ($subQuery) use ($tagPersonalityId) {
+                    $subQuery->where('mt_all_tag.id', $tagPersonalityId);
+                });
             });
     }
 }
