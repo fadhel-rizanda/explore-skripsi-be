@@ -58,7 +58,7 @@ class AuthController extends BaseController
                 'token_type' => 'bearer',
                 'expires_in' => auth('api')->factory()->getTTL() * 60,
                 'refresh_expires_in' => config('jwt.refresh_ttl') * 60,
-                'channels' => [],
+                'channels' => [ChannelPrefixEnum::NOTIFICATION->value . $user->id],
             ];
 
             DB::commit();
@@ -538,21 +538,17 @@ class AuthController extends BaseController
         string $token,
         string $refreshToken
     ): array {
-        $getActiveIds = fn ($relation) => $relation->where('is_active', true)->pluck('id')->toArray();
+        $channels = [ChannelPrefixEnum::NOTIFICATION->value . $user->id];
 
-        $channels = [];
-
-        $channels[] = ChannelPrefixEnum::NOTIFICATION->value . auth('api')->id();
-
-        foreach ($getActiveIds($user->adoptionsByRole()) as $id) {
+        foreach ($user->adoptionsByRole()->where('is_active', true)->pluck('id') as $id) {
             $channels[] = ChannelPrefixEnum::ADOPTION->value . $id;
         }
 
-        foreach ($getActiveIds($user->communities()) as $id) {
+        foreach ($user->communities->where('is_active', true)->pluck('id') as $id) {
             $channels[] = ChannelPrefixEnum::COMMUNITY->value . $id;
         }
 
-        foreach ($user->chatRooms()->pluck('id') as $id) {
+        foreach ($user->chatRooms->pluck('id') as $id) {
             $channels[] = ChannelPrefixEnum::CHAT->value . $id;
         }
 

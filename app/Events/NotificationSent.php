@@ -37,6 +37,11 @@ class NotificationSent implements ShouldBroadcast
         ];
     }
 
+    public function broadcastAs(): string
+    {
+        return 'notification.sent';
+    }
+
     public function broadcastWith(): array
     {
         return [

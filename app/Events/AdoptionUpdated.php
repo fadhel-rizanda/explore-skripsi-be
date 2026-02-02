@@ -37,6 +37,11 @@ class AdoptionUpdated implements ShouldBroadcast
         ];
     }
 
+    public function broadcastAs(): string
+    {
+        return 'adoption.updated';
+    }
+
     public function broadcastWith(): array
     {
         return [
