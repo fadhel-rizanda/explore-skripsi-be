@@ -11,11 +11,8 @@ Broadcast::channel(ChannelPrefixEnum::CHAT->value . '{roomId}', function ($user,
         ->exists();
 });
 
-// TODO: update logic relasi di model user
 Broadcast::channel(ChannelPrefixEnum::NOTIFICATION->value . '{userId}', function ($user, $userId) {
-    return $user->notifications()
-        ->where('tr_notification.user_id', $userId)
-        ->exists();
+    return (string) $user->id === (string) $userId;
 });
 
 Broadcast::channel(ChannelPrefixEnum::ADOPTION->value . '{adoptionId}', function ($user, $adoptionId) {
@@ -29,6 +26,6 @@ Broadcast::channel(ChannelPrefixEnum::ADOPTION->value . '{adoptionId}', function
 
 Broadcast::channel(ChannelPrefixEnum::COMMUNITY->value . '{communityId}', function ($user, $communityId) {
     return $user->communities()
-        ->where('tr_follow_community.user_id', $communityId)
+        ->where('mt_community.id', $communityId)
         ->exists();
 });

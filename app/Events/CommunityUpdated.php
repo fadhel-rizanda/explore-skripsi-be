@@ -37,6 +37,11 @@ class CommunityUpdated implements ShouldBroadcast
         ];
     }
 
+    public function broadcastAs(): string
+    {
+        return 'community.updated';
+    }
+
     public function broadcastWith(): array
     {
         return [
