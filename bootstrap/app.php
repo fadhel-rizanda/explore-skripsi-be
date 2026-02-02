@@ -27,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'adoption.owner' => \App\Http\Middleware\AdoptionOwner::class,
             'adoption.stage' => \App\Http\Middleware\AdoptionStage::class,
             'adoption.access' => \App\Http\Middleware\AdoptionAccess::class,
+            'model.isActive' => \App\Http\Middleware\ModelIsActive::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

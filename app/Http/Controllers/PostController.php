@@ -34,11 +34,6 @@ class PostController extends Controller
 
     public function postDetail(Post $post)
     {
-        $isAdmin = auth('api')->user()?->hasRole('admin') ?? false;
-        if (! $isAdmin && ! $post->is_active) {
-            return $this->sendError('Post not found.', 404);
-        }
-
         try {
             $post->load([
                 'attachment:id,public_url',
@@ -88,11 +83,6 @@ class PostController extends Controller
 
     public function updatePost(UpdatePostRequest $request, Post $post)
     {
-        $isAdmin = auth('api')->user()?->hasRole('admin') ?? false;
-        if (! $isAdmin && ! $post->is_active) {
-            return $this->sendError('Post not found.', 404);
-        }
-
         try {
             DB::beginTransaction();
 
