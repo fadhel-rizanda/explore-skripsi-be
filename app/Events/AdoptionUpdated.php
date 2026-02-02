@@ -2,6 +2,7 @@
 
 namespace App\Events;
 
+use App\Enums\ChannelPrefixEnum;
 use App\Models\Notification;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
@@ -32,14 +33,8 @@ class AdoptionUpdated implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('adoption.' . $this->notification->reference_id),
+            new PrivateChannel(ChannelPrefixEnum::ADOPTION->value . $this->notification->reference_id),
         ];
-    }
-
-    //    broadcastAs buat ngasih nama custom event pas di broadcast
-    public function broadcastAs(): string
-    {
-        return 'adoption.updated';
     }
 
     public function broadcastWith(): array
