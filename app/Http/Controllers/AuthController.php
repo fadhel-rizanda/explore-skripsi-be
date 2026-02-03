@@ -52,13 +52,18 @@ class AuthController extends BaseController
                     'email' => $user->email,
                     'roles' => $user->roles,
                     'avatar' => $user->avatar,
+                    'channels' => [
+                        [
+                            'name' => ChannelPrefixEnum::NOTIFICATION->value . $user->id,
+                            'event' => 'notification.sent',
+                        ],
+                    ],
                 ],
                 'access_token' => $token,
                 'refresh_token' => $refreshToken,
                 'token_type' => 'bearer',
                 'expires_in' => auth('api')->factory()->getTTL() * 60,
                 'refresh_expires_in' => config('jwt.refresh_ttl') * 60,
-                'channels' => [ChannelPrefixEnum::NOTIFICATION->value . $user->id],
             ];
 
             DB::commit();
@@ -538,18 +543,32 @@ class AuthController extends BaseController
         string $token,
         string $refreshToken
     ): array {
-        $channels = [ChannelPrefixEnum::NOTIFICATION->value . $user->id];
+        $channels = [
+            [
+                'name' => ChannelPrefixEnum::NOTIFICATION->value . $user->id,
+                'event' => 'notification.sent',
+            ],
+        ];
 
         foreach ($user->adoptionsByRole()->where('is_active', true)->pluck('id') as $id) {
-            $channels[] = ChannelPrefixEnum::ADOPTION->value . $id;
+            $channels[] = [
+                'name' => ChannelPrefixEnum::ADOPTION->value . $id,
+                'event' => 'adoption.updated',
+            ];
         }
 
         foreach ($user->communities->where('is_active', true)->pluck('id') as $id) {
-            $channels[] = ChannelPrefixEnum::COMMUNITY->value . $id;
+            $channels[] = [
+                'name' => ChannelPrefixEnum::COMMUNITY->value . $id,
+                'event' => 'community.updated',
+            ];
         }
 
         foreach ($user->chatRooms->pluck('id') as $id) {
-            $channels[] = ChannelPrefixEnum::CHAT->value . $id;
+            $channels[] = [
+                'name' => ChannelPrefixEnum::CHAT->value . $id,
+                'event' => 'message.sent',
+            ];
         }
 
         return [

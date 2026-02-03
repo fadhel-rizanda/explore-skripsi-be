@@ -46,6 +46,11 @@ class NotificationSent implements ShouldBroadcast
     {
         return [
             'id' => $this->notification->id,
+            'reference_id' => $this->notification->reference_id,
+            'reference_by' => $this->notification->reference_by,
+            'title' => $this->notification->title,
+            'message' => $this->notification->message,
+            'created_at' => $this->notification->created_at->toDateTimeString(),
         ];
     }
 }
