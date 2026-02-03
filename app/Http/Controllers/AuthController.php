@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\ChannelPrefixEnum;
+use App\Enums\ChannelEnum;
 use App\Http\Requests\ActivationCodeRequest;
 use App\Http\Requests\ChangePasswordRequest;
 use App\Http\Requests\ForgotPasswordRequest;
@@ -54,8 +54,8 @@ class AuthController extends BaseController
                     'avatar' => $user->avatar,
                     'channels' => [
                         [
-                            'name' => ChannelPrefixEnum::NOTIFICATION->value . $user->id,
-                            'event' => 'notification.sent',
+                            'name' => ChannelEnum::NOTIFICATION->channel($user->id),
+                            'event' => ChannelEnum::NOTIFICATION->event(),
                         ],
                     ],
                 ],
@@ -545,29 +545,29 @@ class AuthController extends BaseController
     ): array {
         $channels = [
             [
-                'name' => ChannelPrefixEnum::NOTIFICATION->value . $user->id,
-                'event' => 'notification.sent',
+                'name' => ChannelEnum::NOTIFICATION->channel($user->id),
+                'event' => ChannelEnum::NOTIFICATION->event(),
             ],
         ];
 
         foreach ($user->adoptionsByRole()->where('is_active', true)->pluck('id') as $id) {
             $channels[] = [
-                'name' => ChannelPrefixEnum::ADOPTION->value . $id,
-                'event' => 'adoption.updated',
+                'name' => ChannelEnum::ADOPTION->channel($id),
+                'event' => ChannelEnum::ADOPTION->event(),
             ];
         }
 
         foreach ($user->communities->where('is_active', true)->pluck('id') as $id) {
             $channels[] = [
-                'name' => ChannelPrefixEnum::COMMUNITY->value . $id,
-                'event' => 'community.updated',
+                'name' => ChannelEnum::COMMUNITY->channel($id),
+                'event' => ChannelEnum::COMMUNITY->event(),
             ];
         }
 
         foreach ($user->chatRooms->pluck('id') as $id) {
             $channels[] = [
-                'name' => ChannelPrefixEnum::CHAT->value . $id,
-                'event' => 'message.sent',
+                'name' => ChannelEnum::CHAT->channel($id),
+                'event' => ChannelEnum::CHAT->event(),
             ];
         }
 
