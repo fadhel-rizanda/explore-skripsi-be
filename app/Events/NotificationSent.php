@@ -39,7 +39,7 @@ class NotificationSent implements ShouldBroadcast
 
     public function broadcastAs(): string
     {
-        return 'notification.sent';
+        return ChannelEnum::NOTIFICATION->event();
     }
 
     public function broadcastWith(): array
