@@ -39,7 +39,7 @@ class AdoptionUpdated implements ShouldBroadcast
 
     public function broadcastAs(): string
     {
-        return 'adoption.updated';
+        return ChannelEnum::ADOPTION->event();
     }
 
     public function broadcastWith(): array

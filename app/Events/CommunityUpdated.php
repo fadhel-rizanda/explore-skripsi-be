@@ -39,7 +39,7 @@ class CommunityUpdated implements ShouldBroadcast
 
     public function broadcastAs(): string
     {
-        return 'community.updated';
+        return ChannelEnum::COMMUNITY->event();
     }
 
     public function broadcastWith(): array

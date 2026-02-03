@@ -37,7 +37,7 @@ class MessageSent implements ShouldBroadcast
 
     public function broadcastAs(): string
     {
-        return 'message.sent';
+        return ChannelEnum::CHAT->event();
     }
 
     public function broadcastWith(): array
