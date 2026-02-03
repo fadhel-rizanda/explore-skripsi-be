@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\RoleEnum;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -139,5 +140,33 @@ class User extends Authenticatable implements JWTSubject
     public function petPreferencesTags(): BelongsToMany
     {
         return $this->belongsToMany(AllTag::class, 'tr_all_tag_user_preferences_record', 'user_id', 'tag_id');
+    }
+
+    public function adoptionsAsAdopter()
+    {
+        return $this->hasMany(Adoption::class, 'adopter_id');
+    }
+
+    public function adoptionsAsProvider()
+    {
+        return $this->hasMany(Adoption::class, 'provider_id');
+    }
+
+    public function adoptionsByRole()
+    {
+        if ($this->hasRole(RoleEnum::ADOPTER->value)) {
+            return $this->adoptionsAsAdopter();
+        }
+
+        if ($this->hasRole(RoleEnum::PROVIDER->value)) {
+            return $this->adoptionsAsProvider();
+        }
+
+        return Adoption::query()->whereRaw('1 = 0');
+    }
+
+    public function communities(): BelongsToMany
+    {
+        return $this->belongsToMany(Community::class, 'tr_follow_community', 'user_id', 'community_id');
     }
 }
