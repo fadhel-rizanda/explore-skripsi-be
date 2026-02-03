@@ -36,11 +36,6 @@ class CommunityController extends Controller
     public function communityDetail(Community $community)
     {
         try {
-            $isAdmin = auth('api')->user()?->hasRole('admin') ?? false;
-            if (! $isAdmin && ! $community->is_active) {
-                return $this->sendError('Community not found.', 404);
-            }
-
             $community->load([
                 'attachment:id,public_url',
                 'address',
@@ -74,9 +69,7 @@ class CommunityController extends Controller
     {
         try {
             DB::beginTransaction();
-            $address = Address::create(
-                $request->input('address')
-            );
+            $address = Address::create($request->input('address'));
 
             $community = Community::create([
                 'name' => $request->name,
@@ -87,19 +80,35 @@ class CommunityController extends Controller
                 'created_by' => auth('api')->id(),
             ]);
 
-            if ($request->has('tag_ids')) {
+            if ($request->filled('tag_ids')) {
                 $community->tags()->sync($request->tag_ids);
             }
-            if ($request->has('admin_ids')) {
-                $community->admins()->sync($request->admin_ids);
-            }
+
+            $creatorId = auth('api')->id();
+
+            $adminIds = collect($request->admin_ids ?? [])
+                ->push($creatorId)
+                ->unique()
+                ->values()
+                ->toArray();
+
+            $community->admins()->sync($adminIds);
+            $community->members()->syncWithoutDetaching($adminIds);
 
             DB::commit();
 
-            return $this->sendSuccess('Community created successfully.', new CommunityResource($community->load('tags', 'admins')));
+            return $this->sendSuccess(
+                'Community created successfully.',
+                new CommunityResource(
+                    $community->load(['tags', 'admins'])
+                )
+            );
         } catch (\Throwable $e) {
             DB::rollBack();
-            \Log::error('Error creating community', ['error' => $e->getMessage()]);
+
+            \Log::error('Error creating community', [
+                'error' => $e->getMessage(),
+            ]);
 
             return $this->sendError('Error creating community.');
         }
@@ -107,11 +116,6 @@ class CommunityController extends Controller
 
     public function updateCommunity(UpdateCommunityRequest $request, Community $community)
     {
-        $isAdmin = auth('api')->user()?->hasRole('admin') ?? false;
-        if (! $isAdmin && ! $community->is_active) {
-            return $this->sendError('Community not found.', 404);
-        }
-
         try {
             DB::beginTransaction();
 
@@ -121,7 +125,7 @@ class CommunityController extends Controller
 
             if ($request->filled('attachment_id') && $request->attachment_id !== $community->attachment_id) {
                 $oldAttachment = $community->attachment;
-                if ($oldAttachment->attachment) {
+                if ($oldAttachment?->attachment) {
                     $oldAttachment->attachment->deleteFromStorage();
                 }
             }
@@ -133,19 +137,35 @@ class CommunityController extends Controller
                 'attachment_id',
             ]));
 
-            if ($request->has('tag_ids')) {
+            if ($request->filled('tag_ids')) {
                 $community->tags()->sync($request->tag_ids);
             }
+
             if ($request->has('admin_ids')) {
-                $community->admins()->sync($request->admin_ids);
+                $creatorId = $community->created_by;
+
+                $adminIds = collect($request->admin_ids)
+                    ->push($creatorId)
+                    ->unique()
+                    ->values()
+                    ->toArray();
+
+                $community->admins()->sync($adminIds);
+                $community->members()->syncWithoutDetaching($adminIds);
             }
 
             DB::commit();
 
-            return $this->sendSuccess('Community updated successfully.', new CommunityResource($community->load('tags', 'admins')));
+            return $this->sendSuccess(
+                'Community updated successfully.',
+                new CommunityResource($community->load(['tags', 'admins']))
+            );
         } catch (\Throwable $e) {
             DB::rollBack();
-            \Log::error('Error updating community', ['error' => $e->getMessage()]);
+
+            \Log::error('Error updating community', [
+                'error' => $e->getMessage(),
+            ]);
 
             return $this->sendError('Error updating community.');
         }
@@ -229,5 +249,43 @@ class CommunityController extends Controller
         });
 
         return $communities;
+    }
+
+    public function followCommunity(Community $community)
+    {
+        try {
+            $user = auth('api')->user();
+
+            $isAdmin = $community->admins()
+                    ->where('user_id', $user->id)
+                    ->exists() || $community->created_by === $user->id || $user->hasRole('admin');
+
+            if ($isAdmin) {
+                return $this->sendError(
+                    'Admin cannot unfollow the community. Remove admin role first.',
+                    403
+                );
+            }
+
+            $isMember = $community->members()
+                ->where('user_id', $user->id)
+                ->exists();
+
+            if ($isMember) {
+                $community->members()->detach($user->id);
+
+                return $this->sendSuccess('Community unfollowed successfully.');
+            }
+
+            $community->members()->attach($user->id);
+
+            return $this->sendSuccess('Community followed successfully.');
+        } catch (\Throwable $e) {
+            \Log::error('Error follow/unfollow community', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return $this->sendError('Error toggling follow for community.');
+        }
     }
 }
