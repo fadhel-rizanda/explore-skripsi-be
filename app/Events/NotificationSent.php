@@ -2,6 +2,7 @@
 
 namespace App\Events;
 
+use App\Enums\ChannelEnum;
 use App\Models\Notification;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
@@ -32,19 +33,24 @@ class NotificationSent implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('notification.' . $this->notification->user_id),
+            new PrivateChannel(ChannelEnum::NOTIFICATION->channel($this->notification->reference_id)),
         ];
     }
 
     public function broadcastAs(): string
     {
-        return 'notification.sent';
+        return ChannelEnum::NOTIFICATION->event();
     }
 
     public function broadcastWith(): array
     {
         return [
             'id' => $this->notification->id,
+            'reference_id' => $this->notification->reference_id,
+            'reference_by' => $this->notification->reference_by,
+            'title' => $this->notification->title,
+            'message' => $this->notification->message,
+            'created_at' => $this->notification->created_at->toDateTimeString(),
         ];
     }
 }

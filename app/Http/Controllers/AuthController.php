@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ChannelEnum;
 use App\Http\Requests\ActivationCodeRequest;
 use App\Http\Requests\ChangePasswordRequest;
 use App\Http\Requests\ForgotPasswordRequest;
@@ -51,6 +52,12 @@ class AuthController extends BaseController
                     'email' => $user->email,
                     'roles' => $user->roles,
                     'avatar' => $user->avatar,
+                    'channels' => [
+                        [
+                            'name' => ChannelEnum::NOTIFICATION->channel($user->id),
+                            'event' => ChannelEnum::NOTIFICATION->event(),
+                        ],
+                    ],
                 ],
                 'access_token' => $token,
                 'refresh_token' => $refreshToken,
@@ -85,25 +92,16 @@ class AuthController extends BaseController
             }
 
             $user = auth('api')->user();
-            $user->load(['roles:id,name', 'roles.permissions:id,name']);
+            $user->load([
+                'roles:id,name',
+                'roles.permissions:id,name',
+                'communities',
+                'chatRooms',
+            ]);
 
             $refreshToken = RefreshToken::createToken($user->id);
 
-            $data = [
-                'user' => [
-                    'id' => $user->id,
-                    'username' => $user->username ?? $user->name,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'roles' => $user->roles,
-                    'avatar' => $user->avatar,
-                ],
-                'access_token' => $token,
-                'refresh_token' => $refreshToken,
-                'token_type' => 'bearer',
-                'expires_in' => auth('api')->factory()->getTTL() * 60,
-                'refresh_expires_in' => config('jwt.refresh_ttl') * 60,
-            ];
+            $data = $this->getCompleteData($user, $token, $refreshToken);
 
             return $this->sendSuccess('Login successful', $data, 200);
         } catch (\Exception $ex) {
@@ -330,23 +328,14 @@ class AuthController extends BaseController
 
             $token = auth('api')->login($user);
             $refreshToken = RefreshToken::createToken($user->id);
-            $user->load(['roles:id,name', 'roles.permissions:id,name']);
+            $user->load([
+                'roles:id,name',
+                'roles.permissions:id,name',
+                'communities',
+                'chatRooms',
+            ]);
 
-            $data = [
-                'user' => [
-                    'id' => $user->id,
-                    'username' => $user->username ?? $user->name,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'roles' => $user->roles,
-                    'avatar' => $user->avatar,
-                ],
-                'access_token' => $token,
-                'refresh_token' => $refreshToken,
-                'token_type' => 'bearer',
-                'expires_in' => auth('api')->factory()->getTTL() * 60,
-                'refresh_expires_in' => config('jwt.refresh_ttl') * 60,
-            ];
+            $data = $this->getCompleteData($user, $token, $refreshToken);
 
             DB::commit();
 
@@ -547,5 +536,56 @@ class AuthController extends BaseController
 
             return $this->sendError('Failed to verify activation code', 500);
         }
+    }
+
+    private function getCompleteData(
+        User|\Illuminate\Contracts\Auth\Authenticatable|null $user,
+        string $token,
+        string $refreshToken
+    ): array {
+        $channels = [
+            [
+                'name' => ChannelEnum::NOTIFICATION->channel($user->id),
+                'event' => ChannelEnum::NOTIFICATION->event(),
+            ],
+        ];
+
+        foreach ($user->adoptionsByRole()->where('is_active', true)->pluck('id') as $id) {
+            $channels[] = [
+                'name' => ChannelEnum::ADOPTION->channel($id),
+                'event' => ChannelEnum::ADOPTION->event(),
+            ];
+        }
+
+        foreach ($user->communities->where('is_active', true)->pluck('id') as $id) {
+            $channels[] = [
+                'name' => ChannelEnum::COMMUNITY->channel($id),
+                'event' => ChannelEnum::COMMUNITY->event(),
+            ];
+        }
+
+        foreach ($user->chatRooms->pluck('id') as $id) {
+            $channels[] = [
+                'name' => ChannelEnum::CHAT->channel($id),
+                'event' => ChannelEnum::CHAT->event(),
+            ];
+        }
+
+        return [
+            'user' => [
+                'id' => $user->id,
+                'username' => $user->username ?? $user->name,
+                'name' => $user->name,
+                'email' => $user->email,
+                'roles' => $user->roles,
+                'avatar' => $user->avatar,
+                'channels' => $channels,
+            ],
+            'access_token' => $token,
+            'refresh_token' => $refreshToken,
+            'token_type' => 'bearer',
+            'expires_in' => auth('api')->factory()->getTTL() * 60,
+            'refresh_expires_in' => config('jwt.refresh_ttl') * 60,
+        ];
     }
 }
