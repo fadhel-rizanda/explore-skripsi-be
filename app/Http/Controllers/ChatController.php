@@ -11,6 +11,7 @@ use App\Events\MessageSent;
 use App\Http\Requests\CreateChatRequest;
 use App\Http\Requests\SendMessageRequest;
 use App\Http\Services\NotificationService;
+use App\Models\Attachment;
 use App\Models\Chat;
 use App\Notifications\ChatNotification;
 use App\Traits\ResponseAPI;
@@ -30,6 +31,7 @@ class ChatController extends Controller
     {
         $user = auth('api')->user();
 
+        //        TODO: Optimalkan query untuk menghitung unread_count
         $chatRooms = $user->chatRooms()
             ->with([
                 'users' => function ($query) use ($user) {
@@ -167,7 +169,6 @@ class ChatController extends Controller
             ->sort()
             ->values()
             ->toArray();
-        DB::beginTransaction();
 
         try {
             $chatRoom = Chat::where('type', $request->type)
@@ -177,6 +178,7 @@ class ChatController extends Controller
                 ->with(['users', 'lastMessage'])
                 ->first();
             if (! $chatRoom) {
+                DB::beginTransaction();
                 $chatRoom = Chat::create([
                     'name' => $request->name,
                     'description' => $request->description,
@@ -236,6 +238,13 @@ class ChatController extends Controller
     public function sendMessage(Chat $chat, SendMessageRequest $request)
     {
         $user = auth('api')->user();
+        $attachmentId = $request->input('attachment_id');
+        if ($attachmentId) {
+            $attachment = Attachment::find($attachmentId);
+            if (! $attachment || $attachment->uploaded_by !== $user->id) {
+                return $this->sendError('Invalid attachment.', 403);
+            }
+        }
 
         try {
             DB::beginTransaction();

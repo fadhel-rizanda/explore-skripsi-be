@@ -15,7 +15,7 @@ enum ModelReferenceEnum: string
     case REPORT = 'report';
     case CHAT = 'chat';
 
-    public static function allValues(): array
+    public static function allReportValues(): array
     {
         return [
             self::USER->value,

@@ -17,6 +17,7 @@ enum ActionEnum: string
             self::ACTIVATED->value,
             self::TAKEDOWN->value,
             self::RESTORED->value,
+            self::CREATED->value,
         ];
     }
 }

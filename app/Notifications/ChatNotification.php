@@ -45,7 +45,7 @@ class ChatNotification extends Notification
                 'chatType' => $this->chat->type,
                 'action' => $this->action,
                 'membersCount' => $this->chat->users->count(),
-                'lastMessage' => $this->chat->lastMessage?->message,
+                'lastMessage' => $this->chat->lastMessage?->content,
                 'lastMessageBy' => $this->chat->lastMessage?->user?->name,
                 'notes' => $this->notes,
             ]);
