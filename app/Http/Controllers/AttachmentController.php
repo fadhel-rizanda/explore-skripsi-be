@@ -123,6 +123,9 @@ class AttachmentController extends Controller
         }
 
         try {
+            if ($document->uploaded_by !== auth('api')->id()) {
+                return $this->sendError('Unauthorized.', 403);
+            }
             $document->update([
                 'status' => AttachmentTypeEnum::COMPLETED->value,
                 'uploaded_at' => now(),
@@ -139,6 +142,7 @@ class AttachmentController extends Controller
         }
     }
 
+    //    TODO: Add rate limiting to this endpoint
     public function generateDownloadUrl(Attachment $document)
     {
         if ($document->status !== AttachmentTypeEnum::COMPLETED->value || ! Storage::disk('s3')->exists($document->path)) {

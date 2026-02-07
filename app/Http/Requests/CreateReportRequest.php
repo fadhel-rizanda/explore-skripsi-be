@@ -26,7 +26,7 @@ class CreateReportRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'reference_type' => ['required', Rule::in(ModelReferenceEnum::allValues())],
+            'reference_type' => ['required', Rule::in(ModelReferenceEnum::allReportValues())],
             'reference_id' => 'required|uuid',
             'notes' => 'required|string|max:2000',
             'status_id' => 'sometimes|uuid|exists:' . (new Status())->getTable() . ',id',
