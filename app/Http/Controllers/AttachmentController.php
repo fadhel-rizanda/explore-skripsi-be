@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\AttachmentTypeEnum;
 use App\Http\Requests\GeneratePresignedUrlRequest;
 use App\Models\Attachment;
 use App\Traits\ResponseAPI;
@@ -83,9 +84,8 @@ class AttachmentController extends Controller
                 'path' => $path,
                 'file_size' => $request->input('file_size'),
                 'mime_type' => $mimeType,
-                'status' => 'pending',
+                'status' => AttachmentTypeEnum::PENDING->value,
                 'uploaded_by' => $user->id,
-                'is_public' => $isPublic,
                 'public_url' => $publicUrl,
             ]);
 
@@ -124,7 +124,7 @@ class AttachmentController extends Controller
 
         try {
             $document->update([
-                'status' => 'completed',
+                'status' => AttachmentTypeEnum::COMPLETED->value,
                 'uploaded_at' => now(),
             ]);
 
@@ -141,7 +141,7 @@ class AttachmentController extends Controller
 
     public function generateDownloadUrl(Attachment $document)
     {
-        if ($document->status !== 'completed' || ! Storage::disk('s3')->exists($document->path)) {
+        if ($document->status !== AttachmentTypeEnum::COMPLETED->value || ! Storage::disk('s3')->exists($document->path)) {
             return $this->sendError('File not found in storage.', 404);
         }
 

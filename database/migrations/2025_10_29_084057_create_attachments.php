@@ -20,7 +20,6 @@ return new class() extends Migration
             $table->string('mime_type');
             $table->enum('status', ['pending', 'completed', 'failed'])->default('pending');
             $table->timestamp('uploaded_at')->nullable();
-            $table->boolean('is_public')->default(false);
             $table->string('public_url')->nullable();
             $table->timestamps();
         });
