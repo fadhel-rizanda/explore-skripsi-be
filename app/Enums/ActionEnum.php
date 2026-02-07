@@ -8,6 +8,7 @@ enum ActionEnum: string
     case ACTIVATED = 'activated';
     case TAKEDOWN = 'taken down';
     case RESTORED = 'restored';
+    case CREATED = 'created';
 
     public static function allValues(): array
     {

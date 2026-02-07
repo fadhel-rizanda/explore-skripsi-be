@@ -15,7 +15,7 @@ return new class() extends Migration
             $table->uuid('id')->primary();
             $table->string('name')->nullable();
             $table->text('description')->nullable();
-            $table->enum('type', ['private', 'group'])->default('private');
+            $table->enum('type', ['private', 'public'])->default('private');
             $table->foreignUuid('created_by')->nullable()->constrained('mt_user')->nullOnDelete();
             $table->foreignUuid('updated_by')->nullable()->constrained('mt_user')->nullOnDelete();
             $table->timestamps();
@@ -38,19 +38,11 @@ return new class() extends Migration
             $table->uuid('id')->primary();
             $table->foreignUuid('chat_id')->constrained('mt_chat')->onDelete('cascade');
             $table->foreignUuid('user_id')->constrained('mt_user')->onDelete('cascade');
-            $table->text('message');
+            $table->text('content')->nullable();
             $table->foreignUuid('attachment_id')->nullable()->constrained('mt_attachment')->nullOnDelete();
             $table->timestamps();
 
             $table->index(['chat_id', 'created_at']);
-        });
-
-        Schema::create('tr_message_read', function (Blueprint $table) {
-            $table->foreignUuid('message_id')->constrained('tr_message')->onDelete('cascade');
-            $table->foreignUuid('user_id')->constrained('mt_user')->onDelete('cascade');
-            $table->timestamp('read_at')->useCurrent();
-            $table->timestamps();
-            $table->primary(['message_id', 'user_id']);
         });
     }
 
@@ -59,7 +51,6 @@ return new class() extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('tr_message_read');
         Schema::dropIfExists('tr_message');
         Schema::dropIfExists('tr_chat_room');
         Schema::dropIfExists('mt_chat');

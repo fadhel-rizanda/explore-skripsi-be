@@ -149,7 +149,11 @@ class User extends Authenticatable implements JWTSubject
 
     public function adoptionsAsProvider()
     {
-        return $this->hasMany(Adoption::class, 'provider_id');
+        return Adoption::query()
+            ->whereHas(
+                'pet',
+                fn ($q) => $q->where('user_id', $this->id)
+            );
     }
 
     public function adoptionsByRole()

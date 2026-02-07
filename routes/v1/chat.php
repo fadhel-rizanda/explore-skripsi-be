@@ -8,9 +8,10 @@ Route::group([
     'middleware' => ['auth:api', 'check.token.version'],
 ], function () {
     Route::get('/', [ChatController::class, 'getChatRooms']);
-    Route::post('/private/{userId}', [ChatController::class, 'getOrCreatePrivateChat']);
     Route::post('/', [ChatController::class, 'createChat']);
-    Route::post('/{roomId}/messages', [ChatController::class, 'sendMessage']);
-    Route::get('/{roomId}/messages', [ChatController::class, 'getMessages']);
-    Route::post('/{roomId}/read', [ChatController::class, 'markRoomAsRead']);
+    Route::middleware(['chat.member'])->group(function () {
+        Route::post('/{chat}/messages', [ChatController::class, 'sendMessage']);
+        Route::get('/{chat}/messages', [ChatController::class, 'getMessages']);
+        Route::patch('/{chat}/read', [ChatController::class, 'markRoomAsRead']);
+    });
 });

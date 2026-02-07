@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\ChatTypeEnum;
 use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -24,12 +25,32 @@ class CreateChatRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'nullable|string|max:255',
-            'type' => 'required|in:private,group',
-            'user_ids' => 'required|array|min:1',
+            'name' => [
+                Rule::when(
+                    $this->input('type') == ChatTypeEnum::PUBLIC->value,
+                    ['required'],
+                    ['nullable']
+                ),
+                'string',
+                'max:255',
+            ],
+            'description' => 'nullable|string|max:1000',
+            'type' => ['required', Rule::in(ChatTypeEnum::allValues())],
+            'user_ids' => [
+                'required',
+                'array',
+                Rule::when(
+                    $this->input('type') == ChatTypeEnum::PRIVATE->value,
+                    ['size:1'],
+                    ['min:2']
+                ),
+            ],
             'user_ids.*' => [
                 'uuid',
-                Rule::exists((new User())->getTable(), 'id')->where('is_active', true),
+                'distinct',
+                Rule::notIn([auth('api')->id()]),
+                Rule::exists((new User())->getTable(), 'id')
+                    ->where('is_active', true),
             ],
         ];
     }

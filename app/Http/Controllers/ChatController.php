@@ -2,11 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ActionEnum;
+use App\Enums\AttachmentTypeEnum;
+use App\Enums\ChatTypeEnum;
+use App\Enums\ModelReferenceEnum;
+use App\Events\ChatUpdated;
 use App\Events\MessageSent;
 use App\Http\Requests\CreateChatRequest;
 use App\Http\Requests\SendMessageRequest;
+use App\Http\Services\NotificationService;
 use App\Models\Chat;
+use App\Notifications\ChatNotification;
 use App\Traits\ResponseAPI;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -14,80 +22,206 @@ class ChatController extends Controller
 {
     use ResponseAPI;
 
+    public function __construct(
+        private NotificationService $notificationService
+    ) {}
+
     public function getChatRooms()
     {
         $user = auth('api')->user();
-        $chatRooms = $user->chatRooms()->with('users', 'lastMessage')->get();
+
+        $chatRooms = $user->chatRooms()
+            ->with([
+                'users' => function ($query) use ($user) {
+                    $query->select('mt_user.id', 'name', 'email', 'avatar', 'attachment_id')
+                        ->where('mt_user.id', '!=', $user->id);
+                },
+                'users.attachment:id,public_url',
+                'lastMessage:id,chat_id,user_id,content,created_at',
+            ])
+            ->leftJoin('tr_message as latest_msg', function ($join) {
+                $join->on('mt_chat.id', '=', 'latest_msg.chat_id')
+                    ->whereRaw('latest_msg.id = (
+                    SELECT id FROM tr_message
+                    WHERE chat_id = mt_chat.id
+                    ORDER BY created_at DESC
+                    LIMIT 1
+                )');
+            })
+            ->orderByRaw('latest_msg.created_at DESC NULLS LAST')
+            ->select('mt_chat.*')
+            ->get()
+            ->map(function ($chat) use ($user) {
+                // Hitung unread_count secara manual
+                $userChatRoom = DB::table('tr_chat_room')
+                    ->where('chat_id', $chat->id)
+                    ->where('user_id', $user->id)
+                    ->first();
+
+                $unreadCount = 0;
+                if ($userChatRoom) {
+                    $query = DB::table('tr_message')
+                        ->where('chat_id', $chat->id)
+                        ->where('user_id', '!=', $user->id); // pesan dari user lain
+
+                    if ($userChatRoom->last_read_at) {
+                        $query->where('created_at', '>', $userChatRoom->last_read_at);
+                    } else {
+                        // Jika belum pernah baca, hitung semua pesan
+                        $query->whereNotNull('created_at');
+                    }
+
+                    $unreadCount = $query->count();
+                }
+
+                $otherUser = $chat->users->first();
+                $chatName = ($chat->type === ChatTypeEnum::PRIVATE->value && $otherUser)
+                    ? ($otherUser->name ?: $otherUser->email)
+                    : $chat->name;
+
+                return [
+                    'id' => $chat->id,
+                    'name' => $chatName,
+                    'type' => $chat->type,
+
+                    'users' => $chat->users
+                        ->where('id', '!=', $user->id)
+                        ->map(fn ($u) => [
+                            'id' => $u->id,
+                            'name' => $u->name,
+                            'email' => $u->email,
+                            'avatar' => $u->avatar ?? $u->attachment?->public_url,
+                        ])
+                        ->values(),
+
+                    'unread_count' => $unreadCount,
+
+                    'last_message' => $chat->lastMessage ? [
+                        'id' => $chat->lastMessage->id,
+                        'user_id' => $chat->lastMessage->user_id,
+                        'content' => $chat->lastMessage->content,
+                        'created_at' => $chat->lastMessage->created_at,
+                    ] : null,
+                ];
+            });
 
         return $this->sendSuccess('Chat rooms retrieved successfully', $chatRooms);
     }
 
-    public function getMessages($roomId)
+    public function getMessages(Chat $chat, Request $request)
     {
-        $room = Chat::with(['messages' => function ($query) {
-            $query->orderBy('created_at', 'asc');
-        }, 'messages.user', 'messages.attachment'])->findOrFail($roomId);
-        $user = auth('api')->user();
+        $limit = min($request->input('limit', 10), 100);
+        $idBefore = $request->input('before_id');
+        $chat->load([
+            'messages' => function ($q) use ($idBefore, $limit) {
+                $q->orderBy('id', 'desc')
+                    ->when($idBefore, fn ($q) => $q->where('id', '<', $idBefore))
+                    ->limit($limit);
+            },
+            'messages.user',
+            'messages.user.attachment:id,public_url',
+            'messages.attachment' => fn ($q) => $q
+                ->select('id', 'public_url', 'filename', 'file_size', 'mime_type')
+                ->where('status', AttachmentTypeEnum::COMPLETED->value),
+        ]);
 
-        if (! $room->users()->where('user_id', $user->id)->exists()) {
-            return $this->sendError('You are not a member of this chat room', 403);
-        }
+        $messages = $chat->messages
+            ->sortBy('id')
+            ->map(function ($chatMessage) {
+                return [
+                    'id' => $chatMessage->id,
+                    'content' => $chatMessage->content,
+                    'attachment' => $chatMessage->attachment ? [
+                        'id' => $chatMessage->attachment->id,
+                        'public_url' => $chatMessage->attachment->public_url,
+                        'filename' => $chatMessage->attachment->filename,
+                        'file_size' => $chatMessage->attachment->file_size,
+                        'mime_type' => $chatMessage->attachment->mime_type,
+                    ] : null,
+                    'created_at' => $chatMessage->created_at,
+                    'sender' => [
+                        'id' => $chatMessage->user->id,
+                        'name' => $chatMessage->user->name,
+                        'email' => $chatMessage->user->email,
+                        'avatar' => $chatMessage->user->avatar
+                            ?? $chatMessage->user->attachment?->public_url,
+                    ],
+                ];
+            })
+            ->sortBy('id')
+            ->values();
 
-        return $this->sendSuccess('Messages retrieved successfully', $room->messages);
+        return $this->sendSuccess('Messages retrieved successfully', [
+            'messages' => $messages,
+            'next_cursor' => $messages->first()['id'] ?? null,
+            'has_more' => $messages->count() === $limit,
+        ]);
     }
 
-    public function getOrCreatePrivateChat(CreateChatRequest $request)
+    public function createChat(CreateChatRequest $request)
     {
         $currentUser = auth('api')->user();
-        $userIds = collect($request->user_ids)->push($currentUser->id)->unique()->sort()->values();
+        $userIds = collect($request->user_ids)
+            ->push($currentUser->id)
+            ->unique()
+            ->sort()
+            ->values()
+            ->toArray();
+        DB::beginTransaction();
 
         try {
-            $chatRoom = Chat::where('type', 'private')
+            $chatRoom = Chat::where('type', $request->type)
                 ->whereHas('users', function ($query) use ($userIds) {
                     $query->whereIn('user_id', $userIds);
                 }, '=', count($userIds))
+                ->with(['users', 'lastMessage'])
                 ->first();
             if (! $chatRoom) {
                 $chatRoom = Chat::create([
+                    'name' => $request->name,
+                    'description' => $request->description,
                     'type' => $request->type,
                     'created_by' => $currentUser->id,
                 ]);
                 $chatRoom->users()->attach($userIds);
+
+                $notification = $this->notificationService->createBulk(
+                    userIds: $request->user_ids,
+                    title: 'New Chat Room Created',
+                    message: 'A new chat room has been created.',
+                    referenceType: ModelReferenceEnum::CHAT->value,
+                    referenceId: $chatRoom->id,
+                )->notifyUsers(
+                    new ChatNotification(
+                        action: ActionEnum::CREATED->value,
+                        chat: $chatRoom,
+                        notes: 'A new chat room has been created.'
+                    )
+                )->getNotifications()->first();
+                DB::commit();
+                broadcast(new ChatUpdated($notification));
             }
 
-            $chatRoom->load('users', 'lastMessage');
+            $data = [
+                'id' => $chatRoom->id,
+                'type' => $chatRoom->type,
+                'users' => $chatRoom->users->map(fn ($u) => [
+                    'id' => $u->id,
+                    'name' => $u->name,
+                    'email' => $u->email,
+                    'avatar' => $u->avatar ?? $u->attachment?->public_url,
+                ])->values(),
+                'name' => $chatRoom->name,
+                'created_at' => $chatRoom->created_at,
+                'last_message' => $chatRoom->lastMessage ? [
+                    'id' => $chatRoom->lastMessage->id,
+                    'user_id' => $chatRoom->lastMessage->user_id,
+                    'content' => $chatRoom->lastMessage->content,
+                    'created_at' => $chatRoom->lastMessage->created_at,
+                ] : null,
+            ];
 
-            return $this->sendSuccess('Private chat room retrieved successfully', $chatRoom);
-        } catch (\Exception $exception) {
-            Log::error('getOrCreatePrivateChat failed', [
-                'exception' => $exception->getMessage(),
-                'trace' => $exception->getTraceAsString(),
-            ]);
-
-            return $this->sendError('Failed to get private chat', 500);
-        }
-    }
-
-    // TODO: tambahin notif
-    public function createChat(CreateChatRequest $request)
-    {
-        $currentUser = auth('api')->user();
-        DB::beginTransaction();
-
-        try {
-            $chatRoom = Chat::create([
-                'name' => $request->name,
-                'type' => $request->type,
-                'created_by' => $currentUser->id,
-            ]);
-            $userIds = collect($request->user_ids)->push($currentUser->id)->unique();
-            $chatRoom->users()->attach($userIds);
-
-            $chatRoom->load('users');
-
-            DB::commit();
-
-            return $this->sendSuccess('Chat room created successfully', $chatRoom);
+            return $this->sendSuccess('Chat room created successfully', $data);
         } catch (\Exception $exception) {
             DB::rollBack();
             Log::error('createChat failed', [
@@ -99,28 +233,50 @@ class ChatController extends Controller
         }
     }
 
-    public function sendMessage($roomId, SendMessageRequest $request)
+    public function sendMessage(Chat $chat, SendMessageRequest $request)
     {
-        $room = Chat::findOrFail($roomId);
         $user = auth('api')->user();
 
-        if (! $room->users()->where('user_id', $user->id)->exists()) {
-            return $this->sendError('You are not a member of this chat room', 403);
-        }
-
         try {
-            $message = $room->messages()->create([
+            DB::beginTransaction();
+            $message = $chat->messages()->create([
                 'user_id' => $user->id,
-                'message' => $request->input('message'),
+                'content' => $request->input('content'),
                 'attachment_id' => $request->input('attachment_id'),
             ]);
 
+            //            $chat->users()->updateExistingPivot(
+            //                $user,
+            //                ['last_read_at' => now()]
+            //            );
+            DB::commit();
+
             $message->load('user', 'attachment');
 
+            $data = [
+                'id' => $message->id,
+                'content' => $message->content,
+                'attachment' => $message->attachment ? [
+                    'id' => $message->attachment->id,
+                    'public_url' => $message->attachment->public_url,
+                    'filename' => $message->attachment->filename,
+                    'file_size' => $message->attachment->file_size,
+                    'mime_type' => $message->attachment->mime_type,
+                ] : null,
+                'created_at' => $message->created_at,
+                'sender' => [
+                    'id' => $message->user->id,
+                    'name' => $message->user->name,
+                    'email' => $message->user->email,
+                    'avatar' => $message->user->avatar
+                        ?? $message->user->attachment?->public_url,
+                ],
+            ];
             broadcast(new MessageSent($message));
 
-            return $this->sendSuccess('Message sent successfully', $message);
+            return $this->sendSuccess('Message sent successfully', $data);
         } catch (\Exception $exception) {
+            DB::rollBack();
             Log::error('sendMessage failed', [
                 'exception' => $exception->getMessage(),
                 'trace' => $exception->getTraceAsString(),
@@ -130,18 +286,13 @@ class ChatController extends Controller
         }
     }
 
-    public function markRoomAsRead($roomId)
+    public function markRoomAsRead(Chat $chat)
     {
-        $room = Chat::findOrFail($roomId);
-        $user = auth('api')->user();
-
-        if (! $room->users()->where('user_id', $user->id)->exists()) {
-            return $this->sendError('You are not a member of this chat room', 403);
-        }
+        $userId = auth('api')->id();
 
         try {
-            $room->readStatuses()->updateOrCreate(
-                ['user_id' => $user->id],
+            $chat->users()->updateExistingPivot(
+                $userId,
                 ['last_read_at' => now()]
             );
 

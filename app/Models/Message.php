@@ -23,8 +23,13 @@ class Message extends Model
         'id',
         'chat_id',
         'user_id',
-        'message',
+        'content',
         'attachment_id',
+        'read_at',
+    ];
+
+    protected $casts = [
+        'read_at' => 'datetime',
     ];
 
     public function room(): BelongsTo
