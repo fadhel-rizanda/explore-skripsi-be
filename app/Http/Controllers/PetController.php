@@ -25,7 +25,7 @@ class PetController extends Controller
     {
         try {
             $isAdmin = auth('api')->user()?->hasRole('admin') ?? false;
-            
+
             $perPage = min((int) $request->query('per_page', 15), 100);
             $pets = $this->buildPetQuery($request, $isAdmin)
                 ->orderBy('created_at', 'desc')
@@ -202,26 +202,26 @@ class PetController extends Controller
                 'gender' => $pet->gender,
                 'about' => $pet->about,
                 'breed' => $pet->breed,
-                'profile_pictures' => $pet->profilePictures->map(function($picture) {
+                'profile_pictures' => $pet->profilePictures->map(function ($picture) {
                     return [
                         'id' => $picture->id,
                         'public_url' => $picture->public_url,
                     ];
                 }),
                 'special_needs' => $pet->special_needs,
-                'physique_tags' => $pet->physiqueTags->map(function($tag) {
+                'physique_tags' => $pet->physiqueTags->map(function ($tag) {
                     return [
                         'id' => $tag->id,
                         'name' => $tag->name,
                     ];
                 }),
-                'personality_tags' => $pet->personalityTags->map(function($tag) {
+                'personality_tags' => $pet->personalityTags->map(function ($tag) {
                     return [
                         'id' => $tag->id,
                         'name' => $tag->name,
                     ];
                 }),
-                'additional_records' => $pet->additionalRecords->map(function($record) {
+                'additional_records' => $pet->additionalRecords->map(function ($record) {
                     return [
                         'id' => $record->id,
                         'public_url' => $record->public_url,

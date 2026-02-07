@@ -28,6 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'adoption.stage' => \App\Http\Middleware\AdoptionStage::class,
             'adoption.access' => \App\Http\Middleware\AdoptionAccess::class,
             'model.isActive' => \App\Http\Middleware\ModelIsActive::class,
+            'chat.member' => \App\Http\Middleware\ChatMember::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -13,8 +13,9 @@ enum ModelReferenceEnum: string
     case ADOPTION_MEETNGREET = 'adoption.meetngreet';
     case ADOPTION_REQUIREMENT = 'adoption.requirement';
     case REPORT = 'report';
+    case CHAT = 'chat';
 
-    public static function allValues(): array
+    public static function allReportValues(): array
     {
         return [
             self::USER->value,
