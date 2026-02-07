@@ -119,7 +119,7 @@ class ReportController extends Controller
             $sortBy = 'created_at';
         }
 
-        if ($referenceType && ! in_array($referenceType, ModelReferenceEnum::allValues())) {
+        if ($referenceType && ! in_array($referenceType, ModelReferenceEnum::allReportValues())) {
             $referenceType = null;
         }
 

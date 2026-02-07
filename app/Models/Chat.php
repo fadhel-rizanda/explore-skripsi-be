@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Chat extends Model
 {
@@ -40,8 +41,9 @@ class Chat extends Model
             ->withPivot('last_read_at', 'joined_at');
     }
 
-    public function latestMessage(): HasMany
+    public function lastMessage(): HasOne
     {
-        return $this->messages()->latest();
+        return $this->hasOne(Message::class, 'chat_id')
+            ->latest('updated_at');
     }
 }

@@ -28,12 +28,10 @@ class Attachment extends Model
         'mime_type',
         'status',
         'uploaded_at',
-        'is_public',
         'public_url',
     ];
 
     protected $casts = [
-        'is_public' => 'boolean',
         'uploaded_at' => 'datetime',
     ];
 

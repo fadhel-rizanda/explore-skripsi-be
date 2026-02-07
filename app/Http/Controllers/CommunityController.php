@@ -257,8 +257,8 @@ class CommunityController extends Controller
             $user = auth('api')->user();
 
             $isAdmin = $community->admins()
-                    ->where('user_id', $user->id)
-                    ->exists() || $community->created_by === $user->id || $user->hasRole('admin');
+                ->where('user_id', $user->id)
+                ->exists() || $community->created_by === $user->id || $user->hasRole('admin');
 
             if ($isAdmin) {
                 return $this->sendError(

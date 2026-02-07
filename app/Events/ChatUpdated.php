@@ -10,7 +10,7 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class AdoptionUpdated implements ShouldBroadcast
+class ChatUpdated implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
@@ -33,19 +33,19 @@ class AdoptionUpdated implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel(ChannelEnum::ADOPTION->channel($this->notification->reference_id)),
+            new PrivateChannel(ChannelEnum::CHAT->channel($this->notification->reference_id)),
         ];
     }
 
     public function broadcastAs(): string
     {
-        return ChannelEnum::ADOPTION->event();
+        return ChannelEnum::CHAT->event();
     }
 
     public function broadcastWith(): array
     {
         return [
-            'type' => 'adoption.updated',
+            'type' => 'chat.update',
             'data' => [
                 'id' => $this->notification->id,
                 'reference_id' => $this->notification->reference_id,

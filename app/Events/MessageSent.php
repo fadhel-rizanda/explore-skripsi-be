@@ -20,7 +20,7 @@ class MessageSent implements ShouldBroadcast
     public function __construct(
         public Message $message,
     ) {
-        $this->message->load('user');
+        $this->message->load(['user']);
     }
 
     /**
@@ -42,23 +42,29 @@ class MessageSent implements ShouldBroadcast
 
     public function broadcastWith(): array
     {
+        $message = Message::with(['user.attachment', 'attachment'])->findOrFail($this->message->id);
+
         return [
-            'id' => $this->message->id,
-            'chat_id' => $this->message->chat_id,
-            'user' => [
-                'id' => $this->message->user->id,
-                'name' => $this->message->user->name,
-                'email' => $this->message->user->email,
+            'type' => 'message.sent',
+            'data' => [
+                'id' => $message->id,
+                'chat_id' => $message->chat_id,
+                'content' => $message->content,
+                'created_at' => $message->created_at->toISOString(),
+                'sender' => [
+                    'id' => $message->user->id,
+                    'name' => $message->user->name,
+                    'email' => $message->user->email,
+                    'avatar' => $message->user->avatar ?? $message->user->attachment?->public_url,
+                ],
+                'attachment' => $message->attachment ? [
+                    'id' => $message->attachment->id,
+                    'public_url' => $message->attachment->public_url,
+                    'filename' => $message->attachment->filename,
+                    'file_size' => $message->attachment->file_size,
+                    'mime_type' => $message->attachment->mime_type,
+                ] : null,
             ],
-            'message' => $this->message->message,
-            'attachment' => $this->message->attachment ? [
-                'id' => $this->message->attachment->id,
-                'file_name' => $this->message->attachment->filename,
-                'public_url' => $this->message->attachment->public_url,
-                'mime_type' => $this->message->attachment->mime_type,
-                'file_size' => $this->message->attachment->file_size,
-            ] : null,
-            'created_at' => $this->message->created_at->toDateTimeString(),
         ];
     }
 }
