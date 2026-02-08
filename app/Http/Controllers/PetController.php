@@ -40,9 +40,6 @@ class PetController extends Controller
 
             $transformedData = $pets->getCollection()->map(function ($pet) {
                 [$age, $ageUnit] = $this->calculateAgeAndUnit($pet->date_of_birth);
-                if ($ageUnit) {
-                    $ageUnit .= ' old';
-                }
                 $profilePicture = $pet->profilePicture->first();
                 $profilePictureData = $profilePicture ? $profilePicture->public_url : null;
 
@@ -188,13 +185,7 @@ class PetController extends Controller
                 'additionalRecords:id,public_url,filename,mime_type,path',
             ])->findOrFail($id);
 
-            // Use the new private function to calculate age
             [$age, $ageUnit] = $this->calculateAgeAndUnit($pet->date_of_birth);
-            // Tambahkan 'old' ke semua satuan umur
-            if ($ageUnit) {
-                $ageUnit .= ' old';
-            }
-
             $data = [
                 'type_of_animal_id' => $pet->type_of_animal_id,
                 'size' => $pet->size,
@@ -344,6 +335,6 @@ class PetController extends Controller
                 $ageUnit = $age === 1 ? 'day' : 'days';
             }
         }
-        return [$age, $ageUnit];
+        return [$age, $ageUnit . ' old'];
     }
 }
