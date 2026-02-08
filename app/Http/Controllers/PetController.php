@@ -39,16 +39,10 @@ class PetController extends Controller
             }
 
             $transformedData = $pets->getCollection()->map(function ($pet) {
-                $dateOfBirth = $pet->date_of_birth;
-                $ageInYears = $dateOfBirth->age;
-                if ($ageInYears >= 1) {
-                    $age = $ageInYears;
-                    $ageUnit = $age === 1 ? 'year old' : 'years old';
-                } else {
-                    $age = (int) $dateOfBirth->diffInMonths(now());
-                    $ageUnit = $age === 1 ? 'month old' : 'months old';
+                [$age, $ageUnit] = $this->calculateAgeAndUnit($pet->date_of_birth);
+                if ($ageUnit) {
+                    $ageUnit .= ' old';
                 }
-
                 $profilePicture = $pet->profilePicture->first();
                 $profilePictureData = $profilePicture ? $profilePicture->public_url : null;
 
@@ -194,11 +188,19 @@ class PetController extends Controller
                 'additionalRecords:id,public_url,filename,mime_type,path',
             ])->findOrFail($id);
 
+            // Use the new private function to calculate age
+            [$age, $ageUnit] = $this->calculateAgeAndUnit($pet->date_of_birth);
+            // Tambahkan 'old' ke semua satuan umur
+            if ($ageUnit) {
+                $ageUnit .= ' old';
+            }
+
             $data = [
                 'type_of_animal_id' => $pet->type_of_animal_id,
                 'size' => $pet->size,
                 'name' => $pet->name,
-                'date_of_birth' => $pet->date_of_birth?->toDateString(),
+                'age' => $age,
+                'age_unit' => $ageUnit,
                 'gender' => $pet->gender,
                 'about' => $pet->about,
                 'breed' => $pet->breed,
@@ -314,5 +316,33 @@ class PetController extends Controller
                     $subQuery->where('mt_all_tag.id', $tagPersonalityId);
                 });
             });
+    }
+
+    /**
+     * Calculate age and age unit from date_of_birth
+     * @param  \Carbon\Carbon|null $dateOfBirth
+     * @return array [age, age_unit]
+     */
+    private function calculateAgeAndUnit($dateOfBirth)
+    {
+        if (!$dateOfBirth) {
+            return [null, null];
+        }
+        $ageInYears = $dateOfBirth->age;
+        if ($ageInYears >= 1) {
+            $age = $ageInYears;
+            $ageUnit = $age === 1 ? 'year' : 'years';
+        } else {
+            $ageInMonths = (int) $dateOfBirth->diffInMonths(now());
+            if ($ageInMonths >= 1) {
+                $age = $ageInMonths;
+                $ageUnit = $age === 1 ? 'month' : 'months';
+            } else {
+                $ageInDays = (int) $dateOfBirth->diffInDays(now());
+                $age = $ageInDays;
+                $ageUnit = $age === 1 ? 'day' : 'days';
+            }
+        }
+        return [$age, $ageUnit];
     }
 }
