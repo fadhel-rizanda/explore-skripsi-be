@@ -310,12 +310,7 @@ class PetController extends Controller
             });
     }
 
-    /**
-     * Calculate age and age unit from date_of_birth
-     * @param  \Carbon\Carbon|null $dateOfBirth
-     * @return array [age, age_unit]
-     */
-    private function calculateAgeAndUnit($dateOfBirth)
+    private function calculateAgeAndUnit(?\Carbon\Carbon $dateOfBirth): array
     {
         if (!$dateOfBirth) {
             return [null, null];
