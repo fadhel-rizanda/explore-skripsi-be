@@ -192,7 +192,7 @@ class PetController extends Controller
                 'name' => $pet->name,
                 'age' => $age,
                 'age_unit' => $ageUnit,
-                'date_of_birth' => $pet->date_of_birth ? $pet->date_of_birth->toDateString() : null,
+                'date_of_birth' => $pet->date_of_birth?->toDateString(),
                 'gender' => $pet->gender,
                 'about' => $pet->about,
                 'breed' => $pet->breed,
