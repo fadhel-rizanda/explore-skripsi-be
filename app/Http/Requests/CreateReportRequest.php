@@ -2,9 +2,10 @@
 
 namespace App\Http\Requests;
 
-use App\Enums\ModelReferenceEnum;
+use App\Enums\ModelFlagEnum;
 use App\Models\AllTag;
 use App\Models\Status;
+use App\Rules\OwnsAttachment;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -26,12 +27,17 @@ class CreateReportRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'reference_type' => ['required', Rule::in(ModelReferenceEnum::allReportValues())],
+            'reference_type' => ['required', Rule::in(ModelFlagEnum::allReportValues())],
             'reference_id' => 'required|uuid',
             'notes' => 'required|string|max:2000',
             'status_id' => 'sometimes|uuid|exists:' . (new Status())->getTable() . ',id',
             'tag_ids' => 'sometimes|array',
             'tag_ids.*' => 'uuid|exists:' . (new AllTag())->getTable() . ',id',
+            'attachment_id' => [
+                'sometimes',
+                'uuid',
+                new OwnsAttachment(),
+            ],
         ];
     }
 }

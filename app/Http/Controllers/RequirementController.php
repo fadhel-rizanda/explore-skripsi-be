@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Enums\AdoptionStageEnum;
 use App\Enums\AdoptionStatusEnum;
+use App\Enums\AttachmentTypeEnum;
+use App\Enums\ModelFlagEnum;
 use App\Enums\ModelReferenceEnum;
 use App\Enums\StatusTypeEnum;
 use App\Enums\TagTypeEnum;
@@ -14,6 +16,7 @@ use App\Http\Requests\RejectRequirementRequest;
 use App\Http\Services\NotificationService;
 use App\Models\Adoption;
 use App\Models\AllTag;
+use App\Models\Attachment;
 use App\Models\Requirement;
 use App\Models\Status;
 use App\Notifications\AdoptionMailNotification;
@@ -79,7 +82,7 @@ class RequirementController extends Controller
                 userIds: $usersToNotify,
                 title: 'New Adoption Requirements Set',
                 message: 'New requirements have been set for the adoption of ' . $adoption->pet->name . '. Please review and complete them.',
-                referenceType: ModelReferenceEnum::ADOPTION_REQUIREMENT->value,
+                referenceType: ModelFlagEnum::ADOPTION_REQUIREMENT->value,
                 referenceId: $adoption->id,
             )->notifyUsers(
                 new AdoptionMailNotification(
@@ -90,7 +93,11 @@ class RequirementController extends Controller
             )->getNotifications()->first();
             broadcast(new AdoptionUpdated($notification));
 
-            return $this->sendSuccess('Requirements set successfully');
+            $data = [
+                'requirements' => $data,
+            ];
+
+            return $this->sendSuccess('Requirements set successfully', $data);
         } catch (\Exception $e) {
             DB::rollBack();
             \Log::error('Error setting requirements', ['error' => $e->getMessage()]);
@@ -115,6 +122,11 @@ class RequirementController extends Controller
                 'updated_by' => $user->id,
             ]);
 
+            $requirement->setAttachmentMetadata(
+                attachmentId: $request->input('attachment_id'),
+                modelReference: ModelReferenceEnum::REQUIREMENT->value,
+            );
+
             DB::commit();
 
             $usersToNotify = [$adoption->provider->id];
@@ -122,7 +134,7 @@ class RequirementController extends Controller
                 userIds: $usersToNotify,
                 title: 'Adoption Requirement Filled',
                 message: 'A requirement has been filled for the adoption of ' . $adoption->pet->name . '. Please review and approve it.',
-                referenceType: ModelReferenceEnum::ADOPTION_REQUIREMENT->value,
+                referenceType: ModelFlagEnum::ADOPTION_REQUIREMENT->value,
                 referenceId: $adoption->id,
             )->notifyUsers(
                 new AdoptionMailNotification(
@@ -133,7 +145,27 @@ class RequirementController extends Controller
             )->getNotifications()->first();
             broadcast(new AdoptionUpdated($notification));
 
-            return $this->sendSuccess('Requirement filled successfully', $requirement);
+            $data = [
+                'id' => $requirement->id,
+                'name' => $requirement->name,
+                'notes' => $requirement->notes,
+                'attachment' => $requirement->attachment,
+                'status' => $requirement->status,
+                'created_by' => [
+                    'id' => $requirement->createdBy->id,
+                    'name' => $requirement->createdBy->name,
+                    'email' => $requirement->createdBy->email,
+                ],
+                'updated_by' => [
+                    'id' => $requirement->updatedBy->id,
+                    'name' => $requirement->updatedBy->name,
+                    'email' => $requirement->updatedBy->email,
+                ],
+                'created_at' => $requirement->created_at,
+                'updated_at' => $requirement->updated_at,
+            ];
+
+            return $this->sendSuccess('Requirement filled successfully', $data);
         } catch (\Exception $e) {
             DB::rollBack();
             \Log::error('Error filling requirement', ['error' => $e->getMessage()]);
@@ -153,6 +185,14 @@ class RequirementController extends Controller
         }
 
         try {
+            if ($requirement->attachment_id) {
+                Attachment::whereId($requirement->attachment_id)->update([
+                    'reference_id' => null,
+                    'reference_by' => null,
+                    'status' => AttachmentTypeEnum::PENDING->value,
+                ]);
+            }
+
             $requirement->delete();
 
             return $this->sendSuccess('Requirement deleted successfully');
@@ -190,7 +230,7 @@ class RequirementController extends Controller
                 userIds: $usersToNotify,
                 title: 'Adoption Requirement Approved',
                 message: 'A requirement has been approved for the adoption of ' . $adoption->pet->name . '.',
-                referenceType: ModelReferenceEnum::ADOPTION_REQUIREMENT->value,
+                referenceType: ModelFlagEnum::ADOPTION_REQUIREMENT->value,
                 referenceId: $adoption->id,
             )->notifyUsers(
                 new AdoptionMailNotification(
@@ -201,7 +241,19 @@ class RequirementController extends Controller
             )->getNotifications()->first();
             broadcast(new AdoptionUpdated($notification));
 
-            return $this->sendSuccess('Requirement approved successfully', $requirement);
+            $data = [
+                'id' => $requirement->id,
+                'name' => $requirement->name,
+                'notes' => $requirement->notes,
+                'attachment' => $requirement->attachment,
+                'status' => $requirement->status,
+                'created_by' => $requirement->createdBy,
+                'updated_by' => $requirement->updatedBy,
+                'created_at' => $requirement->created_at,
+                'updated_at' => $requirement->updated_at,
+            ];
+
+            return $this->sendSuccess('Requirement approved successfully', $data);
         } catch (\Exception $e) {
             DB::rollBack();
             \Log::error('Error approving requirement', ['error' => $e->getMessage()]);
@@ -237,7 +289,7 @@ class RequirementController extends Controller
                 userIds: $usersToNotify,
                 title: 'Adoption Requirement Rejected',
                 message: 'A requirement has been rejected for the adoption of ' . $adoption->pet->name . '. Please review and resubmit it.',
-                referenceType: ModelReferenceEnum::ADOPTION_REQUIREMENT->value,
+                referenceType: ModelFlagEnum::ADOPTION_REQUIREMENT->value,
                 referenceId: $adoption->id,
             )->notifyUsers(
                 new AdoptionMailNotification(
@@ -248,7 +300,19 @@ class RequirementController extends Controller
             )->getNotifications()->first();
             broadcast(new AdoptionUpdated($notification));
 
-            return $this->sendSuccess('Requirement rejected successfully', $requirement);
+            $data = [
+                'id' => $requirement->id,
+                'name' => $requirement->name,
+                'notes' => $requirement->notes,
+                'attachment' => $requirement->attachment,
+                'status' => $requirement->status,
+                'created_by' => $requirement->createdBy,
+                'updated_by' => $requirement->updatedBy,
+                'created_at' => $requirement->created_at,
+                'updated_at' => $requirement->updated_at,
+            ];
+
+            return $this->sendSuccess('Requirement rejected successfully', $data);
         } catch (\Exception $e) {
             DB::rollBack();
             \Log::error('Error rejecting requirement', ['error' => $e->getMessage()]);
@@ -311,7 +375,7 @@ class RequirementController extends Controller
                 userIds: $usersToNotify,
                 title: 'Adoption Finalized',
                 message: 'The adoption process for ' . $adoption->pet->name . ' has been finalized.',
-                referenceType: ModelReferenceEnum::ADOPTION_REQUIREMENT->value,
+                referenceType: ModelFlagEnum::ADOPTION_REQUIREMENT->value,
                 referenceId: $adoption->id,
             )->notifyUsers(
                 new AdoptionMailNotification(
@@ -322,10 +386,12 @@ class RequirementController extends Controller
             )->getNotifications()->first();
             broadcast(new AdoptionUpdated($notification));
 
-            return $this->sendSuccess(
-                'Finalized requirements fetched successfully',
-                $requirements
-            );
+            $data = [
+                'adoption_status' => $adoption->status,
+                'adoption_stage' => $adoption->stageTag,
+            ];
+
+            return $this->sendSuccess('Finalized requirements fetched successfully', $data);
         } catch (\Throwable $e) {
             DB::rollBack();
             \Log::error('Error finalizing requirements', ['error' => $e->getMessage()]);

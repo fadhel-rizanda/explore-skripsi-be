@@ -54,7 +54,7 @@ class AdoptionAccess
             && $adoption->adopter_id === $user->id;
 
         $isProvider = in_array('provider', $allowedRoles, true)
-            && $adoption->provider_id === $user->id;
+            && $adoption->provider->id === $user->id;
 
         return $isAdopter || $isProvider;
     }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\AdoptionStageEnum;
 use App\Enums\AdoptionStatusEnum;
+use App\Enums\ModelFlagEnum;
 use App\Enums\ModelReferenceEnum;
 use App\Enums\PetStatusEnum;
 use App\Enums\RoleEnum;
@@ -39,30 +40,6 @@ class HandoverController extends Controller
         return $this->sendSuccess('Handover fetched successfully', $handover);
     }
 
-    #[\Deprecated]
-    public function createHandover(Adoption $adoption)
-    {
-        $handover = $adoption->handovers()
-            ->with(['schedule', 'schedule.address', 'status'])
-            ->orderBy('updated_at', 'desc')
-            ->first();
-
-        if ($handover) {
-            return $this->sendError('Handover already exists for this adoption.', 400);
-        }
-
-        $handover = $adoption->handovers()->create([
-            'adoption_id' => $adoption->id,
-            'status_id' => Status::getCache(
-                StatusTypeEnum::ADOPTION->value,
-                AdoptionStatusEnum::IN_PROGRESS->value
-            )->id,
-            'created_by' => auth('api')->id(),
-        ]);
-
-        return $this->sendSuccess('Handover created successfully', $handover);
-    }
-
     public function purposeMeetNGreetSchedule(Adoption $adoption, CreateScheduleRequest $request)
     {
         $user = auth('api')->user();
@@ -75,7 +52,7 @@ class HandoverController extends Controller
                 meetNGreetId: $request->input('meet_n_greet_id')
             );
 
-            $handover = Handover::firstOrCreate(
+            $handover = Handover::updateOrCreate(
                 [
                     'adoption_id' => $adoption->id,
                 ],
@@ -98,7 +75,7 @@ class HandoverController extends Controller
                     userIds: $usersToNotify,
                     title: 'Handover Scheduled',
                     message: 'Handover has been scheduled for ' . ($adoption->pet->name ?? 'Unnamed Pet'),
-                    referenceType: ModelReferenceEnum::ADOPTION_HANDOVER->value,
+                    referenceType: ModelFlagEnum::ADOPTION_HANDOVER->value,
                     referenceId: $handover->id,
                 )
                 ->notifyUsers(
@@ -111,10 +88,34 @@ class HandoverController extends Controller
                 ->first();
             broadcast(new AdoptionUpdated($notification));
 
-            return $this->sendSuccess(
-                'Handover scheduled successfully',
-                $handover->load(['meetNGreet.schedule.address', 'status'])
-            );
+            $data = [
+                'id' => $handover->id,
+                'adoption_id' => $handover->adoption_id,
+                'status' => $handover->status,
+                'created_at' => $handover->created_at,
+                'updated_at' => $handover->updated_at,
+                'meet_n_greet' => [
+                    'id' => $meetNGreet->id,
+                    'adoption_id' => $meetNGreet->adoption_id,
+                    'adopter_confirmed' => $meetNGreet->adopter_confirmed,
+                    'adopter_confirmed_at' => $meetNGreet->adopter_confirmed_at,
+                    'provider_confirmed' => $meetNGreet->provider_confirmed,
+                    'provider_confirmed_at' => $meetNGreet->provider_confirmed_at,
+                    'status' => $meetNGreet->status,
+                    'schedule' => [
+                        'id' => $meetNGreet->schedule->id,
+                        'scheduled_time' => $meetNGreet->schedule->scheduled_time,
+                        'notes' => $meetNGreet->schedule->notes,
+                        'address' => $meetNGreet->schedule->address,
+                        'created_at' => $meetNGreet->schedule->created_at,
+                        'updated_at' => $meetNGreet->schedule->updated_at,
+                    ],
+                    'created_at' => $meetNGreet->created_at,
+                    'updated_at' => $meetNGreet->updated_at,
+                ],
+            ];
+
+            return $this->sendSuccess('Handover Meet and Greet ' . ($request->has('meet_n_greet_id') ? 'updated' : 'scheduled') . ' successfully', $data);
 
         } catch (\Throwable $e) {
             DB::rollBack();
@@ -140,7 +141,7 @@ class HandoverController extends Controller
                     userIds: $usersToNotify,
                     title: 'Handover Meet and Greet Completed',
                     message: 'The Handover Meet and Greet has been completed for the adoption of ' . ($adoption->pet->name ?? 'Unnamed Pet'),
-                    referenceType: ModelReferenceEnum::ADOPTION_HANDOVER->value,
+                    referenceType: ModelFlagEnum::ADOPTION_HANDOVER->value,
                     referenceId: $handover->id,
                 )->notifyUsers(new AdoptionMailNotification(
                     action: AdoptionStageEnum::HANDOVER->value,
@@ -151,10 +152,34 @@ class HandoverController extends Controller
                 broadcast(new AdoptionUpdated($notification));
             }
 
-            return $this->sendSuccess(
-                'Meet and Greet approved successfully',
-                $meetNGreet->load(['schedule.address', 'status'])
-            );
+            $data = [
+                'id' => $handover->id,
+                'adoption_id' => $handover->adoption_id,
+                'status' => $handover->status,
+                'created_at' => $handover->created_at,
+                'updated_at' => $handover->updated_at,
+                'meet_n_greet' => [
+                    'id' => $meetNGreet->id,
+                    'adoption_id' => $meetNGreet->adoption_id,
+                    'adopter_confirmed' => $meetNGreet->adopter_confirmed,
+                    'adopter_confirmed_at' => $meetNGreet->adopter_confirmed_at,
+                    'provider_confirmed' => $meetNGreet->provider_confirmed,
+                    'provider_confirmed_at' => $meetNGreet->provider_confirmed_at,
+                    'status' => $meetNGreet->status,
+                    'schedule' => [
+                        'id' => $meetNGreet->schedule->id,
+                        'scheduled_time' => $meetNGreet->schedule->scheduled_time,
+                        'notes' => $meetNGreet->schedule->notes,
+                        'address' => $meetNGreet->schedule->address,
+                        'created_at' => $meetNGreet->schedule->created_at,
+                        'updated_at' => $meetNGreet->schedule->updated_at,
+                    ],
+                    'created_at' => $meetNGreet->created_at,
+                    'updated_at' => $meetNGreet->updated_at,
+                ],
+            ];
+
+            return $this->sendSuccess('Meet and Greet approved successfully', $data);
 
         } catch (\Throwable $e) {
             \Log::error('Error approving Meet and Greet', ['error' => $e->getMessage()]);
@@ -172,8 +197,10 @@ class HandoverController extends Controller
         try {
             DB::beginTransaction();
 
-            $handover->attachments()->sync(
-                $request->input('attachment_ids')
+            $handover->syncAttachmentsWithMetadata(
+                relation: 'attachments',
+                newIds: $request->input('attachment_ids'),
+                modelReference: ModelReferenceEnum::HANDOVER->value,
             );
 
             $adopterAttached = $handover->attachments()
@@ -194,9 +221,18 @@ class HandoverController extends Controller
 
             DB::commit();
 
+            $data = [
+                'id' => $handover->id,
+                'adoption_id' => $handover->adoption_id,
+                'status' => $handover->status,
+                'attachments' => $handover->attachments,
+                'created_at' => $handover->created_at,
+                'updated_at' => $handover->updated_at,
+            ];
+
             return $this->sendSuccess(
                 'Handover evidence updated successfully',
-                $handover->load(['attachments'])
+                $data
             );
 
         } catch (\Throwable $e) {
@@ -277,7 +313,7 @@ class HandoverController extends Controller
                 userIds: [$adoption->adopter->id, $adoption->provider->id],
                 title: 'Handover Finalized',
                 message: 'The handover has been finalized for the adoption of ' . ($adoption->pet->name ?? 'Unnamed Pet'),
-                referenceType: ModelReferenceEnum::ADOPTION_HANDOVER->value,
+                referenceType: ModelFlagEnum::ADOPTION_HANDOVER->value,
                 referenceId: $handover->id,
             )->notifyUsers(
                 new AdoptionMailNotification(
@@ -288,10 +324,21 @@ class HandoverController extends Controller
             )->getNotifications()->first();
             broadcast(new AdoptionUpdated($notification));
 
-            return $this->sendSuccess(
-                'Handover finalized successfully',
-                $handover->load('status')
-            );
+            $data = [
+                'id' => $handover->id,
+                'adoption_id' => $handover->adoption_id,
+                'adopter_finalized' => $handover->adopter_finalized,
+                'adopter_finalized_at' => $handover->adopter_finalized_at,
+                'provider_finalized' => $handover->provider_finalized,
+                'provider_finalized_at' => $handover->provider_finalized_at,
+                'admin_finalized' => $handover->admin_finalized,
+                'admin_finalized_at' => $handover->admin_finalized_at,
+                'status' => $handover->status,
+                'created_at' => $handover->created_at,
+                'updated_at' => $handover->updated_at,
+            ];
+
+            return $this->sendSuccess('Handover finalized successfully', $data);
         } catch (\Throwable $e) {
             DB::rollBack();
             \Log::error('Error finalizing Handover', ['error' => $e->getMessage()]);

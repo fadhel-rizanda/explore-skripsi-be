@@ -29,6 +29,8 @@ class Attachment extends Model
         'status',
         'uploaded_at',
         'public_url',
+        'reference_by',
+        'reference_id',
     ];
 
     protected $casts = [
