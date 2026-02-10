@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ModelReferenceEnum;
 use App\Enums\PetStatusEnum;
 use App\Enums\StatusTypeEnum;
 use App\Http\Requests\GetAllRequest;
@@ -105,12 +106,20 @@ class PetController extends Controller
 
                 // Attach profile pictures if provided
                 if ($request->filled('profile_picture_ids')) {
-                    $pet->profilePictures()->sync($request->profile_picture_ids);
+                    $pet->syncAttachmentsWithMetadata(
+                        relation: 'profilePictures',
+                        newIds: $request->profile_picture_ids,
+                        modelReference: ModelReferenceEnum::PET->value,
+                    );
                 }
 
                 // Attach profile pictures if provided
                 if ($request->filled('additional_record_ids')) {
-                    $pet->additionalRecords()->sync($request->additional_record_ids);
+                    $pet->syncAttachmentsWithMetadata(
+                        relation: 'additionalRecords',
+                        newIds: $request->additional_record_ids,
+                        modelReference: ModelReferenceEnum::PET->value,
+                    );
                 }
 
                 return $pet;
@@ -150,12 +159,20 @@ class PetController extends Controller
 
                 // Sync profile pictures if provided
                 if ($request->has('profile_picture_ids')) {
-                    $pet->profilePictures()->sync($request->profile_picture_ids);
+                    $pet->syncAttachmentsWithMetadata(
+                        relation: 'profilePictures',
+                        newIds: $request->profile_picture_ids,
+                        modelReference: ModelReferenceEnum::PET->value,
+                    );
                 }
 
                 // Sync additional records if provided
                 if ($request->has('additional_record_ids')) {
-                    $pet->additionalRecords()->sync($request->additional_record_ids);
+                    $pet->syncAttachmentsWithMetadata(
+                        relation: 'additionalRecords',
+                        newIds: $request->additional_record_ids,
+                        modelReference: ModelReferenceEnum::PET->value,
+                    );
                 }
             });
 
@@ -312,7 +329,7 @@ class PetController extends Controller
 
     private function calculateAgeAndUnit(?\Carbon\Carbon $dateOfBirth): array
     {
-        if (!$dateOfBirth) {
+        if (! $dateOfBirth) {
             return [null, null];
         }
         $ageInYears = $dateOfBirth->age;
@@ -330,6 +347,7 @@ class PetController extends Controller
                 $ageUnit = $age === 1 ? 'day' : 'days';
             }
         }
+
         return [$age, $ageUnit . ' old'];
     }
 }

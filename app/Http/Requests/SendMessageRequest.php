@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\OwnsAttachment;
 use Illuminate\Foundation\Http\FormRequest;
 
 class SendMessageRequest extends FormRequest
@@ -23,7 +24,12 @@ class SendMessageRequest extends FormRequest
     {
         return [
             'content' => 'required_without:attachment_id|nullable|string|max:10000',
-            'attachment_id' => 'required_without:content|nullable|uuid',
+            'attachment_id' => [
+                'required_without:content',
+                'nullable',
+                'uuid',
+                new OwnsAttachment(),
+            ],
         ];
     }
 }

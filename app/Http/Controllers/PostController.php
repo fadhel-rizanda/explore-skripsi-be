@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ModelReferenceEnum;
 use App\Http\Requests\CreatePostRequest;
 use App\Http\Requests\GetAllRequest;
 use App\Http\Requests\UpdatePostRequest;
@@ -64,6 +65,11 @@ class PostController extends Controller
                 'created_by' => auth('api')->user()->id,
             ]);
 
+            $post->setAttachmentMetadata(
+                attachmentId: $request->input('attachment_id'),
+                modelReference: ModelReferenceEnum::POST->value,
+            );
+
             if ($request->has('tag_ids')) {
                 $post->tags()->sync($request->input('tag_ids'));
             }
@@ -86,18 +92,16 @@ class PostController extends Controller
         try {
             DB::beginTransaction();
 
-            if ($request->filled('attachment_id') && $request->attachment_id !== $post->attachment_id) {
-                $oldAttachment = $post->attachment;
-                if ($oldAttachment) {
-                    $oldAttachment->deleteFromStorage();
-                }
-            }
-
             $post->update($request->only([
                 'title',
                 'content',
                 'attachment_id',
             ]));
+
+            $post->setAttachmentMetadata(
+                attachmentId: $request->input('attachment_id'),
+                modelReference: ModelReferenceEnum::POST->value,
+            );
 
             if ($request->has('tag_ids')) {
                 $post->tags()->sync($request->input('tag_ids'));
@@ -121,9 +125,10 @@ class PostController extends Controller
         try {
             DB::beginTransaction();
 
-            if ($post->attachment) {
-                $post->attachment->deleteFromStorage();
-            }
+            $post->setAttachmentMetadata(
+                attachmentId: null,
+                modelReference: ModelReferenceEnum::POST->value,
+            );
 
             $post->delete();
 

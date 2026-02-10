@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Enums\AttachmentTypeEnum;
+use App\Enums\ModelReferenceEnum;
+use App\Enums\PetStatusEnum;
+use App\Enums\RoleEnum;
 use App\Http\Requests\GeneratePresignedUrlRequest;
 use App\Models\Attachment;
 use App\Traits\ResponseAPI;
@@ -87,6 +90,8 @@ class AttachmentController extends Controller
                 'status' => AttachmentTypeEnum::PENDING->value,
                 'uploaded_by' => $user->id,
                 'public_url' => $publicUrl,
+                'reference_by' => $request->input('reference_by'),
+                'reference_id' => $request->input('reference_id'),
             ]);
 
             $responseData = [
@@ -142,11 +147,21 @@ class AttachmentController extends Controller
         }
     }
 
-    //    TODO: Add rate limiting to this endpoint
     public function generateDownloadUrl(Attachment $document)
     {
         if ($document->status !== AttachmentTypeEnum::COMPLETED->value || ! Storage::disk('s3')->exists($document->path)) {
             return $this->sendError('File not found in storage.', 404);
+        }
+
+        $relatedModel = $this->getRelatedModel($document);
+        $user = auth('api')->user();
+        if ($relatedModel && ! $document->public_url) {
+            $hasAccess = $this->checkUserAccessToModel($user, $relatedModel);
+            if (! $hasAccess && $document->uploaded_by !== $user->id && ! $user->hasRole(RoleEnum::ADMIN)) {
+                return $this->sendError('Unauthorized to access this document.', 403);
+            }
+        } else {
+            return $this->sendError('Related model not found.', 404);
         }
 
         try {
@@ -192,5 +207,59 @@ class AttachmentController extends Controller
         $document->delete();
 
         return $this->sendSuccess('Document deleted successfully.');
+    }
+
+    private function getRelatedModel(Attachment $document)
+    {
+        if (!$document->reference_by || !$document->reference_id) return null;
+        try {
+            $reference = ModelReferenceEnum::tryFrom($document->reference_by);
+
+            if (!$reference) {
+                Log::warning('Unknown reference_by: ' . $document->reference_by);
+                return null;
+            }
+
+            $modelClass = 'App\\Models\\' . ucfirst($reference->value);
+
+            if (class_exists($modelClass)) {
+                return $modelClass::find($document->reference_id);
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Error getting related model: ' . $e->getMessage());
+        }
+        return null;
+    }
+
+    private function checkUserAccessToModel($user, $model)
+    {
+        if (!$user) return false;
+        $userId = (string) $user->id;
+
+        switch (get_class($model)) {
+            case \App\Models\Adoption::class:
+                return (string) $model->adopter_id === $userId ||
+                    (string) $model->pet->user_id === $userId;
+            case \App\Models\Pet::class:
+                if ((string) $model->user_id === $userId) return true;
+                return $model->status->name === PetStatusEnum::AVAILABLE->value;
+            case \App\Models\Report::class:
+            case \App\Models\Post::class:
+                return (string) $model->created_by === $userId;
+            case \App\Models\Community::class:
+                return $model->members()->where('mt_user.id', $userId)->exists();
+            case \App\Models\User::class:
+                return (string) $model->id === $userId;
+            case \App\Models\Chat::class:
+                return $model->users()->where('mt_user.id', $userId)->exists();
+            case \App\Models\Handover::class:
+            case \App\Models\Requirement::class:
+                $adoption = $model->adoption;
+                return (string) $adoption?->user_id === $userId ||
+                    (string) $adoption?->pet?->user_id === $userId;
+            default:
+                return false;
+        }
     }
 }

@@ -10,13 +10,13 @@ use Illuminate\Support\Facades\Route;
 
 Route::group([
     'prefix' => 'adoptions',
-    'middleware' => ['auth:api', 'check.token.version', 'adoption.owner'],
+    'middleware' => ['auth:api', 'check.token.version'],
 ], function () {
     Route::get('/', [AdoptionController::class, 'listAdoptions']);
-    Route::get('/{adoption}', [AdoptionController::class, 'adoptionDetail']);
+    Route::get('/{adoption}', [AdoptionController::class, 'adoptionDetail'])->middleware(['adoption.owner']);
 
     Route::scopeBindings()->group(function () {
-        Route::get('/{adoption}/requirements', [RequirementController::class, 'listRequirements']);
+        Route::get('/{adoption}/requirements', [RequirementController::class, 'listRequirements'])->middleware(['adoption.owner']);
 
         Route::middleware(['adoption.stage:' . AdoptionStageEnum::REQUIREMENT->value])->group(function () {
             Route::middleware(['adoption.access:' . RoleEnum::PROVIDER->value])->group(function () {
@@ -24,16 +24,16 @@ Route::group([
                 Route::delete('/{adoption}/requirements/{requirement}', [RequirementController::class, 'deleteRequirement']);
                 Route::patch('/{adoption}/requirements/{requirement}/approve', [RequirementController::class, 'approveRequirement']);
                 Route::patch('/{adoption}/requirements/{requirement}/reject', [RequirementController::class, 'rejectRequirement']);
+                Route::patch('/{adoption}/requirements/finalize', [RequirementController::class, 'finalizedRequirements']);
             });
             Route::post('/{adoption}/requirements/{requirement}/fill', [RequirementController::class, 'fillRequirement'])->middleware(['adoption.access:' . RoleEnum::ADOPTER->value]);
-            Route::patch('/{adoption}/requirements/finalize', [RequirementController::class, 'finalizedRequirements']);
         });
 
         Route::middleware(['adoption.stage:' . AdoptionStageEnum::MEET_N_GREET->value])->group(function () {
             Route::get('/{adoption}/meet-n-greet', [MeetNGreetController::class, 'meetNGreet']);
             Route::post('/{adoption}/meet-n-greet', [MeetNGreetController::class, 'purposeSchedule']);
             Route::patch('/{adoption}/meet-n-greet/{meetNGreet}/approve', [MeetNGreetController::class, 'approveSchedule']);
-            Route::patch('/{adoption}/meet-n-greet/{meetNGreet}/finalize', [MeetNGreetController::class, 'finalizeMeetNGreet']);
+            Route::patch('/{adoption}/meet-n-greet/{meetNGreet}/finalize', [MeetNGreetController::class, 'finalizeMeetNGreet'])->middleware(['adoption.access:' . RoleEnum::PROVIDER->value]);
         });
 
         Route::middleware(['adoption.stage:' . AdoptionStageEnum::HANDOVER->value])->group(function () {

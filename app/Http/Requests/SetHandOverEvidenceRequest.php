@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests;
 
-use App\Models\Attachment;
+use App\Rules\OwnsAttachment;
 use Illuminate\Foundation\Http\FormRequest;
 
 class SetHandOverEvidenceRequest extends FormRequest
@@ -23,8 +23,8 @@ class SetHandOverEvidenceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'attachment_ids' => 'required|array|min:1',
-            'attachment_ids.*' => 'uuid|exists:' . (new Attachment())->getTable() . ',id',
+            'attachment_ids' => ['required', 'array', 'min:1', new OwnsAttachment()],
+            'attachment_ids.*' => 'uuid',
         ];
     }
 }

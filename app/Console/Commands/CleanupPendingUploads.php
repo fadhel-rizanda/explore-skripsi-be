@@ -15,22 +15,31 @@ class CleanupPendingUploads extends Command
 
     public function handle()
     {
-        $documents = Attachment::where('status', 'pending')
+        $this->info('Starting cleanup for pending uploads...');
+
+        Attachment::where('status', 'pending')
             ->where('created_at', '<', now()->subHour())
-            ->get();
+            ->chunkById(100, function ($documents) {
+                foreach ($documents as $document) {
+                    try {
+                        if ($document->path && Storage::disk('s3')->exists($document->path)) {
+                            Storage::disk('s3')->delete($document->path);
+                        }
 
-        foreach ($documents as $document) {
-            try {
-                Storage::disk('s3')->delete($document->path);
-            } catch (\Exception $e) {
-                Log::error('Failed to delete file from S3: ' . $document->path, ['error' => $e->getMessage()]);
-                $document->status = 'failed';
-                $document->save();
-                continue;
-            }
-            $document->delete();
-        }
+                        $document->delete();
+                        $this->comment("Deleted: {$document->id}");
 
-        $this->info("Cleaned up {$documents->count()} pending uploads");
+                    } catch (\Exception $e) {
+                        Log::error("Failed to cleanup attachment ID: {$document->id}", [
+                            'path' => $document->path,
+                            'error' => $e->getMessage(),
+                        ]);
+
+                        $document->update(['status' => 'failed']);
+                    }
+                }
+            });
+
+        $this->info('Cleanup process completed.');
     }
 }

@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\AdoptionStageEnum;
-use App\Enums\ModelReferenceEnum;
+use App\Enums\ModelFlagEnum;
 use App\Events\AdoptionUpdated;
 use App\Http\Requests\CreateScheduleRequest;
 use App\Http\Services\MeetNGreetService;
@@ -46,7 +46,7 @@ class MeetNGreetController extends Controller
                 userIds: $usersToNotify,
                 title: 'Meet and Greet Scheduled',
                 message: 'A Meet and Greet has been ' . ($meetNGreet->id ? 'updated' : 'scheduled') . ' for the adoption of ' . ($adoption->pet->name ?? 'Unnamed Pet'),
-                referenceType: ModelReferenceEnum::ADOPTION_MEETNGREET->value,
+                referenceType: ModelFlagEnum::ADOPTION_MEETNGREET->value,
                 referenceId: $meetNGreet->id,
             )->notifyUsers(new AdoptionMailNotification(
                 action: AdoptionStageEnum::MEET_N_GREET->value,
@@ -56,10 +56,27 @@ class MeetNGreetController extends Controller
 
             broadcast(new AdoptionUpdated($notification));
 
-            return $this->sendSuccess(
-                'Meet and Greet ' . ($request->has('meet_n_greet_id') ? 'updated' : 'scheduled') . ' successfully',
-                $meetNGreet->load(['schedule', 'schedule.address', 'status'])
-            );
+            $data = [
+                'id' => $meetNGreet->id,
+                'adoption_id' => $meetNGreet->adoption_id,
+                'adopter_confirmed' => $meetNGreet->adopter_confirmed,
+                'adopter_confirmed_at' => $meetNGreet->adopter_confirmed_at,
+                'provider_confirmed' => $meetNGreet->provider_confirmed,
+                'provider_confirmed_at' => $meetNGreet->provider_confirmed_at,
+                'status' => $meetNGreet->status,
+                'schedule' => [
+                    'id' => $meetNGreet->schedule->id,
+                    'scheduled_time' => $meetNGreet->schedule->scheduled_time,
+                    'notes' => $meetNGreet->schedule->notes,
+                    'address' => $meetNGreet->schedule->address,
+                    'created_at' => $meetNGreet->schedule->created_at,
+                    'updated_at' => $meetNGreet->schedule->updated_at,
+                ],
+                'created_at' => $meetNGreet->created_at,
+                'updated_at' => $meetNGreet->updated_at,
+            ];
+
+            return $this->sendSuccess('Meet and Greet ' . ($request->has('meet_n_greet_id') ? 'updated' : 'scheduled') . ' successfully', $data);
         } catch (\Throwable $e) {
             \Log::error('Error scheduling Meet and Greet', [
                 'error' => $e->getMessage(),
@@ -83,7 +100,7 @@ class MeetNGreetController extends Controller
                     userIds: $usersToNotify,
                     title: 'Meet and Greet Completed',
                     message: 'The Meet and Greet has been completed for the adoption of ' . ($adoption->pet->name ?? 'Unnamed Pet'),
-                    referenceType: ModelReferenceEnum::ADOPTION_MEETNGREET->value,
+                    referenceType: ModelFlagEnum::ADOPTION_MEETNGREET->value,
                     referenceId: $meetNGreet->id,
                 )->notifyUsers(new AdoptionMailNotification(
                     action: AdoptionStageEnum::MEET_N_GREET->value,
@@ -94,10 +111,27 @@ class MeetNGreetController extends Controller
                 broadcast(new AdoptionUpdated($notification));
             }
 
-            return $this->sendSuccess(
-                'Meet and Greet status updated successfully',
-                $meetNGreet->load(['schedule', 'schedule.address', 'status'])
-            );
+            $data = [
+                'id' => $meetNGreet->id,
+                'adoption_id' => $meetNGreet->adoption_id,
+                'adopter_confirmed' => $meetNGreet->adopter_confirmed,
+                'adopter_confirmed_at' => $meetNGreet->adopter_confirmed_at,
+                'provider_confirmed' => $meetNGreet->provider_confirmed,
+                'provider_confirmed_at' => $meetNGreet->provider_confirmed_at,
+                'status' => $meetNGreet->status,
+                'schedule' => [
+                    'id' => $meetNGreet->schedule->id,
+                    'scheduled_time' => $meetNGreet->schedule->scheduled_time,
+                    'notes' => $meetNGreet->schedule->notes,
+                    'address' => $meetNGreet->schedule->address,
+                    'created_at' => $meetNGreet->schedule->created_at,
+                    'updated_at' => $meetNGreet->schedule->updated_at,
+                ],
+                'created_at' => $meetNGreet->created_at,
+                'updated_at' => $meetNGreet->updated_at,
+            ];
+
+            return $this->sendSuccess('Meet and Greet status updated successfully', $data);
         } catch (\Throwable $e) {
             \Log::error('Error updating Meet and Greet status', [
                 'error' => $e->getMessage(),
@@ -115,10 +149,15 @@ class MeetNGreetController extends Controller
                 meetNGreet: $meetNGreet
             );
 
-            return $this->sendSuccess(
-                'Meet and Greet finalized successfully',
-                $meetNGreet->load(['schedule', 'schedule.address', 'status'])
-            );
+            $data = [
+                'id' => $meetNGreet->id,
+                'adoption_id' => $meetNGreet->adoption_id,
+                'status' => $meetNGreet->status,
+                'created_at' => $meetNGreet->created_at,
+                'updated_at' => $meetNGreet->updated_at,
+            ];
+
+            return $this->sendSuccess('Meet and Greet finalized successfully', $data);
         } catch (\Throwable $e) {
             \Log::error('Error finalizing Meet and Greet', [
                 'error' => $e->getMessage(),

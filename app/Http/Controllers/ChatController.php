@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\ActionEnum;
 use App\Enums\AttachmentTypeEnum;
 use App\Enums\ChatTypeEnum;
+use App\Enums\ModelFlagEnum;
 use App\Enums\ModelReferenceEnum;
 use App\Events\ChatUpdated;
 use App\Events\MessageSent;
@@ -13,6 +14,7 @@ use App\Http\Requests\SendMessageRequest;
 use App\Http\Services\NotificationService;
 use App\Models\Attachment;
 use App\Models\Chat;
+use App\Models\Message;
 use App\Notifications\ChatNotification;
 use App\Traits\ResponseAPI;
 use Illuminate\Http\Request;
@@ -191,7 +193,7 @@ class ChatController extends Controller
                     userIds: $request->user_ids,
                     title: 'New Chat Room Created',
                     message: 'A new chat room has been created.',
-                    referenceType: ModelReferenceEnum::CHAT->value,
+                    referenceType: ModelFlagEnum::CHAT->value,
                     referenceId: $chatRoom->id,
                 )->notifyUsers(
                     new ChatNotification(
@@ -238,13 +240,6 @@ class ChatController extends Controller
     public function sendMessage(Chat $chat, SendMessageRequest $request)
     {
         $user = auth('api')->user();
-        $attachmentId = $request->input('attachment_id');
-        if ($attachmentId) {
-            $attachment = Attachment::find($attachmentId);
-            if (! $attachment || $attachment->uploaded_by !== $user->id) {
-                return $this->sendError('Invalid attachment.', 403);
-            }
-        }
 
         try {
             DB::beginTransaction();
@@ -254,10 +249,15 @@ class ChatController extends Controller
                 'attachment_id' => $request->input('attachment_id'),
             ]);
 
-            //            $chat->users()->updateExistingPivot(
-            //                $user,
-            //                ['last_read_at' => now()]
-            //            );
+            $chat->setAttachmentMetadata(
+                attachmentId: $request->input('attachment_id'),
+                modelReference: ModelReferenceEnum::CHAT->value,
+            );
+
+            $chat->users()->updateExistingPivot(
+                $user,
+                ['last_read_at' => now()]
+            );
             DB::commit();
 
             $message->load('user', 'attachment');
@@ -292,6 +292,73 @@ class ChatController extends Controller
             ]);
 
             return $this->sendError('Failed to send message', 500);
+        }
+    }
+
+    public function deleteChat(Chat $chat)
+    {
+        $user = auth('api')->user();
+
+        try {
+            DB::beginTransaction();
+
+            $chat->setAttachmentMetadata(
+                attachmentId: null,
+                modelReference: ModelReferenceEnum::CHAT->value,
+            );
+
+            $chat->delete();
+
+            $chat->users()->detach();
+
+            $chat->delete();
+
+            DB::commit();
+
+            return $this->sendSuccess('Chat deleted successfully');
+        } catch (\Exception $exception) {
+            DB::rollBack();
+            Log::error('deleteChat failed', [
+                'exception' => $exception->getMessage(),
+                'trace' => $exception->getTraceAsString(),
+            ]);
+
+            return $this->sendError('Failed to delete chat', 500);
+        }
+    }
+
+    public function deleteMessage(Chat $chat, Message $message)
+    {
+        $user = auth('api')->user();
+
+        try {
+            DB::beginTransaction();
+
+            if ($message->user_id !== $user->id) {
+                return $this->sendError('Unauthorized to delete this message', 403);
+            }
+
+            if ($message->attachment_id) {
+                Attachment::whereId($message->attachment_id)->update([
+                    'reference_id' => null,
+                    'reference_by' => null,
+                    'status' => AttachmentTypeEnum::PENDING->value,
+                ]);
+            }
+
+            $message->delete();
+
+            DB::commit();
+
+            return $this->sendSuccess('Message deleted successfully');
+        } catch (\Exception $exception) {
+            DB::rollBack();
+            Log::error('deleteMessage failed', [
+                'exception' => $exception->getMessage(),
+                'trace' => $exception->getTraceAsString(),
+            ]);
+
+            return $this->sendError('Failed to delete message', 500);
         }
     }
 

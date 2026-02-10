@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\AdoptionStageEnum;
 use App\Enums\AdoptionStatusEnum;
-use App\Enums\ModelReferenceEnum;
+use App\Enums\ModelFlagEnum;
 use App\Enums\PetStatusEnum;
 use App\Enums\RoleEnum;
 use App\Enums\StatusTypeEnum;
@@ -101,7 +101,7 @@ class AdoptionController extends Controller
                 userIds: $usersToNotify,
                 title: 'New Adoption Application Submitted',
                 message: 'An adoption application has been submitted for the pet: ' . ($pet->name ?? 'Unnamed Pet'),
-                referenceType: ModelReferenceEnum::ADOPTION->value,
+                referenceType: ModelFlagEnum::ADOPTION->value,
                 referenceId: $adoption->id,
             )->notifyUsers(
                 new AdoptionMailNotification(
@@ -187,7 +187,7 @@ class AdoptionController extends Controller
                 userIds: $usersToNotify,
                 title: 'Adoption Application ' . ucfirst($action),
                 message: 'The adoption application for the pet: ' . ($adoption->pet->name ?? 'Unnamed Pet') . " has been {$action}.",
-                referenceType: ModelReferenceEnum::ADOPTION->value,
+                referenceType: ModelFlagEnum::ADOPTION->value,
                 referenceId: $adoption->id,
             )->notifyUsers(
                 new AdoptionMailNotification(
