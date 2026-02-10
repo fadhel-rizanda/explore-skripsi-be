@@ -15,6 +15,7 @@ use App\Http\Services\NotificationService;
 use App\Models\Attachment;
 use App\Models\Chat;
 use App\Models\Message;
+use App\Models\User;
 use App\Notifications\ChatNotification;
 use App\Traits\ResponseAPI;
 use Illuminate\Http\Request;
@@ -299,6 +300,10 @@ class ChatController extends Controller
     {
         $user = auth('api')->user();
 
+        if ($chat->created_by !== $user->id) {
+            return $this->sendError('Unauthorized to delete this chat', 403);
+        }
+
         try {
             DB::beginTransaction();
 
@@ -306,10 +311,6 @@ class ChatController extends Controller
                 attachmentId: null,
                 modelReference: ModelReferenceEnum::CHAT->value,
             );
-
-            $chat->delete();
-
-            $chat->users()->detach();
 
             $chat->delete();
 
@@ -327,6 +328,57 @@ class ChatController extends Controller
         }
     }
 
+    public function leaveChat(Chat $chat)
+    {
+        $user = auth('api')->user();
+
+        if (!$chat->users()->where('mt_user.id', $user->id)->exists()) {
+            return $this->sendError('You are not a member of this chat', 400);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $chat->users()->detach($user->id);
+
+            if ($chat->users()->count() === 0) {
+                $chat->setAttachmentMetadata(null, ModelReferenceEnum::CHAT->value);
+                $chat->delete();
+            }
+
+            DB::commit();
+            return $this->sendSuccess('Left chat successfully');
+        } catch (\Exception $exception) {
+            DB::rollBack();
+            Log::error('leaveChat failed', ['error' => $exception->getMessage()]);
+            return $this->sendError('Failed to leave chat', 500);
+        }
+    }
+
+    public function removeUserFromChat(Chat $chat, User $user)
+    {
+        $authUser = auth('api')->user();
+
+        if ((string) $chat->created_by !== (string) $authUser->id) {
+            return $this->sendError('Only the chat creator can kick members', 403);
+        }
+
+        if ((string) $user->id === (string) $authUser->id) {
+            return $this->sendError('You cannot kick yourself. Use the leave feature instead.', 400);
+        }
+
+        try {
+            DB::beginTransaction();
+            $chat->users()->detach($user->id);
+            DB::commit();
+
+            return $this->sendSuccess("User {$user->name} kicked successfully");
+        } catch (\Exception $exception) {
+            DB::rollBack();
+            Log::error('kickUserFromChat failed', ['error' => $exception->getMessage()]);
+            return $this->sendError('Failed to kick user', 500);
+        }
+    }
     public function deleteMessage(Chat $chat, Message $message)
     {
         $user = auth('api')->user();

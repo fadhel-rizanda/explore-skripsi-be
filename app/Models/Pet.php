@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Pet extends Model
 {
@@ -51,6 +52,11 @@ class Pet extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    public function adoption(): HasMany
+    {
+        return $this->hasMany(Adoption::class, 'pet_id');
+    }
 
     /**
      * Get the user that owns the pet.
