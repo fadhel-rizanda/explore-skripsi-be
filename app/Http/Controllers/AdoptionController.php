@@ -231,7 +231,7 @@ class AdoptionController extends Controller
             'adopter:mt_user.id,mt_user.name,mt_user.email,mt_user.avatar,mt_user.is_active',
             'adopter.attachment:id,public_url',
             'status:id,name,color_code',
-            'stageTag:id,name',
+            'stageTag:id,name,color_code',
         ])
             ->when(! $isAdmin, fn ($q) => $q->where('adopter_id', $userId)->orWhereHas('pet', fn ($p) => $p->where('user_id', $userId)))
             ->when($search, function ($q) use ($search, $isAdmin) {

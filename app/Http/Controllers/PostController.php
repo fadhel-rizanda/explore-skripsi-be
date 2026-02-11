@@ -40,7 +40,7 @@ class PostController extends Controller
                 'attachment:id,public_url',
                 'createdBy:id,name,email,avatar,is_active',
                 'createdBy.attachment:id,public_url',
-                'tags:id,name,type',
+                'tags:id,name,type,color_code',
             ]);
 
             return $this->sendSuccess('Post details retrieved successfully.', new PostResource($post));
@@ -175,7 +175,7 @@ class PostController extends Controller
             'attachment:id,public_url',
             'createdBy:id,name,email,avatar,is_active',
             'createdBy.attachment:id,public_url',
-            'tags:id,name,type',
+            'tags:id,name,type,color_code',
         ])
             ->withCount(['likes', 'comments'])
             ->when(! $isAdmin, fn ($q) => $q->where('is_active', true))

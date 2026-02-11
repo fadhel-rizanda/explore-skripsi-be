@@ -101,9 +101,9 @@ class UserController extends Controller
             $user->load([
                 'attachment:id,public_url',
                 'address',
-                'personalityTags:id,name',
-                'petExperienceTags:id,name',
-                'petPreferencesTags:id,name',
+                'personalityTags:id,name,type,color_code',
+                'petExperienceTags:id,name,type,color_code',
+                'petPreferencesTags:id,name,type,color_code',
                 'roles:id,name',
             ]);
 
@@ -215,9 +215,9 @@ class UserController extends Controller
 
             $user->load([
                 'address',
-                'personalityTags:id,name',
-                'petExperienceTags:id,name',
-                'petPreferencesTags:id,name',
+                'personalityTags:id,name,type,color_code',
+                'petExperienceTags:id,name,type,color_code',
+                'petPreferencesTags:id,name,type,color_code',
                 'attachment:id,public_url',
             ]);
 
