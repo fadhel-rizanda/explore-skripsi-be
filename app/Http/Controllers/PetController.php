@@ -195,10 +195,10 @@ class PetController extends Controller
     {
         try {
             $pet = Pet::with([
-                'typeOfAnimal:id,name',
+                'typeOfAnimal:id,name,type,color_code',
                 'profilePictures:id,public_url',
-                'physiqueTags:id,name',
-                'personalityTags:id,name',
+                'physiqueTags:id,name,type,color_code',
+                'personalityTags:id,name,type,color_code',
                 'additionalRecords:id,public_url,filename,mime_type,path',
             ])->findOrFail($id);
 
@@ -292,7 +292,7 @@ class PetController extends Controller
         $age = $request->query('age');
         $tagPersonalityId = $request->query('tag_personality_id');
 
-        return Pet::with('typeOfAnimal:id,name')->when(! $isAdmin, fn ($q) => $q->with('profilePicture:id,public_url'))
+        return Pet::with('typeOfAnimal:id,name,type,color_code')->when(! $isAdmin, fn ($q) => $q->with('profilePicture:id,public_url'))
             ->when(! $isAdmin, fn ($q) => $q->where('is_active', true))
             ->when($search, function ($q) use ($search, $isAdmin) {
                 $q->where(function ($query) use ($search, $isAdmin) {
