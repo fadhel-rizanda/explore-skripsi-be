@@ -39,7 +39,7 @@ class ReportController extends Controller
             $report->load([
                 'createdBy:id,name,email,avatar,is_active',
                 'createdBy.attachment:id,public_url',
-                'tags:id,name,type',
+                'tags:id,name,type,color_code',
                 'status:id,name,type,color_code',
             ]);
 
@@ -125,7 +125,7 @@ class ReportController extends Controller
 
         $reports = Report::with([
             'createdBy:id,name,email',
-            'tags:id,name,type',
+            'tags:id,name,type,color_code',
             'status:id,name,type,color_code',
         ])
             ->when($search, function ($q) use ($search) {

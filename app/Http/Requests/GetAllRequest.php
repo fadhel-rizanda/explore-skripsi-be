@@ -3,6 +3,8 @@
 namespace App\Http\Requests;
 
 use App\Models\AllTag;
+use App\Models\Role;
+use App\Models\Status;
 use Illuminate\Foundation\Http\FormRequest;
 
 class GetAllRequest extends FormRequest
@@ -31,8 +33,11 @@ class GetAllRequest extends FormRequest
             'type_of_animal_id' => 'sometimes|uuid|exists:' . (new AllTag())->getTable() . ',id',
             'age' => 'sometimes|string|in:baby,young,adult,senior',
             'tag_personality_id' => 'sometimes|uuid|exists:' . (new AllTag())->getTable() . ',id',
-            // 'sort_by' => 'sometimes|string|max:100',
-            // 'order_by' => 'sometimes|string|in:asc,desc',
+            'status_id' => 'sometimes|uuid|exists:' . (new Status())->getTable() . ',id',
+            'tag_id' => 'sometimes|uuid|exists:' . (new AllTag())->getTable() . ',id',
+            'role_id' => 'sometimes|uuid|exists:' . (new Role())->getTable() . ',id',
+            'sort_by' => 'sometimes|string|max:100',
+            'order_by' => 'sometimes|string|in:asc,desc',
         ];
     }
 }

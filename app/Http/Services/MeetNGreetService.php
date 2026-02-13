@@ -19,7 +19,7 @@ class MeetNGreetService
     /**
      * Create or update a Meet & Greet schedule
      */
-    public function schedule(Adoption $adoption, array $data, ?int $meetNGreetId = null): MeetNGreet
+    public function schedule(Adoption $adoption, array $data, ?string $meetNGreetId = null): MeetNGreet
     {
         $user = auth('api')->user();
         $adopter = $adoption->adopter;

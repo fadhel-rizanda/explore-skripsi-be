@@ -2,7 +2,8 @@
 
 namespace App\Http\Requests;
 
-use App\Models\Attachment;
+use App\Enums\ModelReferenceEnum;
+use App\Rules\OwnsAttachment;
 use Illuminate\Foundation\Http\FormRequest;
 
 class FillRequirementRequest extends FormRequest
@@ -23,7 +24,14 @@ class FillRequirementRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'attachment_id' => 'required|uuid|exists:' . (new Attachment())->getTable() . ',id',
+            'attachment_id' => [
+                'required',
+                'uuid',
+                new OwnsAttachment(
+                    referenceType: ModelReferenceEnum::REQUIREMENT->value,
+                    referenceId: $this->route('requirement')->id,
+                ),
+            ],
         ];
     }
 }
