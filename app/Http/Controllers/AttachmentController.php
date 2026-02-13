@@ -56,7 +56,7 @@ class AttachmentController extends Controller
         }
 
         if (! in_array($extension, $allowedTypes[$mimeType])) {
-            return $this->sendError("File extension '{$extension}' does not match content type '{$mimeType}'. Expected: " . implode(', ', $allowedTypes[$mimeType]), 400);
+            return $this->sendError("File extension $extension does not match content type $mimeType. Expected: " . implode(', ', $allowedTypes[$mimeType]), 400);
         }
 
         try {
@@ -79,7 +79,7 @@ class AttachmentController extends Controller
             $uploadUrl = (string) $presignedRequest->getUri();
 
             $publicUrl = $isPublic
-                ? "https://{$this->bucket}.s3." . config('filesystems.disks.s3.region') . ".amazonaws.com/{$path}"
+                ? "https://$this->bucket.s3." . config('filesystems.disks.s3.region') . ".amazonaws.com/$path"
                 : null;
 
             $user = auth('api')->user();
@@ -227,15 +227,11 @@ class AttachmentController extends Controller
 
             if (! $reference) {
                 Log::warning('Unknown reference_by: ' . $document->reference_by);
+
                 return null;
             }
 
-            $modelClass = 'App\\Models\\' . ucfirst($reference->value);
-
-            if (class_exists($modelClass)) {
-                return $modelClass::find($document->reference_id);
-            }
-
+            return $reference?->resolve($document->reference_id);
         } catch (\Exception $e) {
             Log::error('Error getting related model: ' . $e->getMessage());
         }
@@ -259,6 +255,7 @@ class AttachmentController extends Controller
                     if ((string) $model->user_id === $userId) {
                         return true;
                     }
+
                     return \App\Models\Adoption::where('pet_id', $model->id)
                         ->where('adopter_id', $userId)
                         ->whereIn('status_id', [
@@ -276,9 +273,11 @@ class AttachmentController extends Controller
                     return (string) $model->id === $userId;
                 case \App\Models\Chat::class:
                     return $model->users()->where('mt_user.id', $userId)->exists();
+                case \App\Models\MeetNGreet::class:
                 case \App\Models\Handover::class:
                 case \App\Models\Requirement::class:
                     $adoption = $model->adoption;
+
                     return (string) $adoption?->adopter_id === $userId ||
                         (string) $adoption?->pet?->user_id === $userId;
                 default:

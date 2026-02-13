@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\AdoptionStageEnum;
-use App\Enums\ModelFlagEnum;
+use App\Enums\ModelReferenceEnum;
 use App\Events\AdoptionUpdated;
 use App\Http\Requests\CreateScheduleRequest;
 use App\Http\Services\MeetNGreetService;
@@ -46,7 +46,7 @@ class MeetNGreetController extends Controller
                 userIds: $usersToNotify,
                 title: 'Meet and Greet Scheduled',
                 message: 'A Meet and Greet has been ' . ($meetNGreet->id ? 'updated' : 'scheduled') . ' for the adoption of ' . ($adoption->pet->name ?? 'Unnamed Pet'),
-                referenceType: ModelFlagEnum::ADOPTION_MEETNGREET->value,
+                referenceType: ModelReferenceEnum::MEETNGREET->value,
                 referenceId: $meetNGreet->id,
             )->notifyUsers(new AdoptionMailNotification(
                 action: AdoptionStageEnum::MEET_N_GREET->value,
@@ -100,7 +100,7 @@ class MeetNGreetController extends Controller
                     userIds: $usersToNotify,
                     title: 'Meet and Greet Completed',
                     message: 'The Meet and Greet has been completed for the adoption of ' . ($adoption->pet->name ?? 'Unnamed Pet'),
-                    referenceType: ModelFlagEnum::ADOPTION_MEETNGREET->value,
+                    referenceType: ModelReferenceEnum::MEETNGREET->value,
                     referenceId: $meetNGreet->id,
                 )->notifyUsers(new AdoptionMailNotification(
                     action: AdoptionStageEnum::MEET_N_GREET->value,

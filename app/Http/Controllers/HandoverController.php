@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Enums\AdoptionStageEnum;
 use App\Enums\AdoptionStatusEnum;
-use App\Enums\ModelFlagEnum;
 use App\Enums\ModelReferenceEnum;
 use App\Enums\PetStatusEnum;
 use App\Enums\RoleEnum;
@@ -75,7 +74,7 @@ class HandoverController extends Controller
                     userIds: $usersToNotify,
                     title: 'Handover Scheduled',
                     message: 'Handover has been scheduled for ' . ($adoption->pet->name ?? 'Unnamed Pet'),
-                    referenceType: ModelFlagEnum::ADOPTION_HANDOVER->value,
+                    referenceType: ModelReferenceEnum::HANDOVER->value,
                     referenceId: $handover->id,
                 )
                 ->notifyUsers(
@@ -141,7 +140,7 @@ class HandoverController extends Controller
                     userIds: $usersToNotify,
                     title: 'Handover Meet and Greet Completed',
                     message: 'The Handover Meet and Greet has been completed for the adoption of ' . ($adoption->pet->name ?? 'Unnamed Pet'),
-                    referenceType: ModelFlagEnum::ADOPTION_HANDOVER->value,
+                    referenceType: ModelReferenceEnum::HANDOVER->value,
                     referenceId: $handover->id,
                 )->notifyUsers(new AdoptionMailNotification(
                     action: AdoptionStageEnum::HANDOVER->value,
@@ -313,7 +312,7 @@ class HandoverController extends Controller
                 userIds: [$adoption->adopter->id, $adoption->provider->id],
                 title: 'Handover Finalized',
                 message: 'The handover has been finalized for the adoption of ' . ($adoption->pet->name ?? 'Unnamed Pet'),
-                referenceType: ModelFlagEnum::ADOPTION_HANDOVER->value,
+                referenceType: ModelReferenceEnum::HANDOVER->value,
                 referenceId: $handover->id,
             )->notifyUsers(
                 new AdoptionMailNotification(

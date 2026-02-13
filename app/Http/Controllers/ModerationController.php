@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\ActionEnum;
-use App\Enums\ModelFlagEnum;
+use App\Enums\ModelReferenceEnum;
 use App\Http\Requests\ModerationActionRequest;
 use App\Http\Services\ModerationService;
 use App\Models\Community;
@@ -25,7 +25,7 @@ class ModerationController extends Controller
         $this->moderationService->execute(
             entity: $user,
             isActive: false,
-            referenceType: ModelFlagEnum::USER,
+            referenceType: ModelReferenceEnum::USER,
             action: ActionEnum::DEACTIVATED,
             recipientIds: [$user->id],
             moderatorId: auth('api')->id(),
@@ -41,7 +41,7 @@ class ModerationController extends Controller
         $this->moderationService->execute(
             entity: $user,
             isActive: true,
-            referenceType: ModelFlagEnum::USER,
+            referenceType: ModelReferenceEnum::USER,
             action: ActionEnum::ACTIVATED,
             recipientIds: [$user->id],
             moderatorId: auth('api')->id(),
@@ -63,7 +63,7 @@ class ModerationController extends Controller
         $this->moderationService->execute(
             entity: $post,
             isActive: false,
-            referenceType: ModelFlagEnum::POST,
+            referenceType: ModelReferenceEnum::POST,
             action: ActionEnum::TAKEDOWN,
             recipientIds: [$owner->id],
             moderatorId: auth('api')->id(),
@@ -85,7 +85,7 @@ class ModerationController extends Controller
         $this->moderationService->execute(
             entity: $post,
             isActive: true,
-            referenceType: ModelFlagEnum::POST,
+            referenceType: ModelReferenceEnum::POST,
             action: ActionEnum::RESTORED,
             recipientIds: [$owner->id],
             moderatorId: auth('api')->id(),
@@ -107,7 +107,7 @@ class ModerationController extends Controller
         $this->moderationService->execute(
             entity: $community,
             isActive: false,
-            referenceType: ModelFlagEnum::COMMUNITY,
+            referenceType: ModelReferenceEnum::COMMUNITY,
             action: ActionEnum::TAKEDOWN,
             recipientIds: $recipients,
             moderatorId: auth('api')->id(),
@@ -129,7 +129,7 @@ class ModerationController extends Controller
         $this->moderationService->execute(
             entity: $community,
             isActive: true,
-            referenceType: ModelFlagEnum::COMMUNITY,
+            referenceType: ModelReferenceEnum::COMMUNITY,
             action: ActionEnum::RESTORED,
             recipientIds: $recipients,
             moderatorId: auth('api')->id(),
@@ -151,7 +151,7 @@ class ModerationController extends Controller
         $this->moderationService->execute(
             entity: $pet,
             isActive: false,
-            referenceType: ModelFlagEnum::PET,
+            referenceType: ModelReferenceEnum::PET,
             action: ActionEnum::TAKEDOWN,
             recipientIds: [$owner->id],
             moderatorId: auth('api')->id(),
@@ -173,7 +173,7 @@ class ModerationController extends Controller
         $this->moderationService->execute(
             entity: $pet,
             isActive: true,
-            referenceType: ModelFlagEnum::PET,
+            referenceType: ModelReferenceEnum::PET,
             action: ActionEnum::RESTORED,
             recipientIds: [$owner->id],
             moderatorId: auth('api')->id(),

@@ -242,12 +242,12 @@ class CommunityController extends Controller
                 'members_count' => $community->members_count,
                 'created_at' => $community->created_at,
                 'updated_at' => $community->updated_at,
+                'tags' => $community->tags,
             ];
 
             if ($isAdmin) {
                 $data['address'] = $community->address;
                 $data['website'] = $community->website;
-                $data['tags'] = $community->tags;
             }
 
             return $data;
