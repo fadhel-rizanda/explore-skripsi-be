@@ -3,8 +3,8 @@
 namespace App\Http\Requests;
 
 use App\Models\AllTag;
-use App\Models\Attachment;
 use App\Models\Community;
+use App\Rules\OwnsAttachment;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -34,7 +34,11 @@ class CreatePostRequest extends FormRequest
                 Rule::exists((new Community())->getTable(), 'id')
                     ->where('is_active', true),
             ],
-            'attachment_id' => 'sometimes|uuid|exists:' . (new Attachment())->getTable() . ',id',
+            'attachment_id' => [
+                'sometimes',
+                'uuid',
+                new OwnsAttachment(),
+            ],
             'tag_ids' => 'sometimes|array|min:1',
             'tag_ids.*' => 'uuid|exists:' . (new AllTag())->getTable() . ',id',
         ];

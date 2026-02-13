@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ModelReferenceEnum;
 use App\Http\Requests\CreateCommunityRequest;
 use App\Http\Requests\GetAllRequest;
 use App\Http\Requests\UpdateCommunityRequest;
@@ -80,6 +81,11 @@ class CommunityController extends Controller
                 'created_by' => auth('api')->id(),
             ]);
 
+            $community->setAttachmentMetadata(
+                attachmentId: $request->input('attachment_id'),
+                modelReference: ModelReferenceEnum::COMMUNITY->value,
+            );
+
             if ($request->filled('tag_ids')) {
                 $community->tags()->sync($request->tag_ids);
             }
@@ -123,19 +129,17 @@ class CommunityController extends Controller
                 $community->address->update($request->input('address'));
             }
 
-            if ($request->filled('attachment_id') && $request->attachment_id !== $community->attachment_id) {
-                $oldAttachment = $community->attachment;
-                if ($oldAttachment?->attachment) {
-                    $oldAttachment->attachment->deleteFromStorage();
-                }
-            }
-
             $community->update($request->only([
                 'name',
                 'description',
                 'website',
                 'attachment_id',
             ]));
+
+            $community->setAttachmentMetadata(
+                attachmentId: $request->input('attachment_id'),
+                modelReference: ModelReferenceEnum::COMMUNITY->value,
+            );
 
             if ($request->filled('tag_ids')) {
                 $community->tags()->sync($request->tag_ids);
@@ -176,9 +180,10 @@ class CommunityController extends Controller
         try {
             DB::beginTransaction();
 
-            if ($community->attachment) {
-                $community->attachment->deleteFromStorage();
-            }
+            $community->setAttachmentMetadata(
+                attachmentId: null,
+                modelReference: ModelReferenceEnum::COMMUNITY->value,
+            );
 
             $community->delete();
 
@@ -237,12 +242,12 @@ class CommunityController extends Controller
                 'members_count' => $community->members_count,
                 'created_at' => $community->created_at,
                 'updated_at' => $community->updated_at,
+                'tags' => $community->tags,
             ];
 
             if ($isAdmin) {
                 $data['address'] = $community->address;
                 $data['website'] = $community->website;
-                $data['tags'] = $community->tags;
             }
 
             return $data;

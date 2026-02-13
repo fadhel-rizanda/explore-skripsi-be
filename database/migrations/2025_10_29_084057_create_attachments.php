@@ -21,6 +21,8 @@ return new class() extends Migration
             $table->enum('status', ['pending', 'completed', 'failed'])->default('pending');
             $table->timestamp('uploaded_at')->nullable();
             $table->string('public_url')->nullable();
+            $table->string('reference_by')->nullable();
+            $table->uuid('reference_id')->nullable();
             $table->timestamps();
         });
 

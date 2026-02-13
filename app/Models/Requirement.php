@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\InteractsWithAttachments;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Requirement extends Model
 {
-    use HasUuids;
+    use HasUuids, InteractsWithAttachments;
 
     protected $table = 'tr_adoption_requirement';
 

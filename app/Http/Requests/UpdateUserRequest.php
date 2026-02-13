@@ -2,8 +2,8 @@
 
 namespace App\Http\Requests;
 
-use App\Models\Attachment;
 use App\Models\User;
+use App\Rules\OwnsAttachment;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateUserRequest extends FormRequest
@@ -29,7 +29,11 @@ class UpdateUserRequest extends FormRequest
                 'phone' => 'sometimes|string|max:20|unique:' . (new User())->getTable() . ',phone,' . $this->user()->id . ',id',
                 'about_me' => 'sometimes|string|max:1000',
                 'open_to_special_needs' => 'sometimes|boolean',
-                'attachment_id' => 'sometimes|uuid|exists:' . (new Attachment())->getTable() . ',id',
+                'attachment_id' => [
+                    'sometimes',
+                    'uuid',
+                    new OwnsAttachment(),
+                ],
             ],
             UpdateAddressRequest::prefixedRules(),
             UserBackgroundRequest::prefixedRules()

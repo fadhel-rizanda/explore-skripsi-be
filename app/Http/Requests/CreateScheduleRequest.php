@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests;
 
-use App\Models\Handover;
 use App\Models\MeetNGreet;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -27,7 +26,6 @@ class CreateScheduleRequest extends FormRequest
             [
                 'scheduled_time' => 'required|date|after_or_equal:today',
                 'meet_n_greet_id' => 'nullable|uuid|exists:' . (new MeetNGreet())->getTable() . ',id',
-                'handover_id' => 'nullable|uuid|exists:' . (new Handover())->getTable() . ',id',
             ],
             CreateAddressRequest::prefixedRules('address')
         );

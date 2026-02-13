@@ -13,6 +13,8 @@ use App\Http\Requests\SendMessageRequest;
 use App\Http\Services\NotificationService;
 use App\Models\Attachment;
 use App\Models\Chat;
+use App\Models\Message;
+use App\Models\User;
 use App\Notifications\ChatNotification;
 use App\Traits\ResponseAPI;
 use Illuminate\Http\Request;
@@ -238,13 +240,6 @@ class ChatController extends Controller
     public function sendMessage(Chat $chat, SendMessageRequest $request)
     {
         $user = auth('api')->user();
-        $attachmentId = $request->input('attachment_id');
-        if ($attachmentId) {
-            $attachment = Attachment::find($attachmentId);
-            if (! $attachment || $attachment->uploaded_by !== $user->id) {
-                return $this->sendError('Invalid attachment.', 403);
-            }
-        }
 
         try {
             DB::beginTransaction();
@@ -254,10 +249,15 @@ class ChatController extends Controller
                 'attachment_id' => $request->input('attachment_id'),
             ]);
 
-            //            $chat->users()->updateExistingPivot(
-            //                $user,
-            //                ['last_read_at' => now()]
-            //            );
+            $chat->setAttachmentMetadata(
+                attachmentId: $request->input('attachment_id'),
+                modelReference: ModelReferenceEnum::CHAT->value,
+            );
+
+            $chat->users()->updateExistingPivot(
+                $user,
+                ['last_read_at' => now()]
+            );
             DB::commit();
 
             $message->load('user', 'attachment');
@@ -292,6 +292,128 @@ class ChatController extends Controller
             ]);
 
             return $this->sendError('Failed to send message', 500);
+        }
+    }
+
+    public function deleteChat(Chat $chat)
+    {
+        $user = auth('api')->user();
+
+        if ($chat->created_by !== $user->id) {
+            return $this->sendError('Unauthorized to delete this chat', 403);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $chat->setAttachmentMetadata(
+                attachmentId: null,
+                modelReference: ModelReferenceEnum::CHAT->value,
+            );
+
+            $chat->delete();
+
+            DB::commit();
+
+            return $this->sendSuccess('Chat deleted successfully');
+        } catch (\Exception $exception) {
+            DB::rollBack();
+            Log::error('deleteChat failed', [
+                'exception' => $exception->getMessage(),
+                'trace' => $exception->getTraceAsString(),
+            ]);
+
+            return $this->sendError('Failed to delete chat', 500);
+        }
+    }
+
+    public function leaveChat(Chat $chat)
+    {
+        $user = auth('api')->user();
+
+        if (! $chat->users()->where('mt_user.id', $user->id)->exists()) {
+            return $this->sendError('You are not a member of this chat', 400);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $chat->users()->detach($user->id);
+
+            if ($chat->users()->count() === 0) {
+                $chat->setAttachmentMetadata(null, ModelReferenceEnum::CHAT->value);
+                $chat->delete();
+            }
+
+            DB::commit();
+
+            return $this->sendSuccess('Left chat successfully');
+        } catch (\Exception $exception) {
+            DB::rollBack();
+            Log::error('leaveChat failed', ['error' => $exception->getMessage()]);
+
+            return $this->sendError('Failed to leave chat', 500);
+        }
+    }
+
+    public function removeUserFromChat(Chat $chat, User $user)
+    {
+        $authUser = auth('api')->user();
+
+        if ((string) $chat->created_by !== (string) $authUser->id) {
+            return $this->sendError('Only the chat creator can kick members', 403);
+        }
+
+        if ((string) $user->id === (string) $authUser->id) {
+            return $this->sendError('You cannot kick yourself. Use the leave feature instead.', 400);
+        }
+
+        try {
+            DB::beginTransaction();
+            $chat->users()->detach($user->id);
+            DB::commit();
+
+            return $this->sendSuccess("User {$user->name} kicked successfully");
+        } catch (\Exception $exception) {
+            DB::rollBack();
+            Log::error('kickUserFromChat failed', ['error' => $exception->getMessage()]);
+
+            return $this->sendError('Failed to kick user', 500);
+        }
+    }
+
+    public function deleteMessage(Chat $chat, Message $message)
+    {
+        $user = auth('api')->user();
+
+        try {
+            DB::beginTransaction();
+
+            if ($message->user_id !== $user->id) {
+                return $this->sendError('Unauthorized to delete this message', 403);
+            }
+
+            if ($message->attachment_id) {
+                Attachment::whereId($message->attachment_id)->update([
+                    'reference_id' => null,
+                    'reference_by' => null,
+                    'status' => AttachmentTypeEnum::PENDING->value,
+                ]);
+            }
+
+            $message->delete();
+
+            DB::commit();
+
+            return $this->sendSuccess('Message deleted successfully');
+        } catch (\Exception $exception) {
+            DB::rollBack();
+            Log::error('deleteMessage failed', [
+                'exception' => $exception->getMessage(),
+                'trace' => $exception->getTraceAsString(),
+            ]);
+
+            return $this->sendError('Failed to delete message', 500);
         }
     }
 

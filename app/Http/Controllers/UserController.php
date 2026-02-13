@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ModelReferenceEnum;
 use App\Http\Requests\DeleteUserRequest;
 use App\Http\Requests\GetAllRequest;
 use App\Http\Requests\UpdateUserRequest;
@@ -100,9 +101,9 @@ class UserController extends Controller
             $user->load([
                 'attachment:id,public_url',
                 'address',
-                'personalityTags:id,name',
-                'petExperienceTags:id,name',
-                'petPreferencesTags:id,name',
+                'personalityTags:id,name,type,color_code',
+                'petExperienceTags:id,name,type,color_code',
+                'petPreferencesTags:id,name,type,color_code',
                 'roles:id,name',
             ]);
 
@@ -143,13 +144,6 @@ class UserController extends Controller
 
             $user = auth('api')->user();
 
-            if ($request->filled('attachment_id') && $request->attachment_id !== $user->attachment_id) {
-                $oldAttachment = $user->attachment;
-                if ($oldAttachment->attachment) {
-                    $oldAttachment->attachment->deleteFromStorage();
-                }
-            }
-
             $user->update($request->only([
                 'name',
                 'phone',
@@ -160,6 +154,11 @@ class UserController extends Controller
                 'open_to_special_needs',
                 'attachment_id',
             ]));
+
+            $user->setAttachmentMetadata(
+                attachmentId: $request->input('attachment_id'),
+                modelReference: ModelReferenceEnum::USER->value,
+            );
 
             $requiredAddressFields = [
                 'street',
@@ -216,9 +215,9 @@ class UserController extends Controller
 
             $user->load([
                 'address',
-                'personalityTags:id,name',
-                'petExperienceTags:id,name',
-                'petPreferencesTags:id,name',
+                'personalityTags:id,name,type,color_code',
+                'petExperienceTags:id,name,type,color_code',
+                'petPreferencesTags:id,name,type,color_code',
                 'attachment:id,public_url',
             ]);
 
@@ -244,9 +243,10 @@ class UserController extends Controller
                 return $this->sendError('Incorrect password provided.', 422);
             }
 
-            if ($user->attachment) {
-                $user->attachment->deleteFromStorage();
-            }
+            $user->setAttachmentMetadata(
+                attachmentId: null,
+                modelReference: ModelReferenceEnum::USER->value,
+            );
 
             $user->delete();
             DB::commit();
