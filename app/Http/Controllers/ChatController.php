@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Enums\ActionEnum;
 use App\Enums\AttachmentTypeEnum;
 use App\Enums\ChatTypeEnum;
-use App\Enums\ModelFlagEnum;
 use App\Enums\ModelReferenceEnum;
 use App\Events\ChatUpdated;
 use App\Events\MessageSent;
@@ -194,7 +193,7 @@ class ChatController extends Controller
                     userIds: $request->user_ids,
                     title: 'New Chat Room Created',
                     message: 'A new chat room has been created.',
-                    referenceType: ModelFlagEnum::CHAT->value,
+                    referenceType: ModelReferenceEnum::CHAT->value,
                     referenceId: $chatRoom->id,
                 )->notifyUsers(
                     new ChatNotification(
@@ -332,7 +331,7 @@ class ChatController extends Controller
     {
         $user = auth('api')->user();
 
-        if (!$chat->users()->where('mt_user.id', $user->id)->exists()) {
+        if (! $chat->users()->where('mt_user.id', $user->id)->exists()) {
             return $this->sendError('You are not a member of this chat', 400);
         }
 
@@ -347,10 +346,12 @@ class ChatController extends Controller
             }
 
             DB::commit();
+
             return $this->sendSuccess('Left chat successfully');
         } catch (\Exception $exception) {
             DB::rollBack();
             Log::error('leaveChat failed', ['error' => $exception->getMessage()]);
+
             return $this->sendError('Failed to leave chat', 500);
         }
     }
@@ -376,9 +377,11 @@ class ChatController extends Controller
         } catch (\Exception $exception) {
             DB::rollBack();
             Log::error('kickUserFromChat failed', ['error' => $exception->getMessage()]);
+
             return $this->sendError('Failed to kick user', 500);
         }
     }
+
     public function deleteMessage(Chat $chat, Message $message)
     {
         $user = auth('api')->user();

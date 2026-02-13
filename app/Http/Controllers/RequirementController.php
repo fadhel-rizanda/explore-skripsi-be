@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Enums\AdoptionStageEnum;
 use App\Enums\AdoptionStatusEnum;
 use App\Enums\AttachmentTypeEnum;
-use App\Enums\ModelFlagEnum;
 use App\Enums\ModelReferenceEnum;
 use App\Enums\StatusTypeEnum;
 use App\Enums\TagTypeEnum;
@@ -82,7 +81,7 @@ class RequirementController extends Controller
                 userIds: $usersToNotify,
                 title: 'New Adoption Requirements Set',
                 message: 'New requirements have been set for the adoption of ' . $adoption->pet->name . '. Please review and complete them.',
-                referenceType: ModelFlagEnum::ADOPTION_REQUIREMENT->value,
+                referenceType: ModelReferenceEnum::REQUIREMENT->value,
                 referenceId: $adoption->id,
             )->notifyUsers(
                 new AdoptionMailNotification(
@@ -134,7 +133,7 @@ class RequirementController extends Controller
                 userIds: $usersToNotify,
                 title: 'Adoption Requirement Filled',
                 message: 'A requirement has been filled for the adoption of ' . $adoption->pet->name . '. Please review and approve it.',
-                referenceType: ModelFlagEnum::ADOPTION_REQUIREMENT->value,
+                referenceType: ModelReferenceEnum::REQUIREMENT->value,
                 referenceId: $adoption->id,
             )->notifyUsers(
                 new AdoptionMailNotification(
@@ -230,7 +229,7 @@ class RequirementController extends Controller
                 userIds: $usersToNotify,
                 title: 'Adoption Requirement Approved',
                 message: 'A requirement has been approved for the adoption of ' . $adoption->pet->name . '.',
-                referenceType: ModelFlagEnum::ADOPTION_REQUIREMENT->value,
+                referenceType: ModelReferenceEnum::REQUIREMENT->value,
                 referenceId: $adoption->id,
             )->notifyUsers(
                 new AdoptionMailNotification(
@@ -289,7 +288,7 @@ class RequirementController extends Controller
                 userIds: $usersToNotify,
                 title: 'Adoption Requirement Rejected',
                 message: 'A requirement has been rejected for the adoption of ' . $adoption->pet->name . '. Please review and resubmit it.',
-                referenceType: ModelFlagEnum::ADOPTION_REQUIREMENT->value,
+                referenceType: ModelReferenceEnum::REQUIREMENT->value,
                 referenceId: $adoption->id,
             )->notifyUsers(
                 new AdoptionMailNotification(
@@ -375,7 +374,7 @@ class RequirementController extends Controller
                 userIds: $usersToNotify,
                 title: 'Adoption Finalized',
                 message: 'The adoption process for ' . $adoption->pet->name . ' has been finalized.',
-                referenceType: ModelFlagEnum::ADOPTION_REQUIREMENT->value,
+                referenceType: ModelReferenceEnum::REQUIREMENT->value,
                 referenceId: $adoption->id,
             )->notifyUsers(
                 new AdoptionMailNotification(

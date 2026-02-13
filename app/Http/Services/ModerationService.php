@@ -3,7 +3,7 @@
 namespace App\Http\Services;
 
 use App\Enums\ActionEnum;
-use App\Enums\ModelFlagEnum;
+use App\Enums\ModelReferenceEnum;
 use App\Enums\ReportStatusEnum;
 use App\Enums\StatusTypeEnum;
 use App\Models\Report;
@@ -22,7 +22,7 @@ class ModerationService
     public function execute(
         Model $entity,
         bool $isActive,
-        ModelFlagEnum $referenceType,
+        ModelReferenceEnum $referenceType,
         ActionEnum $action,
         array $recipientIds,
         string $moderatorId,
@@ -76,7 +76,7 @@ class ModerationService
     private function notify(
         Model $entity,
         bool $isActive,
-        ModelFlagEnum $referenceType,
+        ModelReferenceEnum $referenceType,
         ActionEnum $action,
         array $recipientIds,
         Report $report

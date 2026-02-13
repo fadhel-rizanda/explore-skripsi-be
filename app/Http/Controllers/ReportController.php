@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\ModelFlagEnum;
+use App\Enums\ModelReferenceEnum;
 use App\Enums\ReportStatusEnum;
 use App\Enums\StatusTypeEnum;
 use App\Http\Requests\CreateReportRequest;
@@ -119,7 +119,7 @@ class ReportController extends Controller
             $sortBy = 'created_at';
         }
 
-        if ($referenceType && ! in_array($referenceType, ModelFlagEnum::allReportValues())) {
+        if ($referenceType && ! in_array($referenceType, ModelReferenceEnum::allReportValues())) {
             $referenceType = null;
         }
 
