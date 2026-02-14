@@ -16,7 +16,6 @@ class StatusController extends Controller
     {
         $type = $request->type;
         $search = $request->search;
-        $page = $request->page;
 
         $query = Status::query()
             ->select('id', 'name', 'type', 'color_code')
