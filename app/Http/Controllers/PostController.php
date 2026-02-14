@@ -20,10 +20,12 @@ class PostController extends Controller
     {
         try {
             $isAdmin = auth('api')->user()?->hasRole('admin') ?? false;
-            $posts = $this->getPostsQuery($request, $isAdmin);
+            $paginator= $this->getPostsQuery($request, $isAdmin);
+            $posts = PostResource::collection($paginator);
 
             return $this->sendSuccessPagination(
                 'Post retrieved successfully.',
+                $paginator,
                 $posts
             );
         } catch (\Throwable $e) {
@@ -193,7 +195,7 @@ class PostController extends Controller
             ->orderBy($sortBy, 'desc')
             ->paginate($perPage);
 
-        return PostResource::collection($posts);
+        return $posts;
     }
 
     private function getDataResponse(Post $post)
