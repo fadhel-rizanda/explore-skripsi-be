@@ -34,10 +34,12 @@ class AdoptionController extends Controller
     {
         try {
             $isAdmin = auth('api')->user()?->hasRole('admin') ?? false;
-            $adoptions = $this->getAdoptionsQuery($request, $isAdmin);
+            $paginator = $this->getAdoptionsQuery($request, $isAdmin);
 
+            $adoptions = AdoptionResource::collection($paginator->items());
             return $this->sendSuccessPagination(
                 'Adoptions retrieved successfully.',
+                $paginator,
                 $adoptions
             );
         } catch (\Throwable $e) {
@@ -253,6 +255,6 @@ class AdoptionController extends Controller
             ->orderBy($sortBy, 'desc')
             ->paginate($perPage);
 
-        return AdoptionResource::collection($adoptions);
+        return $adoptions;
     }
 }

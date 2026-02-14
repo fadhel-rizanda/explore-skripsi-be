@@ -16,6 +16,7 @@ class StatusController extends Controller
     {
         $type = $request->type;
         $search = $request->search;
+        $page = $request->page;
 
         $query = Status::query()
             ->select('id', 'name', 'type', 'color_code')
@@ -27,15 +28,16 @@ class StatusController extends Controller
                 Uuid::isValid($search),
                 fn ($q) => $q->where('id', $search),
                 fn ($q) => $q->where('name', 'ILIKE', "%{$search}%")
-            )->get();
+            )->simplePaginate(15);
         } else {
+            $cacheKey = 'statuses:type_' . ($type ?? 'all') . '_page_' . ($request->page ?? 1);
             $statuses = Cache::remember(
-                'statuses.type_' . ($type ?? 'all'),
+                $cacheKey,
                 now()->addHours(6),
-                fn () => $query->get()
+                fn () => $query->simplePaginate(15),
             );
         }
 
-        return $this->sendSuccess('Statuses retrieved successfully', $statuses);
+        return $this->sendSuccessPagination('Statuses retrieved successfully', $statuses);
     }
 }
