@@ -20,10 +20,12 @@ class ReportController extends Controller
     public function listReports(GetAllRequest $request)
     {
         try {
-            $reports = $this->getReportsQuery($request);
+            $paginator = $this->getReportsQuery($request);
+            $reports = ReportResource::collection($paginator->items());
 
             return $this->sendSuccessPagination(
                 'Report retrieved successfully.',
+                $paginator,
                 $reports
             );
         } catch (\Throwable $e) {
@@ -137,6 +139,6 @@ class ReportController extends Controller
             })
             ->orderBy($sortBy, 'desc')->paginate($perPage);
 
-        return ReportResource::collection($reports);
+        return $reports;
     }
 }

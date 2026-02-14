@@ -27,15 +27,16 @@ class TagController extends Controller
                 Uuid::isValid($search),
                 fn ($q) => $q->where('id', $search),
                 fn ($q) => $q->where('name', 'ILIKE', "%{$search}%")
-            )->get();
+            )->simplePaginate(15);
         } else {
+            $cacheKey = 'tags:type_' . ($type ?? 'all') . '_page_' . ($request->page ?? 1);
             $tags = Cache::remember(
-                'tags.type_' . ($type ?? 'all'),
+                $cacheKey,
                 now()->addHours(6),
-                fn () => $query->get()
+                fn () => $query->simplePaginate(15),
             );
         }
 
-        return $this->sendSuccess('Tags retrieved successfully', $tags);
+        return $this->sendSuccessPagination('Tags retrieved successfully', $tags);
     }
 }
