@@ -16,7 +16,6 @@ class TagController extends Controller
     {
         $type = $request->type;
         $search = $request->search;
-        $page = $request->page;
 
         $query = AllTag::query()
             ->select('id', 'name', 'type', 'color_code')

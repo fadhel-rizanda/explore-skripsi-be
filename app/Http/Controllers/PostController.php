@@ -21,7 +21,7 @@ class PostController extends Controller
         try {
             $isAdmin = auth('api')->user()?->hasRole('admin') ?? false;
             $paginator= $this->getPostsQuery($request, $isAdmin);
-            $posts = PostResource::collection($paginator);
+            $posts = PostResource::collection($paginator->items());;
 
             return $this->sendSuccessPagination(
                 'Post retrieved successfully.',
