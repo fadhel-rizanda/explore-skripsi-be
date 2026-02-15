@@ -145,6 +145,11 @@ class PetController extends Controller
         try {
             $pet = Pet::findOrFail($id);
 
+            $user = auth('api')->user();
+            if (! $user->hasRole('admin') && $pet->user_id !== $user->id) {
+                return $this->sendError('You are not authorized to update this pet.', 403);
+            }
+
             DB::transaction(function () use ($request, $pet) {
                 $pet->update($request->validated());
 
