@@ -201,7 +201,7 @@ class PetController extends Controller
         try {
             $pet = Pet::with([
                 'typeOfAnimal:id,name,type,color_code',
-                'profilePictures:id,public_url',
+                'profilePictures:id,public_url,filename',
                 'physiqueTags:id,name,type,color_code',
                 'personalityTags:id,name,type,color_code',
                 'additionalRecords:id,public_url,filename,mime_type,path',
