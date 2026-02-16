@@ -207,6 +207,16 @@ class PetController extends Controller
                 'additionalRecords:id,public_url,filename,mime_type,path',
             ])->findOrFail($id);
 
+            // Access control for inactive pets
+            if (! $pet->is_active) {
+                $user = auth('api')->user();
+                $canView = $user && ($user->hasRole('admin') || $user->id === $pet->user_id);
+
+                if (! $canView) {
+                    return $this->sendError('Pet not found', 404);
+                }
+            }
+
             [$age, $ageUnit] = $this->calculateAgeAndUnit($pet->date_of_birth);
             $data = [
                 'id' => $pet->id,
