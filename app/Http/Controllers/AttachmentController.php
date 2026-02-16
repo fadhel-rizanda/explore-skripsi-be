@@ -177,9 +177,9 @@ class AttachmentController extends Controller
         try {
             $mode = $request->query('mode', 'download');
 
-            $disposition = $mode === 'preview'
-                ? 'inline; filename="' . $document->filename . '"'
-                : 'attachment; filename="' . $document->filename . '"';
+            $safeFilename = $this->sanitizeFilename($document->filename);
+
+            $disposition = $this->buildDispositionHeader($mode, $safeFilename, $document->filename);
 
             $url = Storage::disk('s3')->temporaryUrl(
                 $document->path,
@@ -291,5 +291,41 @@ class AttachmentController extends Controller
                     return false;
             }
         });
+    }
+    private function sanitizeFilename(string $filename): string
+    {
+        $filename = str_replace(['"', "'", "\r", "\n", "\t", "\0", "\\"], '', $filename);
+
+        $filename = Str::ascii($filename);
+
+        $filename = preg_replace('/[^a-zA-Z0-9._\-\s]/', '_', $filename);
+
+        $filename = preg_replace('/[\s_]+/', '_', $filename);
+
+        $filename = trim($filename, '._-');
+
+        if (empty($filename)) {
+            $filename = 'download';
+        }
+
+        if (mb_strlen($filename) > 200) {
+            $extension = pathinfo($filename, PATHINFO_EXTENSION);
+            $basename = mb_substr(pathinfo($filename, PATHINFO_FILENAME), 0, 190);
+            $filename = $extension ? $basename . '.' . $extension : $basename;
+        }
+
+        return $filename;
+    }
+
+    private function buildDispositionHeader(string $mode, string $sanitizedFilename, string $originalFilename): string
+    {
+        $type = $mode === 'preview' ? 'inline' : 'attachment';
+
+        $asciiPart = sprintf('%s; filename="%s"', $type, $sanitizedFilename);
+
+        $utf8Filename = rawurlencode($originalFilename);
+        $utf8Part = sprintf("filename*=UTF-8''%s", $utf8Filename);
+
+        return $asciiPart . '; ' . $utf8Part;
     }
 }

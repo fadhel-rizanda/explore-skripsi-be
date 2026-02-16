@@ -30,7 +30,7 @@ class PetRequest extends FormRequest
             'special_needs' => 'required|boolean',
             // Profile pictures
             'profile_picture_ids' => ['required', 'array', 'min:1', new OwnsAttachment(
-                referenceType: 'pet',
+                referenceType: ModelReferenceEnum::PET->value,
                 referenceId: $petId
             )],
             'profile_picture_ids.*' => 'uuid',
