@@ -34,7 +34,7 @@ class PetRequest extends FormRequest
                 'array', 
                 'min:1', 
                 $isUpdate 
-                    ? new OwnsAttachment('Pet', $petId)
+                    ? new OwnsAttachment('pet', $petId)
                     : new OwnsAttachment()
             ],
             'profile_picture_ids.*' => 'uuid',
@@ -47,7 +47,7 @@ class PetRequest extends FormRequest
                 'nullable', 
                 'array', 
                 $isUpdate 
-                    ? new OwnsAttachment('Pet', $petId)
+                    ? new OwnsAttachment('pet', $petId)
                     : new OwnsAttachment()
             ],
             'additional_record_ids.*' => 'uuid',
