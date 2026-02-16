@@ -9,7 +9,9 @@ class Address extends Model
 {
     use HasUuids;
 
-    protected $table = 'mt_address';
+    public const TABLE = 'mt_address';
+
+    protected $table = self::TABLE;
 
     public $incrementing = false;
 

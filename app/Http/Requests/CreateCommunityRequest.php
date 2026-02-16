@@ -28,7 +28,7 @@ class CreateCommunityRequest extends FormRequest
     {
         return array_merge(
             [
-                'name' => 'required|string|max:255|unique:' . (new Community())->getTable() . ',name',
+                'name' => 'required|string|max:255|unique:' . Community::TABLE . ',name',
                 'description' => 'sometimes|string|max:1000',
                 'website' => 'sometimes|url|max:255',
                 'attachment_id' => [
@@ -37,11 +37,11 @@ class CreateCommunityRequest extends FormRequest
                     new OwnsAttachment(),
                 ],
                 'tag_ids' => 'required|array|min:1',
-                'tag_ids.*' => 'uuid|exists:' . (new AllTag())->getTable() . ',id',
+                'tag_ids.*' => 'uuid|exists:' . AllTag::TABLE . ',id',
                 'admin_ids' => 'sometimes|array|min:1',
                 'admin_ids.*' => [
                     'uuid',
-                    Rule::exists((new User())->getTable(), 'id')->where('is_active', true),
+                    Rule::exists(User::TABLE, 'id')->where('is_active', true),
                 ],
             ],
             CreateAddressRequest::prefixedRules(),

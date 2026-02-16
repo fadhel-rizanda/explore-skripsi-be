@@ -11,7 +11,9 @@ class Adoption extends Model
 {
     use HasUuids;
 
-    protected $table = 'mt_adoption_application';
+    public const TABLE = 'mt_adoption_application';
+
+    protected $table = self::TABLE;
 
     public $incrementing = false;
 

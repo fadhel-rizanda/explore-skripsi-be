@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\ModelReferenceEnum;
 use App\Models\User;
 use App\Rules\OwnsAttachment;
 use Illuminate\Foundation\Http\FormRequest;
@@ -32,7 +33,10 @@ class UpdateUserRequest extends FormRequest
                 'attachment_id' => [
                     'sometimes',
                     'uuid',
-                    new OwnsAttachment(),
+                    new OwnsAttachment(
+                        referenceType: ModelReferenceEnum::USER->value,
+                        referenceId: $this->route('user') ? $this->route('user')->id : null,
+                    ),
                 ],
             ],
             UpdateAddressRequest::prefixedRules(),

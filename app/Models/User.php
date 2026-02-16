@@ -20,7 +20,9 @@ class User extends Authenticatable implements JWTSubject
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, HasRoles, HasUuids, InteractsWithAttachments, Notifiable;
 
-    protected $table = 'mt_user';
+    public const TABLE = 'mt_user';
+
+    protected $table = self::TABLE;
 
     public $incrementing = false;
 

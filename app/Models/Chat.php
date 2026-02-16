@@ -13,7 +13,9 @@ class Chat extends Model
 {
     use HasUuids, InteractsWithAttachments;
 
-    protected $table = 'mt_chat';
+    public const TABLE = 'mt_chat';
+
+    protected $table = self::TABLE;
 
     public $incrementing = false;
 

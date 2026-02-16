@@ -11,7 +11,9 @@ class MeetNGreet extends Model
 {
     use HasUuids;
 
-    protected $table = 'tr_adoption_meet_greet';
+    public const TABLE = 'tr_adoption_meet_greet';
+
+    protected $table = self::TABLE;
 
     public $incrementing = false;
 

@@ -11,7 +11,9 @@ class Report extends Model
 {
     use HasUuids;
 
-    protected $table = 'mt_report';
+    public const TABLE = 'mt_report';
+
+    protected $table = self::TABLE;
 
     public $incrementing = false;
 

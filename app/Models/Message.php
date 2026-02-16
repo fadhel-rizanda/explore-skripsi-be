@@ -12,7 +12,9 @@ class Message extends Model
 {
     use HasUuids, InteractsWithAttachments;
 
-    protected $table = 'tr_message';
+    public const TABLE = 'tr_message';
+
+    protected $table = self::TABLE;
 
     public $incrementing = false;
 
