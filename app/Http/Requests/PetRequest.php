@@ -19,6 +19,10 @@ class PetRequest extends FormRequest
         $petId = $this->route('id');
         $isUpdate = !is_null($petId);
 
+        $ownsAttachmentRule = $isUpdate 
+            ? new OwnsAttachment('pet', $petId) 
+            : new OwnsAttachment();
+
         return [
             'type_of_animal_id' => 'required|uuid|exists:' . (new AllTag())->getTable() . ',id',
             'size' => 'required|string|in:small,medium,large,extra large',
@@ -33,9 +37,7 @@ class PetRequest extends FormRequest
                 'required', 
                 'array', 
                 'min:1', 
-                $isUpdate 
-                    ? new OwnsAttachment('pet', $petId)
-                    : new OwnsAttachment()
+                $ownsAttachmentRule
             ],
             'profile_picture_ids.*' => 'uuid',
             // Arrays for tags - REQUIRED
@@ -46,9 +48,7 @@ class PetRequest extends FormRequest
             'additional_record_ids' => [
                 'nullable', 
                 'array', 
-                $isUpdate 
-                    ? new OwnsAttachment('pet', $petId)
-                    : new OwnsAttachment()
+                $ownsAttachmentRule
             ],
             'additional_record_ids.*' => 'uuid',
         ];
