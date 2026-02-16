@@ -13,7 +13,9 @@ class Post extends Model
 {
     use HasUuids, InteractsWithAttachments;
 
-    protected $table = 'mt_post';
+    public const TABLE = 'mt_post';
+
+    protected $table = self::TABLE;
 
     public $incrementing = false;
 

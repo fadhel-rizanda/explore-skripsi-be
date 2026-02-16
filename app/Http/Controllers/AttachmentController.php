@@ -7,6 +7,7 @@ use App\Enums\AttachmentTypeEnum;
 use App\Enums\ModelReferenceEnum;
 use App\Enums\RoleEnum;
 use App\Enums\StatusTypeEnum;
+use App\Http\Requests\GenerateDownloadUrlRequest;
 use App\Http\Requests\GeneratePresignedUrlRequest;
 use App\Models\Attachment;
 use App\Models\Status;
@@ -145,7 +146,7 @@ class AttachmentController extends Controller
         }
     }
 
-    public function generateDownloadUrl(Attachment $document)
+    public function generateDownloadUrl(Attachment $document, GenerateDownloadUrlRequest $request)
     {
         if ($document->status !== AttachmentTypeEnum::COMPLETED->value) {
             return $this->sendError('File not found in storage.', 404);
@@ -174,11 +175,17 @@ class AttachmentController extends Controller
         }
 
         try {
+            $mode = $request->query('mode', 'download');
+
+            $safeFilename = $this->sanitizeFilename($document->filename);
+
+            $disposition = $this->buildDispositionHeader($mode, $safeFilename, $document->filename);
+
             $url = Storage::disk('s3')->temporaryUrl(
                 $document->path,
                 now()->addHour(),
                 [
-                    'ResponseContentDisposition' => 'attachment; filename="' . $document->filename . '"',
+                    'ResponseContentDisposition' => $disposition,
                 ]
             );
 
@@ -284,5 +291,41 @@ class AttachmentController extends Controller
                     return false;
             }
         });
+    }
+    private function sanitizeFilename(string $filename): string
+    {
+        $filename = str_replace(['"', "'", "\r", "\n", "\t", "\0", "\\"], '', $filename);
+
+        $filename = Str::ascii($filename);
+
+        $filename = preg_replace('/[^a-zA-Z0-9._\-\s]/', '_', $filename);
+
+        $filename = preg_replace('/[\s_]+/', '_', $filename);
+
+        $filename = trim($filename, '._-');
+
+        if (empty($filename)) {
+            $filename = 'download';
+        }
+
+        if (mb_strlen($filename) > 200) {
+            $extension = pathinfo($filename, PATHINFO_EXTENSION);
+            $basename = mb_substr(pathinfo($filename, PATHINFO_FILENAME), 0, 190);
+            $filename = $extension ? $basename . '.' . $extension : $basename;
+        }
+
+        return $filename;
+    }
+
+    private function buildDispositionHeader(string $mode, string $sanitizedFilename, string $originalFilename): string
+    {
+        $type = $mode === 'preview' ? 'inline' : 'attachment';
+
+        $asciiPart = sprintf('%s; filename="%s"', $type, $sanitizedFilename);
+
+        $utf8Filename = rawurlencode($originalFilename);
+        $utf8Part = sprintf("filename*=UTF-8''%s", $utf8Filename);
+
+        return $asciiPart . '; ' . $utf8Part;
     }
 }

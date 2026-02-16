@@ -8,6 +8,8 @@ class Permission extends \Spatie\Permission\Models\Permission
 {
     use HasUuids;
 
+    public const TABLE = 'mt_permission';
+
     protected $keyType = 'string';
 
     public $incrementing = false;

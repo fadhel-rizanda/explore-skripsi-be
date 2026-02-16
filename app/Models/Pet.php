@@ -13,7 +13,9 @@ class Pet extends Model
 {
     use HasUuids, InteractsWithAttachments;
 
-    protected $table = 'tr_pet';
+    public const TABLE = 'tr_pet';
+
+    protected $table = self::TABLE;
 
     public $incrementing = false;
 

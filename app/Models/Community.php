@@ -12,7 +12,9 @@ class Community extends Model
 {
     use HasUuids, InteractsWithAttachments;
 
-    protected $table = 'mt_community';
+    public const TABLE = 'mt_community';
+
+    protected $table = self::TABLE;
 
     public $incrementing = false;
 

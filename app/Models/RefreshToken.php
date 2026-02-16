@@ -8,7 +8,9 @@ use Illuminate\Support\Str;
 
 class RefreshToken extends Model
 {
-    protected $table = 'mt_refresh_token';
+    public const TABLE = 'mt_refresh_token';
+
+    protected $table = self::TABLE;
 
     protected $fillable = ['user_id', 'token', 'expires_at', 'used_at'];
 

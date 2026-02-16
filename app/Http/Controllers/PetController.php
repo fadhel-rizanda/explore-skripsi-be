@@ -201,7 +201,7 @@ class PetController extends Controller
         try {
             $pet = Pet::with([
                 'typeOfAnimal:id,name,type,color_code',
-                'profilePictures:id,public_url',
+                'profilePictures:id,public_url,filename,mime_type,path',
                 'physiqueTags:id,name,type,color_code',
                 'personalityTags:id,name,type,color_code',
                 'additionalRecords:id,public_url,filename,mime_type,path',
@@ -223,6 +223,9 @@ class PetController extends Controller
                     return [
                         'id' => $picture->id,
                         'public_url' => $picture->public_url,
+                        'filename' => $picture->filename,
+                        'mime_type' => $picture->mime_type,
+                        'path' => $picture->path,
                     ];
                 }),
                 'special_needs' => $pet->special_needs,

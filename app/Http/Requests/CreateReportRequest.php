@@ -30,9 +30,9 @@ class CreateReportRequest extends FormRequest
             'reference_type' => ['required', Rule::in(ModelReferenceEnum::allReportValues())],
             'reference_id' => 'required|uuid',
             'notes' => 'required|string|max:2000',
-            'status_id' => 'sometimes|uuid|exists:' . (new Status())->getTable() . ',id',
+            'status_id' => 'sometimes|uuid|exists:' . Status::TABLE . ',id',
             'tag_ids' => 'sometimes|array',
-            'tag_ids.*' => 'uuid|exists:' . (new AllTag())->getTable() . ',id',
+            'tag_ids.*' => 'uuid|exists:' . AllTag::TABLE . ',id',
             'attachment_id' => [
                 'sometimes',
                 'uuid',

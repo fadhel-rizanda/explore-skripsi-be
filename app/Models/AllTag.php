@@ -10,7 +10,9 @@ class AllTag extends Model
 {
     use HasUuids;
 
-    protected $table = 'mt_all_tag';
+    public const TABLE = 'mt_all_tag';
+
+    protected $table = self::TABLE;
 
     public $incrementing = false;
 
