@@ -223,6 +223,7 @@ class PetController extends Controller
                     return [
                         'id' => $picture->id,
                         'public_url' => $picture->public_url,
+                        'filename' => $picture->filename,
                     ];
                 }),
                 'special_needs' => $pet->special_needs,
