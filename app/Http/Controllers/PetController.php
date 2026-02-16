@@ -145,6 +145,11 @@ class PetController extends Controller
         try {
             $pet = Pet::findOrFail($id);
 
+            $user = auth('api')->user();
+            if (! $user->hasRole('admin') && $pet->user_id !== $user->id) {
+                return $this->sendError('You are not authorized to update this pet.', 403);
+            }
+
             DB::transaction(function () use ($request, $pet) {
                 $pet->update($request->validated());
 
@@ -204,6 +209,7 @@ class PetController extends Controller
 
             [$age, $ageUnit] = $this->calculateAgeAndUnit($pet->date_of_birth);
             $data = [
+                'id' => $pet->id,
                 'type_of_animal_id' => $pet->type_of_animal_id,
                 'size' => $pet->size,
                 'name' => $pet->name,
