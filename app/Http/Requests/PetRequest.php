@@ -15,8 +15,8 @@ class PetRequest extends FormRequest
      */
     public function rules(): array
     {
-        // Check if this is an update request (route has 'pet' parameter)
-        $petId = $this->route('pet');
+        // Check if this is an update request (route has 'id' parameter)
+        $petId = $this->route('id');
         $isUpdate = !is_null($petId);
 
         return [
