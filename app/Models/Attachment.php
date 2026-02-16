@@ -11,7 +11,9 @@ class Attachment extends Model
 {
     use HasUuids;
 
-    protected $table = 'mt_attachment';
+    public const TABLE = 'mt_attachment';
+
+    protected $table = self::TABLE;
 
     public $incrementing = false;
 

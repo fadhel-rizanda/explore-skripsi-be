@@ -25,7 +25,7 @@ class CreateScheduleRequest extends FormRequest
         return array_merge(
             [
                 'scheduled_time' => 'required|date|after_or_equal:today',
-                'meet_n_greet_id' => 'nullable|uuid|exists:' . (new MeetNGreet())->getTable() . ',id',
+                'meet_n_greet_id' => 'nullable|uuid|exists:' . MeetNGreet::TABLE . ',id',
             ],
             CreateAddressRequest::prefixedRules('address')
         );

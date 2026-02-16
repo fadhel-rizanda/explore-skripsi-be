@@ -11,7 +11,9 @@ class Requirement extends Model
 {
     use HasUuids, InteractsWithAttachments;
 
-    protected $table = 'tr_adoption_requirement';
+    public const TABLE = 'tr_adoption_requirement';
+
+    protected $table = self::TABLE;
 
     public $incrementing = false;
 

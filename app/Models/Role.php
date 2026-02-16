@@ -8,6 +8,8 @@ class Role extends \Spatie\Permission\Models\Role
 {
     use HasUuids;
 
+    public const TABLE = 'mt_role';
+
     protected $keyType = 'string';
 
     public $incrementing = false;

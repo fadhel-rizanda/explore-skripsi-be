@@ -12,7 +12,9 @@ class Handover extends Model
 {
     use HasUuids, InteractsWithAttachments;
 
-    protected $table = 'tr_adoption_handover';
+    public const TABLE = 'tr_adoption_handover';
+
+    protected $table = self::TABLE;
 
     public $incrementing = false;
 

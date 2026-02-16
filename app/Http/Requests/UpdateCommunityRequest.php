@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\ModelReferenceEnum;
 use App\Models\AllTag;
 use App\Models\Community;
 use App\Models\User;
@@ -34,7 +35,10 @@ class UpdateCommunityRequest extends FormRequest
                 'attachment_id' => [
                     'sometimes',
                     'uuid',
-                    new OwnsAttachment(),
+                    new OwnsAttachment(
+                        referenceType: ModelReferenceEnum::COMMUNITY->value,
+                        referenceId: $this->route('community') ? $this->route('community')->id : null,
+                    ),
                 ],
                 'tag_ids' => 'sometimes|array|min:1',
                 'tag_ids.*' => 'uuid|exists:' . (new AllTag())->getTable() . ',id',

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\ModelReferenceEnum;
 use App\Models\AllTag;
 use App\Rules\OwnsAttachment;
 use Illuminate\Foundation\Http\FormRequest;
@@ -29,7 +30,10 @@ class UpdatePostRequest extends FormRequest
             'attachment_id' => [
                 'sometimes',
                 'uuid',
-                new OwnsAttachment(),
+                new OwnsAttachment(
+                    referenceType: ModelReferenceEnum::POST->value,
+                    referenceId: $this->route('post') ? $this->route('post')->id : null,
+                ),
             ],
             'tag_ids' => 'sometimes|array|min:1',
             'tag_ids.*' => 'uuid|exists:' . (new AllTag())->getTable() . ',id',

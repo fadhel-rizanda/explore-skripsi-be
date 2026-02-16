@@ -24,18 +24,22 @@ class GetAllRequest extends FormRequest
      */
     public function rules(): array
     {
+        $tagTables = AllTag::TABLE;
+        $statusTable = Status::TABLE;
+        $roleTable = Role::TABLE;
+
         return [
             'search' => 'nullable|string|max:255',
             'page' => 'sometimes|integer|min:1',
             'per_page' => 'sometimes|integer|min:1|max:100',
             'type' => 'sometimes|string|max:50',
             'status' => 'sometimes|string|max:50',
-            'type_of_animal_id' => 'sometimes|uuid|exists:' . (new AllTag())->getTable() . ',id',
+            'type_of_animal_id' => 'sometimes|uuid|exists:' . $tagTables . ',id',
             'age' => 'sometimes|string|in:baby,young,adult,senior',
-            'tag_personality_id' => 'sometimes|uuid|exists:' . (new AllTag())->getTable() . ',id',
-            'status_id' => 'sometimes|uuid|exists:' . (new Status())->getTable() . ',id',
-            'tag_id' => 'sometimes|uuid|exists:' . (new AllTag())->getTable() . ',id',
-            'role_id' => 'sometimes|uuid|exists:' . (new Role())->getTable() . ',id',
+            'tag_personality_id' => 'sometimes|uuid|exists:' . $tagTables . ',id',
+            'status_id' => 'sometimes|uuid|exists:' . $statusTable . ',id',
+            'tag_id' => 'sometimes|uuid|exists:' . $tagTables . ',id',
+            'role_id' => 'sometimes|uuid|exists:' . $roleTable . ',id',
             'sort_by' => 'sometimes|string|max:100',
             'order_by' => 'sometimes|string|in:asc,desc',
         ];

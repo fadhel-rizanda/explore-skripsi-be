@@ -31,7 +31,7 @@ class CreatePostRequest extends FormRequest
             'community_id' => [
                 'sometimes',
                 'uuid',
-                Rule::exists((new Community())->getTable(), 'id')
+                Rule::exists(Community::TABLE, 'id')
                     ->where('is_active', true),
             ],
             'attachment_id' => [
@@ -40,7 +40,7 @@ class CreatePostRequest extends FormRequest
                 new OwnsAttachment(),
             ],
             'tag_ids' => 'sometimes|array|min:1',
-            'tag_ids.*' => 'uuid|exists:' . (new AllTag())->getTable() . ',id',
+            'tag_ids.*' => 'uuid|exists:' . AllTag::TABLE . ',id',
         ];
     }
 }

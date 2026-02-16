@@ -7,6 +7,7 @@ use App\Enums\AttachmentTypeEnum;
 use App\Enums\ModelReferenceEnum;
 use App\Enums\RoleEnum;
 use App\Enums\StatusTypeEnum;
+use App\Http\Requests\GenerateDownloadUrlRequest;
 use App\Http\Requests\GeneratePresignedUrlRequest;
 use App\Models\Attachment;
 use App\Models\Status;
@@ -145,7 +146,7 @@ class AttachmentController extends Controller
         }
     }
 
-    public function generateDownloadUrl(Attachment $document)
+    public function generateDownloadUrl(Attachment $document, GenerateDownloadUrlRequest $request)
     {
         if ($document->status !== AttachmentTypeEnum::COMPLETED->value) {
             return $this->sendError('File not found in storage.', 404);
@@ -174,11 +175,17 @@ class AttachmentController extends Controller
         }
 
         try {
+            $mode = $request->query('mode', 'download');
+
+            $disposition = $mode === 'preview'
+                ? 'inline; filename="' . $document->filename . '"'
+                : 'attachment; filename="' . $document->filename . '"';
+
             $url = Storage::disk('s3')->temporaryUrl(
                 $document->path,
                 now()->addHour(),
                 [
-                    'ResponseContentDisposition' => 'attachment; filename="' . $document->filename . '"',
+                    'ResponseContentDisposition' => $disposition,
                 ]
             );
 
