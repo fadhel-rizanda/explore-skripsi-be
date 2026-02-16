@@ -11,7 +11,9 @@ class Status extends Model
 {
     use HasUuids;
 
-    protected $table = 'mt_all_status';
+    public const TABLE = 'mt_all_status';
+
+    protected $table = self::TABLE;
 
     public $incrementing = false;
 

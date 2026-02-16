@@ -10,7 +10,9 @@ class Comment extends Model
 {
     use HasUuids;
 
-    protected $table = 'mt_comment';
+    public const TABLE = 'mt_comment';
+
+    protected $table = self::TABLE;
 
     public $incrementing = false;
 

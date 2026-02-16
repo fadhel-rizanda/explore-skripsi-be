@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Comment;
 use Illuminate\Foundation\Http\FormRequest;
 
 class CreateCommentRequest extends FormRequest
@@ -23,7 +24,7 @@ class CreateCommentRequest extends FormRequest
     {
         return [
             'content' => 'required|string|max:2000',
-            'parent_id' => 'sometimes|uuid|exists:' . (new \App\Models\Comment())->getTable() . ',id',
+            'parent_id' => 'sometimes|uuid|exists:' . Comment::TABLE . ',id',
         ];
     }
 }

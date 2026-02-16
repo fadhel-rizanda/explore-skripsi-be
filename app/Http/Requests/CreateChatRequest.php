@@ -24,10 +24,14 @@ class CreateChatRequest extends FormRequest
      */
     public function rules(): array
     {
+        $type = $this->input('type');
+        $currentUserId = auth('api')->id();
+        $userTable = User::TABLE;
+
         return [
             'name' => [
                 Rule::when(
-                    $this->input('type') == ChatTypeEnum::PUBLIC->value,
+                    $type === ChatTypeEnum::PUBLIC->value,
                     ['required'],
                     ['nullable']
                 ),
@@ -40,7 +44,7 @@ class CreateChatRequest extends FormRequest
                 'required',
                 'array',
                 Rule::when(
-                    $this->input('type') == ChatTypeEnum::PRIVATE->value,
+                    $type === ChatTypeEnum::PRIVATE->value,
                     ['size:1'],
                     ['min:2']
                 ),
@@ -48,9 +52,8 @@ class CreateChatRequest extends FormRequest
             'user_ids.*' => [
                 'uuid',
                 'distinct',
-                Rule::notIn([auth('api')->id()]),
-                Rule::exists((new User())->getTable(), 'id')
-                    ->where('is_active', true),
+                Rule::notIn(array_filter([$currentUserId])),
+                Rule::exists($userTable, 'id')->where('is_active', true),
             ],
         ];
     }

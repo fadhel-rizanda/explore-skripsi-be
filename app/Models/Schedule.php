@@ -10,7 +10,9 @@ class Schedule extends Model
 {
     use HasUuids;
 
-    protected $table = 'mt_schedule';
+    public const TABLE = 'mt_schedule';
+
+    protected $table = self::TABLE;
 
     public $incrementing = false;
 
