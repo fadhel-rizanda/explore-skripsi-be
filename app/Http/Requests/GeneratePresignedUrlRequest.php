@@ -16,7 +16,13 @@ class GeneratePresignedUrlRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'filename' => 'required|string',
+            'filename' => [
+                'required',
+                'string',
+                'max:255',
+                'regex:/^[^"\r\n\t\0]+$/',
+                'regex:/^[a-zA-Z0-9._-]+$/',
+            ],
             'mime_type' => 'required|string',
             'file_size' => 'required|integer|max:10485760', // Max 10MB
             'is_public' => 'nullable|boolean',

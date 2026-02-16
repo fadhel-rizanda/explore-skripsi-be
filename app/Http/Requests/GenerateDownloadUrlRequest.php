@@ -22,7 +22,7 @@ class GenerateDownloadUrlRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'mode' => 'required|string|in:preview,download',
+            'mode' => 'sometimes|string|in:preview,download',
         ];
     }
 }
