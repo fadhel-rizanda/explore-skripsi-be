@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Services\NotificationService;
 use App\Traits\ResponseAPI;
 use Illuminate\Http\Request;
+use App\Models\Notification;
 
 class NotificationController extends Controller
 {
@@ -16,39 +17,49 @@ class NotificationController extends Controller
 
     public function getNotifications(Request $request)
     {
-        $notifications = $this->notificationService->getUserNotifications(
-            auth('api')->id(),
-            $request->boolean('unread_only'),
-            $request->query('per_page', 15)
-        );
+        $userId = auth('api')->id();
+        $notifications = Notification::where('user_id', $userId)
+            ->when($request->boolean('unread_only'), function ($query) {
+                $query->whereNull('read_at');
+            })
+            ->orderByDesc('created_at')
+            ->simplePaginate($request->query('per_page', 15));
 
-        return $this->sendSuccessPagination('Notifications retrieved successfully', $notifications);
+        $unreadCount = Notification::where('user_id', $userId)
+                ->whereNull('read_at')
+                ->count();
+
+        return $this->sendSuccessPagination('Notifications retrieved successfully', $notifications, null, 200, ['unread_count' => $unreadCount]);
     }
 
-    public function markAsRead($notificationId)
+    public function markAsRead(Notification $notification)
     {
-        $notification = $this->notificationService->readNotification(
-            auth('api')->id(),
-            $notificationId
-        );
-        if ($notification) {
-            return $this->sendSuccess('Notification marked as read');
-        } else {
-            return $this->sendError('Notification not found or already read', 404);
+        if ($notification->user_id !== auth('api')->id()) {
+            return $this->sendError('Notification not found', 404);
         }
+
+        if (! $notification->read_at) {
+            $notification->update([
+                'read_at' => now(),
+            ]);
+        }
+
+        return $this->sendSuccess('Notification marked as read');
     }
 
-    public function markAsUnread($notificationId)
+    public function markAsUnread(Notification $notification)
     {
-        $notification = $this->notificationService->unreadNotification(
-            auth('api')->id(),
-            $notificationId
-        );
-        if ($notification) {
-            return $this->sendSuccess('Notification marked as unread');
-        } else {
-            return $this->sendError('Notification not found or already read', 404);
+        if ($notification->user_id !== auth('api')->id()) {
+            return $this->sendError('Notification not found', 404);
         }
+
+        if (! $notification->read_at) {
+            $notification->update([
+                'read_at' => null,
+            ]);
+        }
+
+        return $this->sendSuccess('Notification marked as unread');
     }
 
     public function markAllAsRead()
@@ -69,16 +80,14 @@ class NotificationController extends Controller
         return $this->sendSuccess('All notifications marked as unread', ['marked_count' => $count]);
     }
 
-    public function deleteNotification($notificationId)
+    public function deleteNotification(Notification $notification)
     {
-        $deleted = $this->notificationService->delete(
-            auth('api')->id(),
-            $notificationId
-        );
-        if ($deleted) {
-            return $this->sendSuccess('Notification deleted successfully');
-        } else {
+        if ($notification->user_id !== auth('api')->id()) {
             return $this->sendError('Notification not found', 404);
         }
+
+        $notification->delete();
+
+        return $this->sendSuccess('Notification deleted successfully');
     }
 }
