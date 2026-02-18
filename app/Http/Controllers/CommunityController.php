@@ -41,7 +41,7 @@ class CommunityController extends Controller
                 'attachment:id,public_url,filename,mime_type,path',
                 'address',
                 'tags',
-                'admins:id,name,email',
+                'admins:id,name',
             ])->loadCount('members');
 
             $data = [
