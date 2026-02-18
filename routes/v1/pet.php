@@ -8,13 +8,13 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('pets')->group(function () {
     Route::get('/', [PetController::class, 'index']);
-    Route::get('/{id}', [PetController::class, 'show']);
+    Route::get('/{pet}', [PetController::class, 'show']);
 
     Route::middleware(['auth:api', 'check.token.version'])->group(function () {
         Route::middleware(['role:' . RoleEnum::PROVIDER->value . '|' . RoleEnum::ADMIN->value])->group(function () {
             Route::post('/', [PetController::class, 'store']);
-            Route::put('/{id}', [PetController::class, 'update']);
-            Route::delete('/{id}', [PetController::class, 'destroy']);
+            Route::put('/{pet}', [PetController::class, 'update']);
+            Route::delete('/{pet}', [PetController::class, 'destroy']);
         });
         Route::post('/{pet}/adopt', [AdoptionController::class, 'adopt'])->middleware(['role:' . RoleEnum::ADOPTER->value . '|' . RoleEnum::ADMIN->value]);
         Route::post('/{pet}/adopt/{adoption}/reject', [AdoptionController::class, 'reject'])->middleware(['adoption.access:' . RoleEnum::PROVIDER->value]);

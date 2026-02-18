@@ -16,9 +16,9 @@ class TagController extends Controller
     {
         $type = $request->type;
         $search = $request->search;
+        $page = $request->page ?? 1;
 
         $query = AllTag::query()
-            ->select('id', 'name', 'type', 'color_code')
             ->when($type, fn ($q) => $q->where('type', $type))
             ->orderBy('name');
 
@@ -27,13 +27,13 @@ class TagController extends Controller
                 Uuid::isValid($search),
                 fn ($q) => $q->where('id', $search),
                 fn ($q) => $q->where('name', 'ILIKE', "%{$search}%")
-            )->simplePaginate(15);
+            )->simplePaginate(15, ['id', 'name', 'type', 'color_code'], 'page', $page);
         } else {
-            $cacheKey = 'tags:type_' . ($type ?? 'all') . '_page_' . ($request->page ?? 1);
+            $cacheKey = 'tags:type_' . ($type ?? 'all') . '_page_' . ($page);
             $tags = Cache::remember(
                 $cacheKey,
                 now()->addHours(6),
-                fn () => $query->simplePaginate(15),
+                fn () => $query->simplePaginate(15, ['id', 'name', 'type', 'color_code'], 'page', $page),
             );
         }
 

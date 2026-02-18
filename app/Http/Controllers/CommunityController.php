@@ -38,9 +38,10 @@ class CommunityController extends Controller
     {
         try {
             $community->load([
-                'attachment:id,public_url',
+                'attachment:id,public_url,filename,mime_type,path',
                 'address',
                 'tags',
+                'admins:id,name,email',
             ])->loadCount('members');
 
             $data = [
@@ -50,7 +51,9 @@ class CommunityController extends Controller
                 'website' => $community->website,
                 'image_url' => $community->attachment?->public_url,
                 'address' => $community->address,
+                'attachment' => $community->attachment,
                 'tags' => $community->tags,
+                'admins' => $community->admins,
                 'members_count' => $community->members_count,
                 'created_at' => $community->created_at,
                 'updated_at' => $community->updated_at,
