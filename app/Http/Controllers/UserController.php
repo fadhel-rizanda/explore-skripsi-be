@@ -276,14 +276,14 @@ class UserController extends Controller
             $users = $query->where(function ($q) use ($search) {
                 $q->where('name', 'ILIKE', "%{$search}%")
                     ->orWhere('email', 'ILIKE', "%{$search}%");
-            })->simplePaginate(15, ['id', 'name', 'email'], 'page', $page);
+            })->simplePaginate(15, ['id', 'name'], 'page', $page);
         } else {
             $cacheKey = "users:list:page_{$page}";
 
             $users = Cache::remember(
                 $cacheKey,
                 now()->addHours(6),
-                fn () => $query->simplePaginate(15, ['id', 'name', 'email'], 'page', $page)
+                fn () => $query->simplePaginate(15, ['id', 'name'], 'page', $page)
             );
 
         }
