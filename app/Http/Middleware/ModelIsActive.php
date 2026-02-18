@@ -24,7 +24,7 @@ class ModelIsActive
         foreach ($modelNames as $modelName) {
             $model = $request->route($modelName);
 
-            if ($model && property_exists($model, 'is_active') && ! $model->is_active) {
+            if ($model && method_exists($model, 'getAttribute') && ! $model->is_active) {
                 return $this->sendError(
                     ucfirst($modelName) . ' not found.',
                     404
