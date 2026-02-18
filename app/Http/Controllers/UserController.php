@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Enums\ModelReferenceEnum;
+use App\Enums\RoleEnum;
 use App\Http\Requests\DeleteUserRequest;
 use App\Http\Requests\GetAllRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\Address;
 use App\Models\User;
 use App\Traits\ResponseAPI;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -258,5 +260,34 @@ class UserController extends Controller
 
             return $this->sendError('Error deleting user: ' . $e->getMessage());
         }
+    }
+
+    public function userOptions(GetAllRequest $request)
+    {
+        $search = $request->search;
+        $page = $request->page ?? 1;
+
+        $query = User::query()
+            ->withoutRole(RoleEnum::ADMIN->value)
+            ->where('is_active', true)
+            ->orderBy('name');
+
+        if ($search) {
+            $users = $query->where(function ($q) use ($search) {
+                $q->where('name', 'ILIKE', "%{$search}%")
+                    ->orWhere('email', 'ILIKE', "%{$search}%");
+            })->simplePaginate(15, ['id', 'name', 'email'], 'page', $page);
+        } else {
+            $cacheKey = "users:list:page_{$page}";
+
+            $users = Cache::remember(
+                $cacheKey,
+                now()->addHours(6),
+                fn () => $query->simplePaginate(15, ['id', 'name', 'email'], 'page', $page)
+            );
+
+        }
+
+        return $this->sendSuccessPagination('Users retrieved successfully', $users);
     }
 }
