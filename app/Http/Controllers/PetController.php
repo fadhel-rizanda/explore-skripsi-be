@@ -140,11 +140,9 @@ class PetController extends Controller
     /**
      * Update the specified pet in storage.
      */
-    public function update(PetRequest $request, $id)
+    public function update(PetRequest $request, Pet $pet)
     {
         try {
-            $pet = Pet::findOrFail($id);
-
             $user = auth('api')->user();
             if (! $user->hasRole('admin') && $pet->user_id !== $user->id) {
                 return $this->sendError('You are not authorized to update this pet.', 403);
@@ -196,16 +194,16 @@ class PetController extends Controller
     /**
      * Display the specified pet detail.
      */
-    public function show($id)
+    public function show(Pet $pet)
     {
         try {
-            $pet = Pet::with([
+            $pet->load([
                 'typeOfAnimal:id,name,type,color_code',
                 'profilePictures:id,public_url,filename,mime_type,path',
                 'physiqueTags:id,name,type,color_code',
                 'personalityTags:id,name,type,color_code',
                 'additionalRecords:id,public_url,filename,mime_type,path',
-            ])->findOrFail($id);
+            ]);
 
             [$age, $ageUnit] = $this->calculateAgeAndUnit($pet->date_of_birth);
             $data = [
@@ -269,11 +267,9 @@ class PetController extends Controller
     /**
      * Remove the specified pet from storage.
      */
-    public function destroy($id)
+    public function destroy(Pet $pet)
     {
         try {
-            $pet = Pet::findOrFail($id);
-
             $user = auth('api')->user();
             if (! $user->hasRole('admin') && $pet->user_id !== $user->id) {
                 return $this->sendError('You are not authorized to delete this pet.', 403);
@@ -285,7 +281,7 @@ class PetController extends Controller
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return $this->sendError('Pet not found', 404);
         } catch (\Exception $e) {
-            Log::error("Error deleting pet ID {$id}: " . $e->getMessage());
+            Log::error("Error deleting pet ID {$pet->id}: " . $e->getMessage());
 
             return $this->sendError('Internal server error', 500);
         }

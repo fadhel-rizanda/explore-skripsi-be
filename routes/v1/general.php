@@ -3,8 +3,14 @@
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\StatusController;
 use App\Http\Controllers\TagController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/statuses', [StatusController::class, 'listStatuses']);
-Route::get('/tags', [TagController::class, 'listTags']);
-Route::get('/roles', [RoleController::class, 'listRoles']);
+Route::prefix('general')->group(function () {
+    Route::get('/statuses', [StatusController::class, 'listStatuses']);
+    Route::get('/tags', [TagController::class, 'listTags']);
+    Route::get('/roles', [RoleController::class, 'listRoles']);
+    Route::middleware(['auth:api', 'check.token.version'])->group(function () {
+        Route::get('/users', [UserController::class, 'userOptions']);
+    });
+});
