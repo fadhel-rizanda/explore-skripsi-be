@@ -53,7 +53,7 @@ class NotificationController extends Controller
             return $this->sendError('Notification not found', 404);
         }
 
-        if (! $notification->read_at) {
+        if ($notification->read_at) {
             $notification->update([
                 'read_at' => null,
             ]);
