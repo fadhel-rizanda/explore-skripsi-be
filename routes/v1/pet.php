@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('pets')->group(function () {
     Route::get('/', [PetController::class, 'index']);
-    Route::get('/{pet}', [PetController::class, 'show'])->middleware('model.isActive:' . ModelReferenceEnum::POST->value);
+    Route::get('/{pet}', [PetController::class, 'show'])->middleware('model.isActive:' . ModelReferenceEnum::PET->value);
 
     Route::middleware(['auth:api', 'check.token.version'])->group(function () {
         Route::middleware(['role:' . RoleEnum::PROVIDER->value . '|' . RoleEnum::ADMIN->value])->group(function () {
