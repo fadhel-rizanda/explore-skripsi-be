@@ -66,4 +66,13 @@ class Post extends Model
     {
         return $this->hasMany(Comment::class, 'post_id', 'id');
     }
+
+    public function scopeWithLikeStatus($query, $userId)
+    {
+        return $query->when($userId, function ($q) use ($userId) {
+            $q->withExists([
+                'likes as is_liked' => fn ($sub) => $sub->where('user_id', $userId),
+            ]);
+        });
+    }
 }
