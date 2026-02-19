@@ -43,12 +43,13 @@ class PostController extends Controller
                 'createdBy:id,name,email,avatar,is_active',
                 'createdBy.attachment:id,public_url',
                 'tags:id,name,type,color_code',
-            ])->withCount(['likes', 'comments'])
-                ->when(auth('api')->id(), function ($query) {
-                    $query->withExists([
-                        'likes as is_liked' => fn ($q) => $q->where('user_id', auth('api')->id()),
-                    ]);
-                });
+            ])->withCount(['likes', 'comments']);
+
+            if ($userId = auth('api')->id()) {
+                $post->loadExists([
+                    'likes as is_liked' => fn ($q) => $q->where('user_id', $userId),
+                ]);
+            }
 
             return $this->sendSuccess('Post details retrieved successfully.', new PostResource($post));
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
@@ -186,11 +187,7 @@ class PostController extends Controller
             'tags:id,name,type,color_code',
         ])
             ->withCount(['likes', 'comments'])
-            ->when($userId, function ($query) use ($userId) {
-                $query->withExists([
-                    'likes as is_liked' => fn ($q) => $q->where('user_id', $userId),
-                ]);
-            })
+            ->withLikeStatus($userId)
             ->when(! $isAdmin, fn ($q) => $q->where('is_active', true))
             ->when($search, function ($q) use ($search, $isAdmin) {
                 $q->where(function ($query) use ($search, $isAdmin) {

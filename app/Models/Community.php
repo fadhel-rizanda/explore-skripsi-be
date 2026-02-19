@@ -78,4 +78,14 @@ class Community extends Model
             ->values()
             ->all();
     }
+
+    public function scopeWithMemberStatus($query, ?string $userId)
+    {
+        return $query->when($userId, function ($q) use ($userId) {
+            $q->withCount([
+                'members as is_member' => fn ($sub) => $sub->where('user_id', $userId),
+                'admins as is_admin' => fn ($sub) => $sub->where('user_id', $userId),
+            ]);
+        });
+    }
 }

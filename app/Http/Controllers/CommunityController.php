@@ -43,15 +43,14 @@ class CommunityController extends Controller
                 'address',
                 'tags',
                 'admins:id,name',
-            ])->loadCount('members')
-                ->when($userId)->withCount([
-                    'members as is_member' => function ($q) use ($userId) {
-                        $q->where('user_id', $userId);
-                    },
-                    'admins as is_admin' => function ($q) use ($userId) {
-                        $q->where('user_id', $userId);
-                    },
+            ])->loadCount('members');
+
+            if ($userId) {
+                $community->loadExists([
+                    'members as is_member' => fn ($q) => $q->where('user_id', $userId),
+                    'admins as is_admin' => fn ($q) => $q->where('user_id', $userId),
                 ]);
+            }
 
             $data = [
                 'id' => $community->id,
@@ -231,16 +230,7 @@ class CommunityController extends Controller
                 'attachment:id,public_url',
                 ...($isAdmin ? ['address', 'tags'] : []),
             ])
-            ->when($userId, function ($query) use ($userId) {
-                $query->withCount([
-                    'members as is_member' => function ($q) use ($userId) {
-                        $q->where('user_id', $userId);
-                    },
-                    'admins as is_admin' => function ($q) use ($userId) {
-                        $q->where('user_id', $userId);
-                    },
-                ]);
-            })
+            ->withMemberStatus($userId)
             ->withCount('members')
             ->when($search, function ($q) use ($search, $isAdmin) {
                 $q->where(function ($query) use ($search, $isAdmin) {
