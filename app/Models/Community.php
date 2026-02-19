@@ -33,6 +33,11 @@ class Community extends Model
         'is_active',
     ];
 
+    protected $casts = [
+        'is_member' => 'boolean',
+        'is_admin' => 'boolean',
+    ];
+
     public function address(): BelongsTo
     {
         return $this->belongsTo(Address::class, 'address_id', 'id');

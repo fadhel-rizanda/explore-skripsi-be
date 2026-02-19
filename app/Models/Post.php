@@ -33,6 +33,10 @@ class Post extends Model
         'is_active',
     ];
 
+    protected $casts = [
+        'is_liked' => 'boolean',
+    ];
+
     public function community(): BelongsTo
     {
         return $this->belongsTo(Community::class, 'community_id', 'id');
