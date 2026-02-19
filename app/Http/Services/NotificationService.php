@@ -114,22 +114,6 @@ class NotificationService
         return $query->paginate($perPage);
     }
 
-    public function readNotification(string $userId, string $notificationId): bool
-    {
-        return (bool) Notification::forUser($userId)
-            ->unread()
-            ->where('id', $notificationId)
-            ->update(['read_at' => now()]);
-    }
-
-    public function unreadNotification(string $userId, string $notificationId): bool
-    {
-        return (bool) Notification::forUser($userId)
-            ->read()
-            ->where('id', $notificationId)
-            ->update(['read_at' => null]);
-    }
-
     public function markAllAsRead(string $userId): int
     {
         return Notification::forUser($userId)

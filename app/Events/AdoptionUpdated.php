@@ -49,7 +49,7 @@ class AdoptionUpdated implements ShouldBroadcast
             'data' => [
                 'id' => $this->notification->id,
                 'reference_id' => $this->notification->reference_id,
-                'reference_by' => $this->notification->reference_by,
+                'reference_type' => $this->notification->reference_type,
                 'title' => $this->notification->title,
                 'message' => $this->notification->message,
                 'created_at' => $this->notification->created_at->toDateTimeString(),
