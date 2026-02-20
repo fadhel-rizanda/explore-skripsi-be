@@ -33,6 +33,11 @@ class Community extends Model
         'is_active',
     ];
 
+    protected $casts = [
+        'is_member' => 'boolean',
+        'is_admin' => 'boolean',
+    ];
+
     public function address(): BelongsTo
     {
         return $this->belongsTo(Address::class, 'address_id', 'id');
@@ -72,5 +77,15 @@ class Community extends Model
             ->unique('id')
             ->values()
             ->all();
+    }
+
+    public function scopeWithMemberStatus($query, ?string $userId)
+    {
+        return $query->when($userId, function ($q) use ($userId) {
+            $q->withCount([
+                'members as is_member' => fn ($sub) => $sub->where('user_id', $userId),
+                'admins as is_admin' => fn ($sub) => $sub->where('user_id', $userId),
+            ]);
+        });
     }
 }

@@ -20,8 +20,8 @@ class PostController extends Controller
     {
         try {
             $isAdmin = auth('api')->user()?->hasRole('admin') ?? false;
-            $paginator= $this->getPostsQuery($request, $isAdmin);
-            $posts = PostResource::collection($paginator->items());;
+            $paginator = $this->getPostsQuery($request, $isAdmin);
+            $posts = PostResource::collection($paginator->items());
 
             return $this->sendSuccessPagination(
                 'Post retrieved successfully.',
@@ -43,7 +43,13 @@ class PostController extends Controller
                 'createdBy:id,name,email,avatar,is_active',
                 'createdBy.attachment:id,public_url',
                 'tags:id,name,type,color_code',
-            ]);
+            ])->withCount(['likes', 'comments']);
+
+            if ($userId = auth('api')->id()) {
+                $post->loadExists([
+                    'likes as is_liked' => fn ($q) => $q->where('user_id', $userId),
+                ]);
+            }
 
             return $this->sendSuccess('Post details retrieved successfully.', new PostResource($post));
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
@@ -162,6 +168,7 @@ class PostController extends Controller
 
     private function getPostsQuery(GetAllRequest $request, bool $isAdmin)
     {
+        $userId = auth('api')->id();
         $perPage = min((int) $request->query('per_page', 15), 100);
         $search = $request->query('search');
         $sortBy = $request->query('sort_by', 'created_at');
@@ -180,6 +187,7 @@ class PostController extends Controller
             'tags:id,name,type,color_code',
         ])
             ->withCount(['likes', 'comments'])
+            ->withLikeStatus($userId)
             ->when(! $isAdmin, fn ($q) => $q->where('is_active', true))
             ->when($search, function ($q) use ($search, $isAdmin) {
                 $q->where(function ($query) use ($search, $isAdmin) {
