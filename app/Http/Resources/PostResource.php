@@ -24,6 +24,7 @@ class PostResource extends JsonResource
             'tags' => $this->tags,
             'likes_count' => $this->whenCounted('likes'),
             'comments_count' => $this->whenCounted('comments'),
+            'is_liked' => $this->is_liked ?? false,
             'created_by' => [
                 'id' => $this->createdBy->id,
                 'name' => $this->createdBy->name,

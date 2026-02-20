@@ -33,6 +33,10 @@ class Post extends Model
         'is_active',
     ];
 
+    protected $casts = [
+        'is_liked' => 'boolean',
+    ];
+
     public function community(): BelongsTo
     {
         return $this->belongsTo(Community::class, 'community_id', 'id');
@@ -61,5 +65,14 @@ class Post extends Model
     public function comments(): HasMany
     {
         return $this->hasMany(Comment::class, 'post_id', 'id');
+    }
+
+    public function scopeWithLikeStatus($query, $userId)
+    {
+        return $query->when($userId, function ($q) use ($userId) {
+            $q->withExists([
+                'likes as is_liked' => fn ($sub) => $sub->where('user_id', $userId),
+            ]);
+        });
     }
 }

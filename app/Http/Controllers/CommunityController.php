@@ -37,12 +37,20 @@ class CommunityController extends Controller
     public function communityDetail(Community $community)
     {
         try {
+            $userId = auth('api')->id();
             $community->load([
                 'attachment:id,public_url,filename,mime_type,path',
                 'address',
                 'tags',
                 'admins:id,name',
             ])->loadCount('members');
+
+            if ($userId) {
+                $community->loadExists([
+                    'members as is_member' => fn ($q) => $q->where('user_id', $userId),
+                    'admins as is_admin' => fn ($q) => $q->where('user_id', $userId),
+                ]);
+            }
 
             $data = [
                 'id' => $community->id,
@@ -55,6 +63,8 @@ class CommunityController extends Controller
                 'tags' => $community->tags,
                 'admins' => $community->admins,
                 'members_count' => $community->members_count,
+                'is_member' => $community->is_member ?? false,
+                'is_admin' => $community->is_admin ?? false,
                 'created_at' => $community->created_at,
                 'updated_at' => $community->updated_at,
             ];
@@ -203,6 +213,7 @@ class CommunityController extends Controller
 
     private function getCommunitiesQuery(GetAllRequest $request, bool $isAdmin)
     {
+        $userId = auth('api')->id();
         $perPage = min((int) $request->query('per_page', 15), 100);
         $search = $request->query('search');
         $sortBy = $request->query('sort_by', 'created_at');
@@ -219,6 +230,7 @@ class CommunityController extends Controller
                 'attachment:id,public_url',
                 ...($isAdmin ? ['address', 'tags'] : []),
             ])
+            ->withMemberStatus($userId)
             ->withCount('members')
             ->when($search, function ($q) use ($search, $isAdmin) {
                 $q->where(function ($query) use ($search, $isAdmin) {
@@ -243,6 +255,8 @@ class CommunityController extends Controller
                 'description' => $community->description,
                 'image_url' => optional($community->attachment)->public_url,
                 'members_count' => $community->members_count,
+                'is_member' => $community->is_member ?? false,
+                'is_admin' => $community->is_admin ?? false,
                 'created_at' => $community->created_at,
                 'updated_at' => $community->updated_at,
                 'tags' => $community->tags,
