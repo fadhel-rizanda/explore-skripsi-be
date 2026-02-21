@@ -217,11 +217,16 @@ class CommunityController extends Controller
         $perPage = min((int) $request->query('per_page', 15), 100);
         $search = $request->query('search');
         $sortBy = $request->query('sort_by', 'created_at');
+        $sortOrder = $request->query('sort_order', 'desc');
         $tagId = $request->query('tag_id');
 
-        $allowedSorts = ['name', 'created_at', 'updated_at'];
+        $allowedSorts = ['name', 'created_at', 'updated_at', 'members_count'];
         if (! in_array($sortBy, $allowedSorts)) {
             $sortBy = 'created_at';
+        }
+
+        if (! in_array(strtolower($sortOrder), ['asc', 'desc'])) {
+            $sortOrder = 'desc';
         }
 
         $communities = Community::query()
@@ -245,7 +250,7 @@ class CommunityController extends Controller
                 $tagId,
                 fn ($q) => $q->whereHas('tags', fn ($query) => $query->where('mt_all_tag.id', $tagId))
             )
-            ->orderBy($sortBy, 'desc')
+            ->orderBy($sortBy, $sortOrder)
             ->paginate($perPage);
 
         $communities->getCollection()->transform(function ($community) use ($isAdmin) {
