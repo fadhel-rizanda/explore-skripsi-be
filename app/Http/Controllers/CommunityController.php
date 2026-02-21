@@ -225,10 +225,6 @@ class CommunityController extends Controller
             $sortBy = 'created_at';
         }
 
-        if (! in_array(strtolower($sortOrder), ['asc', 'desc'])) {
-            $sortOrder = 'desc';
-        }
-
         $communities = Community::query()
             ->when(! $isAdmin, fn ($q) => $q->where('is_active', true))
             ->with([
