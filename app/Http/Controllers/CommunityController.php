@@ -217,7 +217,7 @@ class CommunityController extends Controller
         $perPage = min((int) $request->query('per_page', 15), 100);
         $search = $request->query('search');
         $sortBy = $request->query('sort_by', 'created_at');
-        $sortOrder = $request->query('sort_order', 'desc');
+        $sortOrder = $request->query('order_by', 'desc');
         $tagId = $request->query('tag_id');
 
         $allowedSorts = ['name', 'created_at', 'updated_at', 'members_count'];
