@@ -15,6 +15,9 @@ use App\Http\Services\MeetNGreetService;
 use App\Http\Services\NotificationService;
 use App\Models\Adoption;
 use App\Models\Handover;
+use App\Models\Attachment;
+use App\Models\AllTag;
+use App\Enums\AttachmentTypeEnum;
 use App\Models\Status;
 use App\Notifications\AdoptionMailNotification;
 use App\Traits\ResponseAPI;
@@ -26,36 +29,36 @@ class HandoverController extends Controller
 
     public function __construct(
         private NotificationService $notificationService,
-        private MeetNGreetService $meetNGreetService
-    ) {}
+        private MeetNGreetService   $meetNGreetService
+    )
+    {
+    }
 
     public function handover(Adoption $adoption)
     {
         $handover = $adoption->handovers()
-            ->with(['meetNGreet.schedule', 'meetNGreet.schedule.address', 'status'])
+            ->with(['meetNGreet.schedule', 'meetNGreet.schedule.address', 'status', 'attachments'])
             ->orderBy('updated_at', 'desc')
             ->first();
 
         return $this->sendSuccess('Handover fetched successfully', $handover);
     }
 
-    public function purposeMeetNGreetSchedule(Adoption $adoption, CreateScheduleRequest $request)
+    public function createMeetNGreetSchedule(Adoption $adoption, CreateScheduleRequest $request)
     {
         $user = auth('api')->user();
 
         try {
             DB::beginTransaction();
-            $meetNGreet = $this->meetNGreetService->schedule(
+            $meetNGreet = $this->meetNGreetService->createSchedule(
                 adoption: $adoption,
                 data: $request->validated(),
-                meetNGreetId: $request->input('meet_n_greet_id')
+                stage: "handover"
             );
 
-            $handover = Handover::updateOrCreate(
+            $handover = Handover::create(
                 [
                     'adoption_id' => $adoption->id,
-                ],
-                [
                     'status_id' => Status::getCache(
                         StatusTypeEnum::ADOPTION->value,
                         AdoptionStatusEnum::IN_PROGRESS->value
@@ -115,6 +118,88 @@ class HandoverController extends Controller
             ];
 
             return $this->sendSuccess('Handover Meet and Greet ' . ($request->has('meet_n_greet_id') ? 'updated' : 'scheduled') . ' successfully', $data);
+
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            \Log::error('Error scheduling handover', ['error' => $e->getMessage()]);
+
+            return $this->sendError('Error scheduling handover.');
+        }
+    }
+
+    public function updateMeetNGreetSchedule(Adoption $adoption, Handover $handover, CreateScheduleRequest $request)
+    {
+        $user = auth('api')->user();
+
+        try {
+            DB::beginTransaction();
+            $meetNGreet = $this->meetNGreetService->updateSchedule(
+                adoption: $adoption,
+                data: $request->validated(),
+                meetNGreet: $handover->meetNGreet,
+            );
+
+            $handover->update([
+                'status_id' => Status::getCache(
+                    StatusTypeEnum::ADOPTION->value,
+                    AdoptionStatusEnum::IN_PROGRESS->value
+                )->id,
+                'meet_n_greet_id' => $meetNGreet->id,
+                'updated_by' => $user->id,
+            ]);
+
+            DB::commit();
+
+            $handover->refresh();
+
+            $usersToNotify = [$adoption->adopter->id, $adoption->provider->id];
+
+            $notification = $this->notificationService
+                ->createBulk(
+                    userIds: $usersToNotify,
+                    title: 'Handover Scheduled',
+                    message: 'Handover has been scheduled for ' . ($adoption->pet->name ?? 'Unnamed Pet'),
+                    referenceType: ModelReferenceEnum::HANDOVER->value,
+                    referenceId: $handover->id,
+                )
+                ->notifyUsers(
+                    new AdoptionMailNotification(
+                        action: AdoptionStageEnum::HANDOVER->value,
+                        adoption: $adoption
+                    )
+                )
+                ->getNotifications()
+                ->first();
+            broadcast(new AdoptionUpdated($notification));
+
+            $data = [
+                'id' => $handover->id,
+                'adoption_id' => $handover->adoption_id,
+                'status' => $handover->status,
+                'created_at' => $handover->created_at,
+                'updated_at' => $handover->updated_at,
+                'meet_n_greet' => [
+                    'id' => $meetNGreet->id,
+                    'adoption_id' => $meetNGreet->adoption_id,
+                    'adopter_confirmed' => $meetNGreet->adopter_confirmed,
+                    'adopter_confirmed_at' => $meetNGreet->adopter_confirmed_at,
+                    'provider_confirmed' => $meetNGreet->provider_confirmed,
+                    'provider_confirmed_at' => $meetNGreet->provider_confirmed_at,
+                    'status' => $meetNGreet->status,
+                    'schedule' => [
+                        'id' => $meetNGreet->schedule->id,
+                        'scheduled_time' => $meetNGreet->schedule->scheduled_time,
+                        'notes' => $meetNGreet->schedule->notes,
+                        'address' => $meetNGreet->schedule->address,
+                        'created_at' => $meetNGreet->schedule->created_at,
+                        'updated_at' => $meetNGreet->schedule->updated_at,
+                    ],
+                    'created_at' => $meetNGreet->created_at,
+                    'updated_at' => $meetNGreet->updated_at,
+                ],
+            ];
+
+            return $this->sendSuccess('Handover Meet and Greet updated successfully', $data);
 
         } catch (\Throwable $e) {
             DB::rollBack();
@@ -196,20 +281,57 @@ class HandoverController extends Controller
         try {
             DB::beginTransaction();
 
-            $handover->syncAttachmentsWithMetadata(
-                relation: 'attachments',
-                newIds: $request->input('attachment_ids'),
-                modelReference: ModelReferenceEnum::HANDOVER->value,
-            );
+            $role = $adoption->adopter_id === auth()->id() ? 'adopter' : 'provider';
+            $otherRole = $role === 'adopter' ? 'provider' : 'adopter';
+
+            $currentIds = $request->input('attachment_ids');
+
+            $oldAllIds = $handover->attachments()->pluck('mt_attachment.id')->toArray();
+            $otherRoleIds = $handover->attachments()
+                ->wherePivot('uploaded_by_role', $otherRole)
+                ->pluck('mt_attachment.id')
+                ->toArray();
+
+            $syncData = collect($currentIds)
+                ->mapWithKeys(fn($id) => [$id => ['uploaded_by_role' => $role]])
+                ->merge(
+                    collect($otherRoleIds)
+                        ->mapWithKeys(fn($id) => [$id => ['uploaded_by_role' => $otherRole]])
+                )
+                ->toArray();
+
+            $mergedIds = array_merge($currentIds, $otherRoleIds);
+
+            $handover->attachments()->sync($syncData);
+
+            $removedIds = array_diff($oldAllIds, $mergedIds);
+            if (!empty($removedIds)) {
+                Attachment::whereIn('id', $removedIds)->update([
+                    'reference_id' => null,
+                    'reference_by' => null,
+                    'status' => AttachmentTypeEnum::PENDING->value,
+                ]);
+            }
+
+            if (!empty($currentIds)) {
+                Attachment::whereIn('id', $currentIds)->update([
+                    'reference_id' => $handover->id,
+                    'reference_by' => ModelReferenceEnum::HANDOVER->value,
+                    'status' => AttachmentTypeEnum::COMPLETED->value,
+                ]);
+            }
 
             $adopterAttached = $handover->attachments()
-                ->where('mt_attachment.uploaded_by', $adoption->adopter->id)
+                ->wherePivot('uploaded_by_role', 'adopter')
                 ->exists();
             $providerAttached = $handover->attachments()
-                ->where('mt_attachment.uploaded_by', $adoption->provider->id)
+                ->wherePivot('uploaded_by_role', 'provider')
                 ->exists();
 
-            if ($adopterAttached && $providerAttached && $handover->status->name === AdoptionStatusEnum::IN_PROGRESS->value && $adoption->status->name === AdoptionStatusEnum::IN_PROGRESS->value) {
+            if ($adopterAttached && $providerAttached
+                && $handover->status->name === AdoptionStatusEnum::IN_PROGRESS->value
+                && $adoption->status->name === AdoptionStatusEnum::IN_PROGRESS->value
+            ) {
                 $adoption->update([
                     'status_id' => Status::getCache(
                         StatusTypeEnum::ADOPTION->value,
@@ -220,24 +342,20 @@ class HandoverController extends Controller
 
             DB::commit();
 
-            $data = [
+            $handover->load('attachments', 'status');
+
+            return $this->sendSuccess('Handover evidence updated successfully', [
                 'id' => $handover->id,
                 'adoption_id' => $handover->adoption_id,
                 'status' => $handover->status,
                 'attachments' => $handover->attachments,
                 'created_at' => $handover->created_at,
                 'updated_at' => $handover->updated_at,
-            ];
-
-            return $this->sendSuccess(
-                'Handover evidence updated successfully',
-                $data
-            );
+            ]);
 
         } catch (\Throwable $e) {
             DB::rollBack();
             \Log::error('Error updating Handover evidence', ['error' => $e->getMessage()]);
-
             return $this->sendError('Error updating Handover evidence.');
         }
     }
@@ -261,18 +379,18 @@ class HandoverController extends Controller
             DB::beginTransaction();
             $updateData = [];
 
-            if ($user->id === $adopter->id && ! $handover->adopter_finalized) {
+            if ($user->id === $adopter->id && !$handover->adopter_finalized) {
                 $updateData['adopter_finalized'] = true;
                 $updateData['adopter_finalized_at'] = now();
             }
 
-            if ($user->id === $provider->id && ! $handover->provider_finalized) {
+            if ($user->id === $provider->id && !$handover->provider_finalized) {
                 $updateData['provider_finalized'] = true;
                 $updateData['provider_finalized_at'] = now();
             }
 
             if (
-                $user->hasRole(RoleEnum::ADMIN->value) && ! $handover->admin_finalized && $handover->adopter_finalized && $handover->provider_finalized) {
+                $user->hasRole(RoleEnum::ADMIN->value) && !$handover->admin_finalized && $handover->adopter_finalized && $handover->provider_finalized) {
                 $updateData['admin_finalized'] = true;
                 $updateData['admin_finalized_at'] = now();
             }
@@ -294,6 +412,10 @@ class HandoverController extends Controller
 
                 $adoption->update([
                     'status_id' => $completedStatusId,
+                    'stage_tag_id' => AllTag::getCache(
+                        StatusTypeEnum::ADOPTION->value,
+                        AdoptionStageEnum::COMPLETED->value
+                    )->id,
                     'updated_by' => $user->id,
                     'is_active' => false,
                 ]);
