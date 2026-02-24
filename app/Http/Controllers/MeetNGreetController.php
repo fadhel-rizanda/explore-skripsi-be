@@ -12,19 +12,23 @@ use App\Models\Adoption;
 use App\Models\MeetNGreet;
 use App\Notifications\AdoptionMailNotification;
 use App\Traits\ResponseAPI;
+use Illuminate\Support\Facades\DB;
 
 class MeetNGreetController extends Controller
 {
     use ResponseAPI;
 
     public function __construct(
-        private MeetNGreetService $meetNGreetService,
+        private MeetNGreetService   $meetNGreetService,
         private NotificationService $notificationService
-    ) {}
+    )
+    {
+    }
 
     public function meetNGreet(Adoption $adoption)
     {
         $meetNGreet = $adoption->meetNGreets()
+            ->where('stage', 'default')
             ->with(['schedule', 'schedule.address', 'status'])
             ->orderBy('updated_at', 'desc')
             ->first();
@@ -32,26 +36,28 @@ class MeetNGreetController extends Controller
         return $this->sendSuccess('Meet and Greet fetched successfully', $meetNGreet);
     }
 
-    public function purposeSchedule(Adoption $adoption, CreateScheduleRequest $request)
+    public function createSchedule(Adoption $adoption, CreateScheduleRequest $request)
     {
         try {
-            $meetNGreet = $this->meetNGreetService->schedule(
+            DB::beginTransaction();
+            $meetNGreet = $this->meetNGreetService->createSchedule(
                 adoption: $adoption,
                 data: $request->validated(),
-                meetNGreetId: $request->input('meet_n_greet_id')
             );
+
+            DB::commit();
 
             $usersToNotify = [$adoption->adopter->id, $adoption->provider->id];
             $notification = $this->notificationService->createBulk(
                 userIds: $usersToNotify,
                 title: 'Meet and Greet Scheduled',
-                message: 'A Meet and Greet has been ' . ($meetNGreet->id ? 'updated' : 'scheduled') . ' for the adoption of ' . ($adoption->pet->name ?? 'Unnamed Pet'),
+                message: 'A Meet and Greet has been scheduled for the adoption of ' . ($adoption->pet->name ?? 'Unnamed Pet'),
                 referenceType: ModelReferenceEnum::MEETNGREET->value,
                 referenceId: $meetNGreet->id,
             )->notifyUsers(new AdoptionMailNotification(
                 action: AdoptionStageEnum::MEET_N_GREET->value,
                 adoption: $adoption,
-                notes: 'A Meet and Greet has been ' . ($meetNGreet->id ? 'updated' : 'scheduled') . '.'
+                notes: 'A Meet and Greet has been scheduled',
             ))->getNotifications()->first();
 
             broadcast(new AdoptionUpdated($notification));
@@ -76,8 +82,67 @@ class MeetNGreetController extends Controller
                 'updated_at' => $meetNGreet->updated_at,
             ];
 
-            return $this->sendSuccess('Meet and Greet ' . ($request->has('meet_n_greet_id') ? 'updated' : 'scheduled') . ' successfully', $data);
+            return $this->sendSuccess('Meet and Greet scheduled successfully', $data);
         } catch (\Throwable $e) {
+            DB::rollBack();
+            \Log::error('Error scheduling Meet and Greet', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return $this->sendError('Error scheduling Meet and Greet.');
+        }
+    }
+
+    public function updateSchedule(Adoption $adoption, MeetNGreet $meetNGreet, CreateScheduleRequest $request)
+    {
+        try {
+            DB::beginTransaction();
+            $meetNGreet = $this->meetNGreetService->updateSchedule(
+                adoption: $adoption,
+                data: $request->validated(),
+                meetNGreet: $meetNGreet,
+            );
+
+            DB::commit();
+
+            $usersToNotify = [$adoption->adopter->id, $adoption->provider->id];
+            $notification = $this->notificationService->createBulk(
+                userIds: $usersToNotify,
+                title: 'Meet and Greet Scheduled',
+                message: 'A Meet and Greet has been updated for the adoption of ' . ($adoption->pet->name ?? 'Unnamed Pet'),
+                referenceType: ModelReferenceEnum::MEETNGREET->value,
+                referenceId: $meetNGreet->id,
+            )->notifyUsers(new AdoptionMailNotification(
+                action: AdoptionStageEnum::MEET_N_GREET->value,
+                adoption: $adoption,
+                notes: 'A Meet and Greet has been updated',
+            ))->getNotifications()->first();
+
+            broadcast(new AdoptionUpdated($notification));
+
+            $data = [
+                'id' => $meetNGreet->id,
+                'adoption_id' => $meetNGreet->adoption_id,
+                'adopter_confirmed' => $meetNGreet->adopter_confirmed,
+                'adopter_confirmed_at' => $meetNGreet->adopter_confirmed_at,
+                'provider_confirmed' => $meetNGreet->provider_confirmed,
+                'provider_confirmed_at' => $meetNGreet->provider_confirmed_at,
+                'status' => $meetNGreet->status,
+                'schedule' => [
+                    'id' => $meetNGreet->schedule->id,
+                    'scheduled_time' => $meetNGreet->schedule->scheduled_time,
+                    'notes' => $meetNGreet->schedule->notes,
+                    'address' => $meetNGreet->schedule->address,
+                    'created_at' => $meetNGreet->schedule->created_at,
+                    'updated_at' => $meetNGreet->schedule->updated_at,
+                ],
+                'created_at' => $meetNGreet->created_at,
+                'updated_at' => $meetNGreet->updated_at,
+            ];
+
+            return $this->sendSuccess('Meet and Greet updated successfully', $data);
+        } catch (\Throwable $e) {
+            DB::rollBack();
             \Log::error('Error scheduling Meet and Greet', [
                 'error' => $e->getMessage(),
             ]);

@@ -19,70 +19,95 @@ class MeetNGreetService
     /**
      * Create or update a Meet & Greet schedule
      */
-    public function schedule(Adoption $adoption, array $data, ?string $meetNGreetId = null): MeetNGreet
+    public function createSchedule(Adoption $adoption, array $data, ?string $stage = null): MeetNGreet
     {
         $user = auth('api')->user();
-        $adopter = $adoption->adopter;
-        $provider = $adoption->provider;
+
+        $adoption = Adoption::where('id', $adoption->id)
+            ->lockForUpdate()
+            ->with(['adopter', 'provider', 'status'])
+            ->firstOrFail();
+
+        if ($adoption->status->name !== AdoptionStatusEnum::NEED_AN_ACTION->value) {
+            throw new \Exception('Adoption is not in a valid state to schedule Meet and Greet.');
+        }
+
         $statusId = Status::getCache(
             StatusTypeEnum::ADOPTION->value,
             AdoptionStatusEnum::IN_PROGRESS->value
         )->id;
 
-        return DB::transaction(function () use ($adoption, $adopter, $provider, $data, $meetNGreetId, $user, $statusId) {
+        $addressData = array_intersect_key(
+            $data['address'] ?? [],
+            array_flip(['street', 'city', 'state', 'zip_code', 'country', 'notes', 'link'])
+        );
 
-            $meetNGreet = $adoption->meetNGreets()
-                ->with(['schedule', 'schedule.address'])
-                ->find($meetNGreetId);
+        $address = Address::create([
+            ...$addressData,
+        ]);
 
-            if ($adoption->status->name !== AdoptionStatusEnum::NEED_AN_ACTION->value || ($meetNGreet && $meetNGreet->status->name !== AdoptionStatusEnum::IN_PROGRESS->value)) {
-                throw new \Exception('Adoption is not in a valid state to schedule Meet and Greet.');
-            }
+        $scheduleData = array_filter([
+            'scheduled_time' => $data['scheduled_time'] ?? null,
+            'notes' => $data['notes'] ?? null,
+        ], fn ($value) => ! is_null($value));
 
-            $addressData = array_intersect_key($data['address'] ?? [], array_flip(['street', 'city', 'state', 'zip_code', 'country', 'notes', 'link']));
-            $addressData['updated_by'] = $user->id;
+        $schedule = Schedule::create([
+            ...$scheduleData,
+            'address_id' => $address->id,
+            'created_by' => $user->id,
+            'updated_by' => $user->id,
+        ]);
 
-            $scheduleData = ['scheduled_time' => $data['scheduled_time']];
-            if (isset($data['notes'])) {
-                $scheduleData['notes'] = $data['notes'];
-            }
-            $scheduleData['updated_by'] = $user->id;
+        $meetNGreet = MeetNGreet::create([
+            'adoption_id' => $adoption->id,
+            'schedule_id' => $schedule->id,
+            'status_id' => $statusId,
+            'created_by' => $user->id,
+            'updated_by' => $user->id,
+            'stage' => $stage ?? 'default',
+        ]);
 
-            if ($meetNGreet) {
-                $meetNGreet->schedule?->address?->update($addressData);
-                $meetNGreet->schedule?->update($scheduleData);
-                $meetNGreet->update([
-                    'status_id' => $statusId,
-                    'updated_by' => $user->id,
-                ]);
-            } else {
-                $address = Address::create(array_merge($addressData, ['created_by' => $user->id]));
-                $scheduleData['address_id'] = $address->id;
-                $scheduleData['created_by'] = $user->id;
-                $schedule = Schedule::create($scheduleData);
+        return $this->autoConfirm($user, $adoption->adopter, $meetNGreet, $adoption->provider);
+    }
 
-                $meetNGreet = MeetNGreet::create([
-                    'adoption_id' => $adoption->id,
-                    'schedule_id' => $schedule->id,
-                    'status_id' => $statusId,
-                    'created_by' => $user->id,
-                ]);
-            }
+    public function updateSchedule(Adoption $adoption, array $data, MeetNGreet $meetNGreet): MeetNGreet
+    {
+        $user = auth('api')->user();
 
-            $updateData = [];
-            if ($user->id === $adopter->id && ! $meetNGreet->adopter_confirmed) {
-                $updateData['adopter_confirmed'] = true;
-                $updateData['adopter_confirmed_at'] = now();
-            } elseif ($user->id === $provider->id && ! $meetNGreet->provider_confirmed) {
-                $updateData['provider_confirmed'] = true;
-                $updateData['provider_confirmed_at'] = now();
-            }
-            if (! empty($updateData)) {
-                $meetNGreet->update($updateData);
-            }
+        $adoption = Adoption::where('id', $adoption->id)
+            ->lockForUpdate()
+            ->with(['adopter', 'provider', 'status'])
+            ->firstOrFail();
 
-            return $meetNGreet;
-        });
+        $meetNGreet = MeetNGreet::where('id', $meetNGreet->id)
+            ->lockForUpdate()
+            ->with(['status', 'schedule.address'])
+            ->firstOrFail();
+
+        if ($adoption->status->name !== AdoptionStatusEnum::NEED_AN_ACTION->value || $meetNGreet->status->name !== AdoptionStatusEnum::IN_PROGRESS->value) {
+            throw new \Exception('Adoption is not in a valid state to schedule Meet and Greet.');
+        }
+
+        $addressData = array_intersect_key(
+            $data['address'] ?? [],
+            array_flip(['street', 'city', 'state', 'zip_code', 'country', 'notes', 'link'])
+        );
+
+        $meetNGreet->schedule->address->update([
+            ...$addressData,
+        ]);
+
+        $scheduleData = array_filter([
+            'scheduled_time' => $data['scheduled_time'] ?? null,
+            'notes' => $data['notes'] ?? null,
+        ], fn ($value) => ! is_null($value));
+
+        $meetNGreet->schedule->update([
+            ...$scheduleData,
+            'updated_by' => $user->id,
+        ]);
+
+        return $this->autoConfirm($user, $adoption->adopter, $meetNGreet, $adoption->provider);
     }
 
     /**
@@ -177,5 +202,22 @@ class MeetNGreetService
 
             return $meetNGreet;
         });
+    }
+
+    private function autoConfirm(\App\Models\User|\Illuminate\Contracts\Auth\Authenticatable|null $user, mixed $adopter, MeetNGreet $meetNGreet, mixed $provider): MeetNGreet
+    {
+        $updateData = [];
+        if ($user->id === $adopter->id && ! $meetNGreet->adopter_confirmed) {
+            $updateData['adopter_confirmed'] = true;
+            $updateData['adopter_confirmed_at'] = now();
+        } elseif ($user->id === $provider->id && ! $meetNGreet->provider_confirmed) {
+            $updateData['provider_confirmed'] = true;
+            $updateData['provider_confirmed_at'] = now();
+        }
+        if (! empty($updateData)) {
+            $meetNGreet->update($updateData);
+        }
+
+        return $meetNGreet;
     }
 }

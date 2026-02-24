@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 
 class Adoption extends Model
 {
@@ -45,7 +47,7 @@ class Adoption extends Model
         return $this->belongsTo(Pet::class, 'pet_id');
     }
 
-    public function provider()
+    public function provider(): HasOneThrough
     {
         return $this->hasOneThrough(
             User::class,
@@ -85,5 +87,24 @@ class Adoption extends Model
     public function handovers(): HasMany
     {
         return $this->hasMany(Handover::class, 'adoption_id');
+    }
+
+    public function latestMeetNGreet(): HasOne
+    {
+        return $this->hasOne(MeetNGreet::class, 'adoption_id')
+            ->where('stage', 'default')
+            ->whereIn('id', function ($query) {
+                $query->selectRaw('id')
+                    ->from('tr_adoption_meet_greet as mg_inner')
+                    ->where('mg_inner.stage', 'default')
+                    ->whereColumn('mg_inner.adoption_id', 'tr_adoption_meet_greet.adoption_id')
+                    ->orderByDesc('created_at')
+                    ->limit(1);
+            });
+    }
+
+    public function latestHandover(): HasOne
+    {
+        return $this->hasOne(Handover::class, 'adoption_id');
     }
 }

@@ -42,6 +42,7 @@ return new class() extends Migration
             $table->timestamp('provider_confirmed_at')->nullable();
             $table->foreignUuid('created_by')->constrained('mt_user')->onDelete('cascade');
             $table->foreignUuid('updated_by')->nullable()->constrained('mt_user')->onDelete('cascade');
+            $table->string('stage')->default('default'); // default/handover
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
@@ -80,6 +81,7 @@ return new class() extends Migration
         Schema::create('tr_adoption_handover_attachment', function (Blueprint $table) {
             $table->foreignUuid('handover_id')->constrained('tr_adoption_handover')->onDelete('cascade');
             $table->foreignUuid('attachment_id')->constrained('mt_attachment')->onDelete('cascade');
+            $table->string('uploaded_by_role')->nullable(); // adopter/provider
             $table->primary(['handover_id', 'attachment_id']);
         });
     }
