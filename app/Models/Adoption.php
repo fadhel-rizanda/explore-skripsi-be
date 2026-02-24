@@ -105,6 +105,6 @@ class Adoption extends Model
 
     public function latestHandover(): HasOne
     {
-        return $this->hasOne(Handover::class, 'adoption_id');
+        return $this->hasOne(Handover::class, 'adoption_id')->latest('created_at');
     }
 }
