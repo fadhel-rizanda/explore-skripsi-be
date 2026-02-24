@@ -28,6 +28,7 @@ class MeetNGreet extends Model
         'status_id',
         'adopter_confirmed',
         'provider_confirmed',
+        'stage',
 
         'adopter_confirmed_at',
         'provider_confirmed_at',

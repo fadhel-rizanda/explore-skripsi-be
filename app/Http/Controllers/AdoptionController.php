@@ -60,6 +60,11 @@ class AdoptionController extends Controller
                 'adopter.attachment:id,public_url',
                 'status:id,name,color_code',
                 'stageTag:id,name',
+                'latestMeetNGreet',
+                'latestMeetNGreet.schedule',
+                'latestHandover',
+                'latestHandover.meetNGreet',
+                'latestHandover.meetNGreet.schedule',
             ]);
 
             return $this->sendSuccess(

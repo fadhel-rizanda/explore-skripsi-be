@@ -59,7 +59,8 @@ class Handover extends Model
 
     public function attachments(): BelongsToMany
     {
-        return $this->belongsToMany(Attachment::class, 'tr_adoption_handover_attachment', 'handover_id', 'attachment_id');
+        return $this->belongsToMany(Attachment::class, 'tr_adoption_handover_attachment', 'handover_id', 'attachment_id')
+            ->withPivot('uploaded_by_role');
     }
 
     public function status(): BelongsTo
