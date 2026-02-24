@@ -199,7 +199,7 @@ class HandoverController extends Controller
                 ],
             ];
 
-            return $this->sendSuccess('Handover Meet and Greet ' . ($request->has('meet_n_greet_id') ? 'updated' : 'scheduled') . ' successfully', $data);
+            return $this->sendSuccess('Handover Meet and Greet updated successfully', $data);
 
         } catch (\Throwable $e) {
             DB::rollBack();
