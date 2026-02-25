@@ -165,18 +165,17 @@ class UserController extends Controller
 
             $requiredAddressFields = [
                 'street',
-                'city',
-                'state',
-                'zip_code',
-                'country',
+                'province_id',
+                'regency_id',
+                'district_id',
             ];
 
             $addressFields = [
                 'street',
-                'city',
-                'state',
+                'province_id',
+                'regency_id',
+                'district_id',
                 'zip_code',
-                'country',
                 'notes',
                 'link',
             ];
@@ -189,7 +188,7 @@ class UserController extends Controller
                 } else {
                     if (! $request->filled($requiredAddressFields)) {
                         return $this->sendError(
-                            'To create an address, street, city, state, zip code, and country are required.',
+                            'To create an address, street, province, regency, and district are required.',
                             422
                         );
                     }
@@ -217,7 +216,9 @@ class UserController extends Controller
             DB::commit();
 
             $user->load([
-                'address',
+                'address.province:id,name',
+                'address.regency:id,name',
+                'address.district:id,name',
                 'personalityTags:id,name,type,color_code',
                 'petExperienceTags:id,name,type,color_code',
                 'petPreferencesTags:id,name,type,color_code',

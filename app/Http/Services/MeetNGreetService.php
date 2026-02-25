@@ -16,6 +16,16 @@ use Illuminate\Support\Facades\DB;
 
 class MeetNGreetService
 {
+    private const ADDRESS_FIELDS = [
+        'street',
+        'province_id',
+        'regency_id',
+        'district_id',
+        'zip_code',
+        'notes',
+        'link',
+    ];
+
     /**
      * Create or update a Meet & Greet schedule
      */
@@ -39,12 +49,10 @@ class MeetNGreetService
 
         $addressData = array_intersect_key(
             $data['address'] ?? [],
-            array_flip(['street', 'city', 'state', 'zip_code', 'country', 'notes', 'link'])
+            array_flip(self::ADDRESS_FIELDS)
         );
 
-        $address = Address::create([
-            ...$addressData,
-        ]);
+        $address = Address::create($addressData);
 
         $scheduleData = array_filter([
             'scheduled_time' => $data['scheduled_time'] ?? null,
@@ -90,12 +98,10 @@ class MeetNGreetService
 
         $addressData = array_intersect_key(
             $data['address'] ?? [],
-            array_flip(['street', 'city', 'state', 'zip_code', 'country', 'notes', 'link'])
+            array_flip(self::ADDRESS_FIELDS)
         );
 
-        $meetNGreet->schedule->address->update([
-            ...$addressData,
-        ]);
+        $meetNGreet->schedule->address->update($addressData);
 
         $scheduleData = array_filter([
             'scheduled_time' => $data['scheduled_time'] ?? null,
