@@ -351,7 +351,7 @@ class RequirementController extends Controller
                 )->id,
                 'stage_tag_id' => AllTag::getCache(
                     TagTypeEnum::ADOPTION_STAGE->value,
-                    AdoptionStageEnum::MEET_N_GREET->value
+                    AdoptionStageEnum::HANDOVER->value
                 )->id,
                 'updated_by' => $user->id,
             ]);

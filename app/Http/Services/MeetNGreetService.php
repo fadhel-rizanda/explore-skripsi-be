@@ -201,7 +201,7 @@ class MeetNGreetService
                 )->id,
                 'stage_tag_id' => AllTag::getCache(
                     TagTypeEnum::ADOPTION_STAGE->value,
-                    AdoptionStageEnum::HANDOVER->value
+                    AdoptionStageEnum::REQUIREMENT->value
                 )->id,
                 'updated_by' => $user->id,
             ]);
