@@ -77,6 +77,7 @@ class UserController extends Controller
                 'name' => $user->name,
                 'avatar' => $user->avatar ?? optional($user->attachment)->public_url,
                 'role_name' => $user->roles->first()?->name,
+                'is_active' => $user->is_active,
                 'created_at' => $user->created_at,
                 'updated_at' => $user->updated_at,
             ];
