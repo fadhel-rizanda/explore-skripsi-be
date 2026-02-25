@@ -109,7 +109,7 @@ class AdoptionController extends Controller
                 'adopter_id' => $user->id,
                 'pet_id' => $pet->id,
                 'status_id' => Status::getCache(StatusTypeEnum::ADOPTION->value, AdoptionStatusEnum::NEED_AN_ACTION->value)->id,
-                'stage_tag_id' => AllTag::getCache(TagTypeEnum::ADOPTION_STAGE->value, AdoptionStageEnum::REQUIREMENT->value)->id,
+                'stage_tag_id' => AllTag::getCache(TagTypeEnum::ADOPTION_STAGE->value, AdoptionStageEnum::MEET_N_GREET->value)->id,
                 'updated_by' => $user->id,
             ]);
 
