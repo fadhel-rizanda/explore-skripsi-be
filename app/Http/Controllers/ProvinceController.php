@@ -14,14 +14,12 @@ class ProvinceController extends Controller
         $search = $request->query('search');
         $page = $request->query('page', 1);
 
-        $query = Province::query()
-            ->orderBy('name');
-
-        if ($search) {
-            $provinces = $query->where('name', 'ILIKE', "%{$search}%");
-        }
-
-        $provinces = $query->simplePaginate(15, ['id', 'name'], 'page', $page);
+        $provinces = Province::query()
+            ->orderBy('name')
+            ->when($search, function ($query, $search) {
+                $query->where('name', 'ILIKE', "%{$search}%");
+            })
+            ->simplePaginate(15, ['id', 'name'], 'page', $page);
 
         return $this->sendSuccessPagination('Provinces retrieved successfully', $provinces);
     }
