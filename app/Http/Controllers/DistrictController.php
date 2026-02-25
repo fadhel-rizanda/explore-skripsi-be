@@ -20,12 +20,8 @@ class DistrictController extends Controller
             ->when($regencyId, fn ($q) => $q->where('regency_id', $regencyId))
             ->orderBy('name');
 
-        if ($search) {
-            $districts = $query->where('name', 'ILIKE', "%{$search}%")
-                ->simplePaginate(15, ['id', 'name', 'regency_id'], 'page', $page);
-        } else {
-            $districts = $query->simplePaginate(15, ['id', 'name', 'regency_id'], 'page', $page);
-        }
+        $districts = $query->when($search, fn ($q) => $q->where('name', 'ILIKE', "%{$search}%"))
+            ->simplePaginate(15, ['id', 'name', 'regency_id'], 'page', $page);
 
         return $this->sendSuccessPagination('Districts retrieved successfully', $districts);
     }

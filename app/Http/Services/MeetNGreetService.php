@@ -16,6 +16,16 @@ use Illuminate\Support\Facades\DB;
 
 class MeetNGreetService
 {
+    private const ADDRESS_FIELDS = [
+        'street',
+        'province_id',
+        'regency_id',
+        'district_id',
+        'zip_code',
+        'notes',
+        'link',
+    ];
+
     /**
      * Create or update a Meet & Greet schedule
      */
@@ -37,19 +47,9 @@ class MeetNGreetService
             AdoptionStatusEnum::IN_PROGRESS->value
         )->id;
 
-        $addressFields = [
-            'street',
-            'province_id',
-            'regency_id',
-            'district_id',
-            'zip_code',
-            'notes',
-            'link',
-        ];
-
         $addressData = array_intersect_key(
             $data['address'] ?? [],
-            array_flip($addressFields)
+            array_flip(self::ADDRESS_FIELDS)
         );
 
         $address = Address::create($addressData);
@@ -96,19 +96,9 @@ class MeetNGreetService
             throw new \Exception('Adoption is not in a valid state to schedule Meet and Greet.');
         }
 
-        $addressFields = [
-            'street',
-            'province_id',
-            'regency_id',
-            'district_id',
-            'zip_code',
-            'notes',
-            'link',
-        ];
-
         $addressData = array_intersect_key(
             $data['address'] ?? [],
-            array_flip($addressFields)
+            array_flip(self::ADDRESS_FIELDS)
         );
 
         $meetNGreet->schedule->address->update($addressData);

@@ -186,13 +186,11 @@ class UserController extends Controller
                         $request->only($addressFields)
                     );
                 } else {
-                    foreach ($requiredAddressFields as $field) {
-                        if (! $request->filled($field)) {
-                            return $this->sendError(
-                                'To create an address, street, province, regency, and district are required.',
-                                422
-                            );
-                        }
+                    if (! $request->filled($requiredAddressFields)) {
+                        return $this->sendError(
+                            'To create an address, street, province, regency, and district are required.',
+                            422
+                        );
                     }
                     $address = Address::create(
                         $request->only($addressFields)
