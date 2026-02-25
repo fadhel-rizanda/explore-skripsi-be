@@ -17,6 +17,9 @@ class DatabaseSeeder extends Seeder
         $this->call([
             AllStatusSeeder::class,
             AllTagSeeder::class,
+            ProvinceSeeder::class,
+            RegencySeeder::class,
+            DistrictSeeder::class,
         ]);
     }
 }

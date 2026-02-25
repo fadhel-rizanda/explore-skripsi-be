@@ -37,14 +37,22 @@ class MeetNGreetService
             AdoptionStatusEnum::IN_PROGRESS->value
         )->id;
 
+        $addressFields = [
+            'street',
+            'province_id',
+            'regency_id',
+            'district_id',
+            'zip_code',
+            'notes',
+            'link',
+        ];
+
         $addressData = array_intersect_key(
             $data['address'] ?? [],
-            array_flip(['street', 'city', 'state', 'zip_code', 'country', 'notes', 'link'])
+            array_flip($addressFields)
         );
 
-        $address = Address::create([
-            ...$addressData,
-        ]);
+        $address = Address::create($addressData);
 
         $scheduleData = array_filter([
             'scheduled_time' => $data['scheduled_time'] ?? null,
@@ -88,14 +96,22 @@ class MeetNGreetService
             throw new \Exception('Adoption is not in a valid state to schedule Meet and Greet.');
         }
 
+        $addressFields = [
+            'street',
+            'province_id',
+            'regency_id',
+            'district_id',
+            'zip_code',
+            'notes',
+            'link',
+        ];
+
         $addressData = array_intersect_key(
             $data['address'] ?? [],
-            array_flip(['street', 'city', 'state', 'zip_code', 'country', 'notes', 'link'])
+            array_flip($addressFields)
         );
 
-        $meetNGreet->schedule->address->update([
-            ...$addressData,
-        ]);
+        $meetNGreet->schedule->address->update($addressData);
 
         $scheduleData = array_filter([
             'scheduled_time' => $data['scheduled_time'] ?? null,
