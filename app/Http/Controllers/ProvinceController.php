@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 class ProvinceController extends Controller
 {
     use ResponseAPI;
+
     public function listProvinces(Request $request)
     {
         $search = $request->query('search');
