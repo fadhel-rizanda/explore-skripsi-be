@@ -2,14 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\GetAllRequest;
 use App\Models\Province;
 use App\Traits\ResponseAPI;
-use Illuminate\Http\Request;
 
 class ProvinceController extends Controller
 {
     use ResponseAPI;
-    public function listProvinces(Request $request)
+
+    public function listProvinces(GetAllRequest $request)
     {
         $search = $request->query('search');
         $page = $request->query('page', 1);

@@ -14,8 +14,8 @@ Route::prefix('general')->group(function () {
     Route::get('/tags', [TagController::class, 'listTags']);
     Route::get('/roles', [RoleController::class, 'listRoles']);
     Route::get('/provinces', [ProvinceController::class, 'listProvinces']);
-    Route::get('/regencies', [RegencyController::class, 'listRegencies']);
-    Route::get('/districts', [DistrictController::class, 'listDistricts']);
+    Route::get('/provinces/{province}/regencies', [RegencyController::class, 'listRegencies']);
+    Route::get('/regencies/{regency}/districts', [DistrictController::class, 'listDistricts']);
     Route::middleware(['auth:api', 'check.token.version'])->group(function () {
         Route::get('/users', [UserController::class, 'userOptions']);
     });

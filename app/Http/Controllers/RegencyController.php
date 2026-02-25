@@ -2,25 +2,22 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Regency;
+use App\Http\Requests\GetAllRequest;
+use App\Models\Province;
 use App\Traits\ResponseAPI;
-use Illuminate\Http\Request;
 
 class RegencyController extends Controller
 {
     use ResponseAPI;
 
-    public function listRegencies(Request $request)
+    public function listRegencies(GetAllRequest $request, Province $province)
     {
-        $provinceId = $request->query('province_id');
         $search = $request->query('search');
         $page = $request->query('page', 1);
 
-        $query = Regency::query()
-            ->when($provinceId, fn ($q) => $q->where('province_id', $provinceId))
-            ->orderBy('name');
-
-        $regencies = $query->when($search, fn ($q) => $q->where('name', 'ILIKE', "%{$search}%"))
+        $regencies = $province->regencies()
+            ->orderBy('name')
+            ->when($search, fn ($q) => $q->where('name', 'ILIKE', "%{$search}%"))
             ->simplePaginate(15, ['id', 'name', 'province_id'], 'page', $page);
 
         return $this->sendSuccessPagination('Regencies retrieved successfully', $regencies);
