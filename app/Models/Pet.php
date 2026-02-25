@@ -33,6 +33,7 @@ class Pet extends Model
         'user_id',
         'status_id',
         'type_of_animal_id',
+        'address_id',
         'size',
         'name',
         'date_of_birth',
@@ -147,5 +148,15 @@ class Pet extends Model
             'pet_id',
             'attachment_id'
         )->orderBy('tr_pet_profile_picture.attachment_id')->limit(1);
+    }
+
+    public function address(): BelongsTo
+    {
+        return $this->belongsTo(Address::class, 'address_id');
+    }
+
+    public function getEffectiveAddressAttribute()
+    {
+        return $this->address ?? $this->user?->address;
     }
 }
