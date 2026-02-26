@@ -41,7 +41,7 @@
 **PATCH** `/meet-n-greet/finalize`
 
 - `adoption.status_id` → need_action
-- `adoption.stage_id` → **handover**
+- `adoption.stage_id` → **requirement**
 - `meet_n_greet.status_id` → completed
 
 ---
