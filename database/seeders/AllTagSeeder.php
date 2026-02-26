@@ -75,6 +75,20 @@ class AllTagSeeder extends Seeder
             ['name' => 'Completed', 'type' => 'adoption.stage', 'color_code' => 'bg-emerald-50 text-emerald-700 border-emerald-200'],
             ['name' => 'Rejected', 'type' => 'adoption.stage', 'color_code' => 'bg-red-50 text-red-700 border-red-200'],
             ['name' => 'Cancelled', 'type' => 'adoption.stage', 'color_code' => 'bg-rose-50 text-rose-700 border-rose-200'],
+
+            // ======================
+            // REQUIREMENT CATEGORIES
+            // ======================
+            ['name' => 'Administrative', 'type' => 'requirement', 'color_code' => 'bg-slate-100 text-slate-700 border-slate-300'], // Urusan administrasi, KTP, formulir, dll.
+            ['name' => 'Facility & Environment', 'type' => 'requirement', 'color_code' => 'bg-emerald-50 text-emerald-700 border-emerald-200'], // Urusan rumah, pagar, luas lahan, atau apartemen.
+            ['name' => 'Lifestyle & Time', 'type' => 'requirement', 'color_code' => 'bg-blue-50 text-blue-700 border-blue-200'], // Urusan waktu luang, olahraga bareng pet, atau jam kerja.
+            ['name' => 'Financial Commitment', 'type' => 'requirement', 'color_code' => 'bg-rose-50 text-rose-700 border-rose-200'], // Urusan budget pakan, dana darurat, atau biaya adopsi.
+            ['name' => 'Medical & Healthcare', 'type' => 'requirement', 'color_code' => 'bg-purple-50 text-purple-700 border-purple-200'], // Urusan vaksin, sterilisasi, atau riwayat penyakit.
+            ['name' => 'Future Care Agreement', 'type' => 'requirement', 'color_code' => 'bg-indigo-50 text-indigo-700 border-indigo-200'], // Urusan kesepakatan jangka panjang (seperti update foto berkala).
+            ['name' => 'Compatibility', 'type' => 'requirement', 'color_code' => 'bg-cyan-50 text-cyan-700 border-cyan-200'], // Urusan kecocokan dengan anak kecil atau peliharaan lain yang sudah ada.
+            ['name' => 'Logistics & Transport', 'type' => 'requirement', 'color_code' => 'bg-orange-50 text-orange-700 border-orange-200'], // Urusan transportasi, jarak tempuh, atau biaya pengiriman hewan.
+            ['name' => 'Education & Knowledge', 'type' => 'requirement', 'color_code' => 'bg-teal-50 text-teal-700 border-teal-200'], // Urusan pengetahuan adopter tentang cara urus hewan/ras tertentu.
+            ['name' => 'Emergency Preparedness', 'type' => 'requirement', 'color_code' => 'bg-red-50 text-red-700 border-red-200'], // Urusan darurat seperti kontak darurat atau klinik hewan terdekat dari rumah.
         ];
 
         foreach ($tags as $tag) {
