@@ -28,6 +28,7 @@ class Requirement extends Model
         'adoption_id',
         'attachment_id',
         'status_id',
+        'tag_id',
         'created_by',
         'updated_by',
         'is_active',
@@ -50,6 +51,11 @@ class Requirement extends Model
     public function status(): BelongsTo
     {
         return $this->belongsTo(Status::class, 'status_id');
+    }
+
+    public function tag(): BelongsTo
+    {
+        return $this->belongsTo(AllTag::class, 'tag_id');
     }
 
     public function createdBy(): BelongsTo

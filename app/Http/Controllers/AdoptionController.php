@@ -177,13 +177,12 @@ class AdoptionController extends Controller
 
         $restrictedStatuses = [
             AdoptionStageEnum::HANDOVER->value,
-            AdoptionStatusEnum::COMPLETED->value,
-            AdoptionStatusEnum::REJECTED->value,
-            AdoptionStatusEnum::CANCELLED->value,
+            AdoptionStageEnum::COMPLETED->value,
+            AdoptionStageEnum::REJECTED->value,
+            AdoptionStageEnum::CANCELLED->value,
         ];
 
-        $isRestricted = in_array($adoption->stageTag->name, $restrictedStatuses)
-            || in_array($adoption->status->name, $restrictedStatuses);
+        $isRestricted = in_array($adoption->stageTag->name, $restrictedStatuses);
 
         if ($isRestricted && ! $user->hasRole(RoleEnum::ADMIN->value)) {
             return $this->sendError("This adoption application cannot be {$action} at its current stage.");
