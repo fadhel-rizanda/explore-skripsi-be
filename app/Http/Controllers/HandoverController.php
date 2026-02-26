@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\AdoptionStageEnum;
 use App\Enums\AdoptionStatusEnum;
+use App\Enums\AttachmentTypeEnum;
 use App\Enums\ModelReferenceEnum;
 use App\Enums\PetStatusEnum;
 use App\Enums\RoleEnum;
@@ -14,10 +15,9 @@ use App\Http\Requests\SetHandOverEvidenceRequest;
 use App\Http\Services\MeetNGreetService;
 use App\Http\Services\NotificationService;
 use App\Models\Adoption;
-use App\Models\Handover;
-use App\Models\Attachment;
 use App\Models\AllTag;
-use App\Enums\AttachmentTypeEnum;
+use App\Models\Attachment;
+use App\Models\Handover;
 use App\Models\Status;
 use App\Notifications\AdoptionMailNotification;
 use App\Traits\ResponseAPI;
@@ -29,10 +29,8 @@ class HandoverController extends Controller
 
     public function __construct(
         private NotificationService $notificationService,
-        private MeetNGreetService   $meetNGreetService
-    )
-    {
-    }
+        private MeetNGreetService $meetNGreetService
+    ) {}
 
     public function handover(Adoption $adoption)
     {
@@ -53,7 +51,7 @@ class HandoverController extends Controller
             $meetNGreet = $this->meetNGreetService->createSchedule(
                 adoption: $adoption,
                 data: $request->validated(),
-                stage: "handover"
+                stage: 'handover'
             );
 
             $handover = Handover::create(
@@ -293,10 +291,10 @@ class HandoverController extends Controller
                 ->toArray();
 
             $syncData = collect($currentIds)
-                ->mapWithKeys(fn($id) => [$id => ['uploaded_by_role' => $role]])
+                ->mapWithKeys(fn ($id) => [$id => ['uploaded_by_role' => $role]])
                 ->merge(
                     collect($otherRoleIds)
-                        ->mapWithKeys(fn($id) => [$id => ['uploaded_by_role' => $otherRole]])
+                        ->mapWithKeys(fn ($id) => [$id => ['uploaded_by_role' => $otherRole]])
                 )
                 ->toArray();
 
@@ -305,7 +303,7 @@ class HandoverController extends Controller
             $handover->attachments()->sync($syncData);
 
             $removedIds = array_diff($oldAllIds, $mergedIds);
-            if (!empty($removedIds)) {
+            if (! empty($removedIds)) {
                 Attachment::whereIn('id', $removedIds)->update([
                     'reference_id' => null,
                     'reference_by' => null,
@@ -313,7 +311,7 @@ class HandoverController extends Controller
                 ]);
             }
 
-            if (!empty($currentIds)) {
+            if (! empty($currentIds)) {
                 Attachment::whereIn('id', $currentIds)->update([
                     'reference_id' => $handover->id,
                     'reference_by' => ModelReferenceEnum::HANDOVER->value,
@@ -356,6 +354,7 @@ class HandoverController extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
             \Log::error('Error updating Handover evidence', ['error' => $e->getMessage()]);
+
             return $this->sendError('Error updating Handover evidence.');
         }
     }
@@ -379,18 +378,18 @@ class HandoverController extends Controller
             DB::beginTransaction();
             $updateData = [];
 
-            if ($user->id === $adopter->id && !$handover->adopter_finalized) {
+            if ($user->id === $adopter->id && ! $handover->adopter_finalized) {
                 $updateData['adopter_finalized'] = true;
                 $updateData['adopter_finalized_at'] = now();
             }
 
-            if ($user->id === $provider->id && !$handover->provider_finalized) {
+            if ($user->id === $provider->id && ! $handover->provider_finalized) {
                 $updateData['provider_finalized'] = true;
                 $updateData['provider_finalized_at'] = now();
             }
 
             if (
-                $user->hasRole(RoleEnum::ADMIN->value) && !$handover->admin_finalized && $handover->adopter_finalized && $handover->provider_finalized) {
+                $user->hasRole(RoleEnum::ADMIN->value) && ! $handover->admin_finalized && $handover->adopter_finalized && $handover->provider_finalized) {
                 $updateData['admin_finalized'] = true;
                 $updateData['admin_finalized_at'] = now();
             }

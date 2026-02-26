@@ -109,7 +109,7 @@ class AdoptionController extends Controller
                 'adopter_id' => $user->id,
                 'pet_id' => $pet->id,
                 'status_id' => Status::getCache(StatusTypeEnum::ADOPTION->value, AdoptionStatusEnum::NEED_AN_ACTION->value)->id,
-                'stage_tag_id' => AllTag::getCache(TagTypeEnum::ADOPTION_STAGE->value, AdoptionStageEnum::REQUIREMENT->value)->id,
+                'stage_tag_id' => AllTag::getCache(TagTypeEnum::ADOPTION_STAGE->value, AdoptionStageEnum::MEET_N_GREET->value)->id,
                 'updated_by' => $user->id,
             ]);
 
@@ -177,13 +177,12 @@ class AdoptionController extends Controller
 
         $restrictedStatuses = [
             AdoptionStageEnum::HANDOVER->value,
-            AdoptionStatusEnum::COMPLETED->value,
-            AdoptionStatusEnum::REJECTED->value,
-            AdoptionStatusEnum::CANCELLED->value,
+            AdoptionStageEnum::COMPLETED->value,
+            AdoptionStageEnum::REJECTED->value,
+            AdoptionStageEnum::CANCELLED->value,
         ];
 
-        $isRestricted = in_array($adoption->stageTag->name, $restrictedStatuses)
-            || in_array($adoption->status->name, $restrictedStatuses);
+        $isRestricted = in_array($adoption->stageTag->name, $restrictedStatuses);
 
         if ($isRestricted && ! $user->hasRole(RoleEnum::ADMIN->value)) {
             return $this->sendError("This adoption application cannot be {$action} at its current stage.");

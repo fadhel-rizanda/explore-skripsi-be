@@ -8,11 +8,45 @@
 
 - `pet.status_id` → **pending**
 - `adoption.status_id` → **need_action**
-- `adoption.stage_id` → **requirement**
+- `adoption.stage_id` → **meet-n-greet**
 
 ---
 
-## 2. Requirement
+## 2. Meet N Greet
+
+### Create Meet N Greet
+
+**POST** `/meet-n-greet`
+
+- `adoption.status_id` → need_action
+- `adoption.stage_id` → meet-n-greet
+- `meet_n_greet.status_id` → inprogress
+
+---
+
+### Approve Meet N Greet Schedule
+
+**PATCH** `/meet-n-greet/approve`
+
+- `adoption.status_id` → in_progress
+- `adoption.stage_id` → meet-n-greet
+- `meet_n_greet.status_id` → inprogress
+
+> ℹ️ Approve hanya menyetujui schedule, **bukan penyelesaian proses**
+
+---
+
+### Finalize Meet N Greet
+
+**PATCH** `/meet-n-greet/finalize`
+
+- `adoption.status_id` → need_action
+- `adoption.stage_id` → **requirement**
+- `meet_n_greet.status_id` → completed
+
+---
+
+## 3. Requirement
 
 ### Create Requirements
 
@@ -51,42 +85,8 @@
 **PATCH** `/requirements/finalize`
 
 - `adoption.status_id` → need_action
-- `adoption.stage_id` → **meet-n-greet**
-- `requirements.status_id` → completed **OR** rejected
-
----
-
-## 3. Meet N Greet
-
-### Create Meet N Greet
-
-**POST** `/meet-n-greet`
-
-- `adoption.status_id` → need_action
-- `adoption.stage_id` → meet-n-greet
-- `meet_n_greet.status_id` → inprogress
-
----
-
-### Approve Meet N Greet Schedule
-
-**PATCH** `/meet-n-greet/approve`
-
-- `adoption.status_id` → in_progress
-- `adoption.stage_id` → meet-n-greet
-- `meet_n_greet.status_id` → inprogress
-
-> ℹ️ Approve hanya menyetujui schedule, **bukan penyelesaian proses**
-
----
-
-### Finalize Meet N Greet
-
-**PATCH** `/meet-n-greet/finalize`
-
-- `adoption.status_id` → need_action
 - `adoption.stage_id` → **handover**
-- `meet_n_greet.status_id` → completed
+- `requirements.status_id` → completed **OR** rejected
 
 ---
 
