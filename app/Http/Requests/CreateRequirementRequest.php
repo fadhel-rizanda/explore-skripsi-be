@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\AllTag;
 use Illuminate\Foundation\Http\FormRequest;
 
 class CreateRequirementRequest extends FormRequest
@@ -25,6 +26,7 @@ class CreateRequirementRequest extends FormRequest
             'requirements' => 'required|array|min:1',
             'requirements.*.name' => 'required|string|max:255',
             'requirements.*.notes' => 'nullable|string|max:1000',
+            'requirements.*.tag_id' => 'required|uuid|exists:' . (new AllTag())->getTable() . ',id',
         ];
     }
 }
