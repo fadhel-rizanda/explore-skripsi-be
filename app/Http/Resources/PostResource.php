@@ -18,6 +18,7 @@ class PostResource extends JsonResource
             'title' => $this->title,
             'content' => $this->content,
             'image_url' => optional($this->attachment)->public_url,
+            'is_active' => (bool) $this->is_active,
             'attachment' => $this->attachment,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
