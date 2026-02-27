@@ -34,6 +34,7 @@ class Post extends Model
     ];
 
     protected $casts = [
+        'is_active' => 'boolean',
         'is_liked' => 'boolean',
     ];
 
