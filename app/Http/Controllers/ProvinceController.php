@@ -20,6 +20,7 @@ class ProvinceController extends Controller
             ->when($search, function ($query, $search) {
                 $query->where('name', 'ILIKE', "%{$search}%");
             })
+            ->where('name', '!=', 'Online')
             ->simplePaginate(15, ['id', 'name'], 'page', $page);
 
         return $this->sendSuccessPagination('Provinces retrieved successfully', $provinces);
