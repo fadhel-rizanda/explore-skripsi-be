@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ChannelEnum;
 use App\Enums\ModelReferenceEnum;
 use App\Enums\RoleEnum;
 use App\Http\Requests\DeleteUserRequest;
@@ -291,5 +292,45 @@ class UserController extends Controller
         }
 
         return $this->sendSuccessPagination('Users retrieved successfully', $users);
+    }
+
+    public function userChannels()
+    {
+        $user = auth('api')->user();
+
+        $user->load([
+            'communities',
+            'chatRooms',
+        ]);
+
+        $channels = [
+            [
+                'name' => ChannelEnum::NOTIFICATION->channel($user->id),
+                'event' => ChannelEnum::NOTIFICATION->event(),
+            ],
+        ];
+
+        foreach ($user->adoptionsByRole()->where('is_active', true)->pluck('id') as $id) {
+            $channels[] = [
+                'name' => ChannelEnum::ADOPTION->channel($id),
+                'event' => ChannelEnum::ADOPTION->event(),
+            ];
+        }
+
+        foreach ($user->communities->where('is_active', true)->pluck('id') as $id) {
+            $channels[] = [
+                'name' => ChannelEnum::COMMUNITY->channel($id),
+                'event' => ChannelEnum::COMMUNITY->event(),
+            ];
+        }
+
+        foreach ($user->chatRooms->pluck('id') as $id) {
+            $channels[] = [
+                'name' => ChannelEnum::CHAT->channel($id),
+                'event' => ChannelEnum::CHAT->event(),
+            ];
+        }
+
+        return $this->sendSuccess('Channels fetched', ['channels' => $channels]);
     }
 }
