@@ -83,7 +83,20 @@ class CommunityController extends Controller
     {
         try {
             DB::beginTransaction();
-            $address = Address::create($request->input('address'));
+
+            if ($request->use_owner_address) {
+                $ownerAddress = auth('api')->user()->address;
+                if (! $ownerAddress) {
+                    DB::rollBack();
+
+                    return $this->sendError('Owner address not found. Please provide an address or update your profile with an address.', 422);
+                }
+                $address = Address::create($ownerAddress->only([
+                    'street', 'province_id', 'regency_id', 'district_id', 'zip_code', 'notes', 'link',
+                ]));
+            } else {
+                $address = Address::create($request->validated()['address']);
+            }
 
             $community = Community::create([
                 'name' => $request->name,
