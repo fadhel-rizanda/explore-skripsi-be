@@ -38,7 +38,7 @@ class CreateAddressRequest extends FormRequest
                 'string',
                 Rule::exists($regencyTable, 'id')
                     ->where(
-                        fn ($query) => $query->where('province_id', $this->province_id)
+                        fn ($query) => $query->where('province_id', request()->input('province_id') ?? request()->input('address.province_id'))
                     ),
             ],
 
@@ -47,7 +47,7 @@ class CreateAddressRequest extends FormRequest
                 'string',
                 Rule::exists($districtTable, 'id')
                     ->where(
-                        fn ($query) => $query->where('regency_id', $this->regency_id)
+                        fn ($query) => $query->where('regency_id', request()->input('regency_id') ?? request()->input('address.regency_id'))
                     ),
             ],
 

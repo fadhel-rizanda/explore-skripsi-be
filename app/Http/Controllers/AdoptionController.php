@@ -119,7 +119,8 @@ class AdoptionController extends Controller
 
             DB::commit();
 
-            $usersToNotify = [$adoption->adopter->id, $adoption->provider->id];
+            $usersToNotify = [$adoption->adopter_id, $adoption->pet->user_id];
+
             $notification = $this->notificationService->createBulk(
                 userIds: $usersToNotify,
                 title: 'New Adoption Application Submitted',
@@ -133,7 +134,7 @@ class AdoptionController extends Controller
                     notes: 'An adoption application has been submitted.'
                 )
             )->getNotifications()->first();
-            broadcast(new AdoptionUpdated($notification));
+            broadcast(new AdoptionUpdated($notification, $adoption->id));
 
             return $this->sendSuccess(
                 'Adoption application created successfully.',
@@ -204,7 +205,7 @@ class AdoptionController extends Controller
 
             DB::commit();
 
-            $usersToNotify = [$adoption->adopter->id, $adoption->provider->id];
+            $usersToNotify = [$adoption->adopter_id, $adoption->pet->user_id];
             $notification = $this->notificationService->createBulk(
                 userIds: $usersToNotify,
                 title: 'Adoption Application ' . ucfirst($action),
@@ -218,7 +219,7 @@ class AdoptionController extends Controller
                     notes: "The adoption application has been {$action}."
                 )
             )->getNotifications()->first();
-            broadcast(new AdoptionUpdated($notification));
+            broadcast(new AdoptionUpdated($notification, $adoption->id));
 
             return $this->sendSuccess(
                 "Adoption application {$action} successfully.",

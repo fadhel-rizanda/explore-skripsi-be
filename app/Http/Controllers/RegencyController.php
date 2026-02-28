@@ -18,6 +18,7 @@ class RegencyController extends Controller
         $regencies = $province->regencies()
             ->orderBy('name')
             ->when($search, fn ($q) => $q->where('name', 'ILIKE', "%{$search}%"))
+            ->where('name', '!=', 'Online')
             ->simplePaginate(15, ['id', 'name', 'province_id'], 'page', $page);
 
         return $this->sendSuccessPagination('Regencies retrieved successfully', $regencies);

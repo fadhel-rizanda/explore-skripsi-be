@@ -2,7 +2,11 @@
 
 namespace App\Http\Requests;
 
+use App\Models\District;
+use App\Models\Province;
+use App\Models\Regency;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateAddressRequest extends FormRequest
 {
@@ -16,14 +20,44 @@ class UpdateAddressRequest extends FormRequest
 
     public static function baseRules(): array
     {
+        $provinceTable = (new Province())->getTable();
+        $regencyTable = (new Regency())->getTable();
+        $districtTable = (new District())->getTable();
+
         return [
-            'street' => 'sometimes|string|max:500',
-            'city' => 'sometimes|string|max:100',
-            'state' => 'sometimes|string|max:100',
-            'zip_code' => 'sometimes|string|max:20',
-            'country' => 'sometimes|string|max:100',
-            'notes' => 'sometimes|string|max:1000',
-            'link' => 'sometimes|url|max:255',
+            'street' => ['sometimes', 'nullable', 'string', 'max:500'],
+
+            'province_id' => [
+                'sometimes',
+                'nullable',
+                'string',
+                Rule::exists($provinceTable, 'id'),
+            ],
+
+            'regency_id' => [
+                'sometimes',
+                'nullable',
+                'string',
+                Rule::exists($regencyTable, 'id')
+                    ->where(
+                        fn ($query) => $query->where('province_id', request()->input('province_id') ?? request()->input('address.province_id'))
+                    ),
+            ],
+
+            'district_id' => [
+                'sometimes',
+                'nullable',
+                'string',
+                Rule::exists($districtTable, 'id')
+                    ->where(
+                        fn ($query) => $query->where('regency_id', request()->input('regency_id') ?? request()->input('address.regency_id'))
+                    ),
+            ],
+
+            'zip_code' => ['sometimes', 'nullable', 'string', 'max:20'],
+
+            'notes' => ['sometimes', 'nullable', 'string', 'max:1000'],
+            'link' => ['sometimes', 'nullable', 'url', 'max:255'],
         ];
     }
 

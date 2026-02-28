@@ -110,6 +110,7 @@ class MeetNGreetService
 
         $meetNGreet->schedule->update([
             ...$scheduleData,
+            'created_by' => $user->id,
             'updated_by' => $user->id,
         ]);
 
@@ -212,18 +213,30 @@ class MeetNGreetService
 
     private function autoConfirm(\App\Models\User|\Illuminate\Contracts\Auth\Authenticatable|null $user, mixed $adopter, MeetNGreet $meetNGreet, mixed $provider): MeetNGreet
     {
-        $updateData = [];
-        if ($user->id === $adopter->id && ! $meetNGreet->adopter_confirmed) {
+
+        if (! $user) {
+            return $meetNGreet;
+        }
+
+        $updateData = [
+            'adopter_confirmed' => false,
+            'adopter_confirmed_at' => null,
+            'provider_confirmed' => false,
+            'provider_confirmed_at' => null,
+        ];
+
+        if ($user->id === $adopter->id) {
             $updateData['adopter_confirmed'] = true;
             $updateData['adopter_confirmed_at'] = now();
-        } elseif ($user->id === $provider->id && ! $meetNGreet->provider_confirmed) {
+        }
+
+        if ($user->id === $provider->id) {
             $updateData['provider_confirmed'] = true;
             $updateData['provider_confirmed_at'] = now();
         }
-        if (! empty($updateData)) {
-            $meetNGreet->update($updateData);
-        }
 
-        return $meetNGreet;
+        $meetNGreet->update($updateData);
+
+        return $meetNGreet->refresh();
     }
 }

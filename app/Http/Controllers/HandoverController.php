@@ -9,6 +9,7 @@ use App\Enums\ModelReferenceEnum;
 use App\Enums\PetStatusEnum;
 use App\Enums\RoleEnum;
 use App\Enums\StatusTypeEnum;
+use App\Enums\TagTypeEnum;
 use App\Events\AdoptionUpdated;
 use App\Http\Requests\CreateScheduleRequest;
 use App\Http\Requests\SetHandOverEvidenceRequest;
@@ -68,7 +69,7 @@ class HandoverController extends Controller
 
             DB::commit();
 
-            $usersToNotify = [$adoption->adopter->id, $adoption->provider->id];
+            $usersToNotify = [$adoption->adopter_id, $adoption->pet->user_id];
 
             $notification = $this->notificationService
                 ->createBulk(
@@ -86,7 +87,7 @@ class HandoverController extends Controller
                 )
                 ->getNotifications()
                 ->first();
-            broadcast(new AdoptionUpdated($notification));
+            broadcast(new AdoptionUpdated($notification, $adoption->id));
 
             $data = [
                 'id' => $handover->id,
@@ -150,7 +151,7 @@ class HandoverController extends Controller
 
             $handover->refresh();
 
-            $usersToNotify = [$adoption->adopter->id, $adoption->provider->id];
+            $usersToNotify = [$adoption->adopter_id, $adoption->pet->user_id];
 
             $notification = $this->notificationService
                 ->createBulk(
@@ -168,7 +169,7 @@ class HandoverController extends Controller
                 )
                 ->getNotifications()
                 ->first();
-            broadcast(new AdoptionUpdated($notification));
+            broadcast(new AdoptionUpdated($notification, $adoption->id));
 
             $data = [
                 'id' => $handover->id,
@@ -218,7 +219,8 @@ class HandoverController extends Controller
             $meetNGreet = $this->meetNGreetService->approve($adoption, $meetNGreet);
 
             if ($meetNGreet->adopter_confirmed && $meetNGreet->provider_confirmed) {
-                $usersToNotify = [$adoption->adopter->id, $adoption->provider->id];
+                $usersToNotify = [$adoption->adopter_id, $adoption->pet->user_id];
+
                 $notification = $this->notificationService->createBulk(
                     userIds: $usersToNotify,
                     title: 'Handover Meet and Greet Completed',
@@ -231,7 +233,7 @@ class HandoverController extends Controller
                     notes: 'The Handover Meet and Greet has been completed.'
                 ))->getNotifications()->first();
 
-                broadcast(new AdoptionUpdated($notification));
+                broadcast(new AdoptionUpdated($notification, $adoption->id));
             }
 
             $data = [
@@ -412,7 +414,7 @@ class HandoverController extends Controller
                 $adoption->update([
                     'status_id' => $completedStatusId,
                     'stage_tag_id' => AllTag::getCache(
-                        StatusTypeEnum::ADOPTION->value,
+                        TagTypeEnum::ADOPTION_STAGE->value,
                         AdoptionStageEnum::COMPLETED->value
                     )->id,
                     'updated_by' => $user->id,
@@ -433,7 +435,7 @@ class HandoverController extends Controller
                 userIds: [$adoption->adopter->id, $adoption->provider->id],
                 title: 'Handover Finalized',
                 message: 'The handover has been finalized for the adoption of ' . ($adoption->pet->name ?? 'Unnamed Pet'),
-                referenceType: ModelReferenceEnum::HANDOVER->value,
+                referenceType: ModelReferenceEnum::ADOPTION->value,
                 referenceId: $handover->id,
             )->notifyUsers(
                 new AdoptionMailNotification(
@@ -442,7 +444,7 @@ class HandoverController extends Controller
                     notes: 'The handover has been finalized.'
                 )
             )->getNotifications()->first();
-            broadcast(new AdoptionUpdated($notification));
+            broadcast(new AdoptionUpdated($notification, $adoption->id));
 
             $data = [
                 'id' => $handover->id,
