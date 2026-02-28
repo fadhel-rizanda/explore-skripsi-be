@@ -5,6 +5,10 @@ use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('users')->group(function () {
+    Route::middleware(['auth:api', 'check.token.version'])->group(function () {
+        Route::get('/channels', [UserController::class, 'userChannels']);
+    });
+
     Route::get('/', [UserController::class, 'listUsers']);
     Route::get('/{user}', [UserController::class, 'userDetails']);
 

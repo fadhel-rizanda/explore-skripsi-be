@@ -18,6 +18,7 @@ class DistrictController extends Controller
         $districts = $regency->districts()
             ->orderBy('name')
             ->when($search, fn ($q) => $q->where('name', 'ILIKE', "%{$search}%"))
+            ->where('name', '!=', 'Online')
             ->simplePaginate(15, ['id', 'name', 'regency_id'], 'page', $page);
 
         return $this->sendSuccessPagination('Districts retrieved successfully', $districts);

@@ -15,14 +15,17 @@ class AdoptionUpdated implements ShouldBroadcast
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public $notification;
+    public $adoptionId;
 
     /**
      * Create a new event instance.
      */
     public function __construct(
         Notification $notification,
+        string $adoptionId
     ) {
         $this->notification = $notification;
+        $this->adoptionId = $adoptionId;
     }
 
     /**
@@ -33,7 +36,7 @@ class AdoptionUpdated implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel(ChannelEnum::ADOPTION->channel($this->notification->reference_id)),
+            new PrivateChannel(ChannelEnum::ADOPTION->channel($this->adoptionId)),
         ];
     }
 

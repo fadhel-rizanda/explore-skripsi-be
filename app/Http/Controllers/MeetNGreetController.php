@@ -47,7 +47,7 @@ class MeetNGreetController extends Controller
 
             DB::commit();
 
-            $usersToNotify = [$adoption->adopter->id, $adoption->provider->id];
+            $usersToNotify = [$adoption->adopter_id, $adoption->pet->user_id];
             $notification = $this->notificationService->createBulk(
                 userIds: $usersToNotify,
                 title: 'Meet and Greet Scheduled',
@@ -60,7 +60,7 @@ class MeetNGreetController extends Controller
                 notes: 'A Meet and Greet has been scheduled',
             ))->getNotifications()->first();
 
-            broadcast(new AdoptionUpdated($notification));
+            broadcast(new AdoptionUpdated($notification, $adoption->id));
 
             $data = [
                 'id' => $meetNGreet->id,
@@ -105,7 +105,7 @@ class MeetNGreetController extends Controller
 
             DB::commit();
 
-            $usersToNotify = [$adoption->adopter->id, $adoption->provider->id];
+            $usersToNotify = [$adoption->adopter_id, $adoption->pet->user_id];
             $notification = $this->notificationService->createBulk(
                 userIds: $usersToNotify,
                 title: 'Meet and Greet Scheduled',
@@ -118,7 +118,8 @@ class MeetNGreetController extends Controller
                 notes: 'A Meet and Greet has been updated',
             ))->getNotifications()->first();
 
-            broadcast(new AdoptionUpdated($notification));
+            broadcast(new AdoptionUpdated($notification, $adoption->id));
+
 
             $data = [
                 'id' => $meetNGreet->id,
@@ -160,7 +161,7 @@ class MeetNGreetController extends Controller
             );
 
             if ($meetNGreet->adopter_confirmed && $meetNGreet->provider_confirmed) {
-                $usersToNotify = [$adoption->adopter->id, $adoption->provider->id];
+                $usersToNotify = [$adoption->adopter_id, $adoption->pet->user_id];
                 $notification = $this->notificationService->createBulk(
                     userIds: $usersToNotify,
                     title: 'Meet and Greet Completed',
@@ -173,7 +174,7 @@ class MeetNGreetController extends Controller
                     notes: 'The Meet and Greet has been completed.'
                 ))->getNotifications()->first();
 
-                broadcast(new AdoptionUpdated($notification));
+                broadcast(new AdoptionUpdated($notification, $adoption->id));
             }
 
             $data = [
@@ -213,6 +214,21 @@ class MeetNGreetController extends Controller
                 adoption: $adoption,
                 meetNGreet: $meetNGreet
             );
+
+            $usersToNotify = [$adoption->adopter_id, $adoption->pet->user_id];
+            $notification = $this->notificationService->createBulk(
+                userIds: $usersToNotify,
+                title: 'Meet and Greet Finalized',
+                message: 'The Meet and Greet has been finalized for the adoption of ' . ($adoption->pet->name ?? 'Unnamed Pet'),
+                referenceType: ModelReferenceEnum::ADOPTION->value,
+                referenceId: $meetNGreet->id,
+            )->notifyUsers(new AdoptionMailNotification(
+                action: AdoptionStageEnum::MEET_N_GREET->value,
+                adoption: $adoption,
+                notes: 'The Meet and Greet has been finalized.'
+            ))->getNotifications()->first();
+
+            broadcast(new AdoptionUpdated($notification, $adoption->id));
 
             $data = [
                 'id' => $meetNGreet->id,

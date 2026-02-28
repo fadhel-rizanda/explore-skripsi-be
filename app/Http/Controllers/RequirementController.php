@@ -78,23 +78,9 @@ class RequirementController extends Controller
 
             DB::commit();
 
-            $otherUser = $adoption->adopter->id === $user->id ? $adoption->provider : $adoption->adopter;
-            $notification = $this->notificationService->createBulk(
-                userIds: [$otherUser],
-                title: 'New Adoption Requirements Set',
-                message: 'New requirements have been set for the adoption of ' . $adoption->pet->name . '. Please review and complete them.',
-                referenceType: ModelReferenceEnum::REQUIREMENT->value,
-                referenceId: $adoption->id,
-            )->notifyUsers(
-                new AdoptionMailNotification(
-                    action: AdoptionStageEnum::REQUIREMENT->value,
-                    adoption: $adoption,
-                    notes: 'New requirements have been set for your adoption application.'
-                )
-            )->getNotifications()->first();
-            broadcast(new AdoptionUpdated($notification));
-
-            $otherUser = $adoption->adopter->id === $user->id ? $adoption->provider : $adoption->adopter;
+            $otherUser = ($adoption->adopter_id === $user->id)
+                ? $adoption->pet->user_id
+                : $adoption->adopter_id;
             $this->notifyRequirementChange(
                 [$otherUser],
                 'New Adoption Requirements Set',
@@ -138,7 +124,7 @@ class RequirementController extends Controller
 
             DB::commit();
 
-            $otherUser = $adoption->adopter->id === $user->id ? $adoption->provider : $adoption->adopter;
+            $otherUser = ($adoption->adopter_id === $user->id) ? $adoption->pet->user_id : $adoption->adopter_id;
             $this->notifyRequirementChange(
                 [$otherUser],
                 'Adoption Requirement Filled',
@@ -206,7 +192,9 @@ class RequirementController extends Controller
             $requirement->delete();
             DB::commit();
 
-            $otherUser = $adoption->adopter->id === $user->id ? $adoption->provider : $adoption->adopter;
+            $otherUser = ($adoption->adopter_id === $user->id)
+                ? $adoption->pet->user_id
+                : $adoption->adopter_id;
             $this->notifyRequirementChange(
                 [$otherUser],
                 'Adoption Requirement Deleted',
@@ -253,7 +241,9 @@ class RequirementController extends Controller
 
             DB::commit();
 
-            $otherUser = $adoption->adopter->id === $user->id ? $adoption->provider : $adoption->adopter;
+            $otherUser = ($adoption->adopter_id === $user->id)
+                ? $adoption->pet->user_id
+                : $adoption->adopter_id;
             $this->notifyRequirementChange(
                 [$otherUser],
                 'Adoption Requirement Approved',
@@ -313,7 +303,9 @@ class RequirementController extends Controller
 
             DB::commit();
 
-            $otherUser = $adoption->adopter->id === $user->id ? $adoption->provider : $adoption->adopter;
+            $otherUser = ($adoption->adopter_id === $user->id)
+                ? $adoption->pet->user_id
+                : $adoption->adopter_id;
             $this->notifyRequirementChange(
                 [$otherUser],
                 'Adoption Requirement Rejected',
@@ -355,6 +347,7 @@ class RequirementController extends Controller
             ->pluck('id');
 
         $hasPending = $adoption->requirements()
+            ->where('created_by', $user->id)
             ->whereNotIn('status_id', $finalStatusIds)
             ->exists();
 
@@ -395,13 +388,16 @@ class RequirementController extends Controller
 
             DB::commit();
 
-            $otherUser = $adoption->adopter->id === $user->id ? $adoption->provider : $adoption->adopter;
+            $otherUser = ($adoption->adopter_id === $user->id)
+                ? $adoption->pet->user_id
+                : $adoption->adopter_id;
             $this->notifyRequirementChange(
                 [$otherUser],
                 'Adoption Finalized',
                 'The adoption process for ' . ($adoption->pet->name ?? 'Unnamed Pet') . ' has been finalized.',
                 $adoption,
-                'The adoption process has been finalized.'
+                'The adoption process has been finalized.',
+                ModelReferenceEnum::ADOPTION->value
             );
 
             $data = [
@@ -418,13 +414,13 @@ class RequirementController extends Controller
         }
     }
 
-    protected function notifyRequirementChange(array $userIds, string $title, string $message, Adoption $adoption, string $notes)
+    protected function notifyRequirementChange(array $userIds, string $title, string $message, Adoption $adoption, string $notes, ?string $referenceType = ModelReferenceEnum::REQUIREMENT->value)
     {
         $notification = $this->notificationService->createBulk(
             userIds: $userIds,
             title: $title,
             message: $message,
-            referenceType: ModelReferenceEnum::REQUIREMENT->value,
+            referenceType: $referenceType,
             referenceId: $adoption->id
         )->notifyUsers(
             new AdoptionMailNotification(
@@ -434,6 +430,6 @@ class RequirementController extends Controller
             )
         )->getNotifications()->first();
 
-        broadcast(new AdoptionUpdated($notification));
+        broadcast(new AdoptionUpdated($notification, $adoption->id));
     }
 }
