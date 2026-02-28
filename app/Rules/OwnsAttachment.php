@@ -38,6 +38,14 @@ class OwnsAttachment implements ValidationRule
         }
 
         foreach ($attachments as $attachment) {
+//            \Log::info('attachment check', [
+//                'reference_by' => $attachment->reference_by,
+//                'reference_id' => $attachment->reference_id,
+//                'referenceType' => $this->referenceType,
+//                'referenceId' => $this->referenceId,
+//                'id_type' => gettype($attachment->reference_id),
+//                'param_type' => gettype($this->referenceId),
+//            ]);
             if (is_null($this->referenceId)) {
                 if (! is_null($attachment->reference_by)) {
                     $fail('One or more attachments are already used by another resource.');

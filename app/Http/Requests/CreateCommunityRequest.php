@@ -43,8 +43,11 @@ class CreateCommunityRequest extends FormRequest
                     'uuid',
                     Rule::exists(User::TABLE, 'id')->where('is_active', true),
                 ],
+                'use_owner_address' => 'required|boolean',
             ],
-            CreateAddressRequest::prefixedRules(),
+            $this->use_owner_address
+                ? []
+                : CreateAddressRequest::prefixedRules(),
         );
     }
 }

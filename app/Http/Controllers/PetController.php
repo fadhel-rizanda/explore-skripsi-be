@@ -8,6 +8,7 @@ use App\Enums\StatusTypeEnum;
 use App\Http\Requests\GetAllRequest;
 use App\Http\Requests\PetRequest;
 use App\Http\Resources\PetMonitorResource;
+use App\Models\Address;
 use App\Models\Pet;
 use App\Models\Status;
 use App\Traits\ResponseAPI;
@@ -77,57 +78,69 @@ class PetController extends Controller
      */
     public function store(PetRequest $request)
     {
+        DB::beginTransaction();
+
         try {
-            $pet = DB::transaction(function () use ($request) {
-                $availableStatus = Status::getCache(StatusTypeEnum::PET->value, PetStatusEnum::AVAILABLE->value);
+            $availableStatus = Status::getCache(StatusTypeEnum::PET->value, PetStatusEnum::AVAILABLE->value);
 
-                $pet = Pet::create([
-                    'user_id' => auth('api')->user()->id,
-                    'type_of_animal_id' => $request->type_of_animal_id,
-                    'size' => $request->size,
-                    'name' => $request->name,
-                    'date_of_birth' => $request->date_of_birth,
-                    'gender' => $request->gender,
-                    'about' => $request->about,
-                    'breed' => $request->breed,
-                    'special_needs' => $request->special_needs,
-                    'status_id' => $availableStatus->id,
-                ]);
+            if ($request->use_owner_address) {
+                $ownerAddress = auth('api')->user()->address;
+                if (! $ownerAddress) {
+                    DB::rollBack();
 
-                // Attach physique tags if provided
-                if ($request->filled('physique_ids')) {
-                    $pet->physiqueTags()->sync($request->physique_ids);
+                    return $this->sendError('Owner address not found. Please provide an address or update your profile with an address.', 422);
                 }
+                $address = Address::create($ownerAddress->only([
+                    'street', 'province_id', 'regency_id', 'district_id', 'zip_code', 'notes', 'link',
+                ]));
+            } else {
+                $address = Address::create($request->validated()['address']);
+            }
 
-                // Attach personality tags if provided
-                if ($request->filled('personality_ids')) {
-                    $pet->personalityTags()->sync($request->personality_ids);
-                }
+            $pet = Pet::create([
+                'user_id' => auth('api')->user()->id,
+                'type_of_animal_id' => $request->type_of_animal_id,
+                'size' => $request->size,
+                'name' => $request->name,
+                'date_of_birth' => $request->date_of_birth,
+                'gender' => $request->gender,
+                'about' => $request->about,
+                'breed' => $request->breed,
+                'special_needs' => $request->special_needs,
+                'status_id' => $availableStatus->id,
+                'address_id' => $address->id,
+            ]);
 
-                // Attach profile pictures if provided
-                if ($request->filled('profile_picture_ids')) {
-                    $pet->syncAttachmentsWithMetadata(
-                        relation: 'profilePictures',
-                        newIds: $request->profile_picture_ids,
-                        modelReference: ModelReferenceEnum::PET->value,
-                    );
-                }
+            if ($request->filled('physique_ids')) {
+                $pet->physiqueTags()->sync($request->physique_ids);
+            }
 
-                // Attach profile pictures if provided
-                if ($request->filled('additional_record_ids')) {
-                    $pet->syncAttachmentsWithMetadata(
-                        relation: 'additionalRecords',
-                        newIds: $request->additional_record_ids,
-                        modelReference: ModelReferenceEnum::PET->value,
-                    );
-                }
+            if ($request->filled('personality_ids')) {
+                $pet->personalityTags()->sync($request->personality_ids);
+            }
 
-                return $pet;
-            });
+            if ($request->filled('profile_picture_ids')) {
+                $pet->syncAttachmentsWithMetadata(
+                    relation: 'profilePictures',
+                    newIds: $request->profile_picture_ids,
+                    modelReference: ModelReferenceEnum::PET->value,
+                );
+            }
+
+            if ($request->filled('additional_record_ids')) {
+                $pet->syncAttachmentsWithMetadata(
+                    relation: 'additionalRecords',
+                    newIds: $request->additional_record_ids,
+                    modelReference: ModelReferenceEnum::PET->value,
+                );
+            }
+
+            DB::commit();
 
             return $this->sendSuccess('Pet created successfully', $pet, 201);
 
         } catch (\Exception $e) {
+            DB::rollBack();
             Log::error('Pet creation failed: ' . $e->getMessage());
 
             return $this->sendError(
@@ -149,6 +162,10 @@ class PetController extends Controller
             }
 
             DB::transaction(function () use ($request, $pet) {
+                if (! $request->use_owner_address && $request->has('address') && $pet->address) {
+                    $pet->address->update($request->validated()['address']);
+                }
+
                 $pet->update($request->validated());
 
                 if ($request->has('physique_ids')) {
@@ -203,6 +220,10 @@ class PetController extends Controller
                 'physiqueTags:id,name,type,color_code',
                 'personalityTags:id,name,type,color_code',
                 'additionalRecords:id,public_url,filename,mime_type,path',
+                'address',
+                'address.province',
+                'address.regency',
+                'address.district',
             ]);
 
             [$age, $ageUnit] = $this->calculateAgeAndUnit($pet->date_of_birth);
@@ -248,6 +269,24 @@ class PetController extends Controller
                         'path' => $record->path,
                     ];
                 }),
+                'address' => $pet->address ? [
+                    'street' => $pet->address->street,
+                    'province' => $pet->address->province ? [
+                        'id' => $pet->address->province->id,
+                        'name' => $pet->address->province->name,
+                    ] : null,
+                    'regency' => $pet->address->regency ? [
+                        'id' => $pet->address->regency->id,
+                        'name' => $pet->address->regency->name,
+                    ] : null,
+                    'district' => $pet->address->district ? [
+                        'id' => $pet->address->district->id,
+                        'name' => $pet->address->district->name,
+                    ] : null,
+                    'zip_code' => $pet->address->zip_code,
+                    'notes' => $pet->address->notes,
+                    'link' => $pet->address->link,
+                ] : null,
             ];
 
             return $this->sendSuccess('Pet detail retrieved successfully', $data);

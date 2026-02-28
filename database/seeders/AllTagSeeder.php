@@ -89,6 +89,22 @@ class AllTagSeeder extends Seeder
             ['name' => 'Logistics & Transport', 'type' => 'requirement', 'color_code' => 'bg-orange-50 text-orange-700 border-orange-200'], // Urusan transportasi, jarak tempuh, atau biaya pengiriman hewan.
             ['name' => 'Education & Knowledge', 'type' => 'requirement', 'color_code' => 'bg-teal-50 text-teal-700 border-teal-200'], // Urusan pengetahuan adopter tentang cara urus hewan/ras tertentu.
             ['name' => 'Emergency Preparedness', 'type' => 'requirement', 'color_code' => 'bg-red-50 text-red-700 border-red-200'], // Urusan darurat seperti kontak darurat atau klinik hewan terdekat dari rumah.
+
+            // ======================
+            // COMMUNITY TAGS
+            // ======================
+            ['name' => 'Rescue', 'type' => 'community', 'color_code' => 'bg-red-50 text-red-700 border-red-200'],
+            ['name' => 'Education', 'type' => 'community', 'color_code' => 'bg-blue-50 text-blue-700 border-blue-200'],
+            ['name' => 'Adoption', 'type' => 'community', 'color_code' => 'bg-emerald-50 text-emerald-700 border-emerald-200'],
+            ['name' => 'Training', 'type' => 'community', 'color_code' => 'bg-amber-50 text-amber-700 border-amber-200'],
+            ['name' => 'Healthcare', 'type' => 'community', 'color_code' => 'bg-purple-50 text-purple-700 border-purple-200'],
+            ['name' => 'Social', 'type' => 'community', 'color_code' => 'bg-pink-50 text-pink-700 border-pink-200'],
+            ['name' => 'Lost & Found', 'type' => 'community', 'color_code' => 'bg-rose-50 text-rose-700 border-rose-200'],
+            ['name' => 'Shelter', 'type' => 'community', 'color_code' => 'bg-orange-50 text-orange-700 border-orange-200'],
+            ['name' => 'Breed Specific', 'type' => 'community', 'color_code' => 'bg-indigo-50 text-indigo-700 border-indigo-200'],
+            ['name' => 'Volunteer', 'type' => 'community', 'color_code' => 'bg-teal-50 text-teal-700 border-teal-200'],
+            ['name' => 'Events', 'type' => 'community', 'color_code' => 'bg-cyan-50 text-cyan-700 border-cyan-200'],
+            ['name' => 'Tips & Tricks', 'type' => 'community', 'color_code' => 'bg-lime-50 text-lime-700 border-lime-200'],
         ];
 
         foreach ($tags as $tag) {
