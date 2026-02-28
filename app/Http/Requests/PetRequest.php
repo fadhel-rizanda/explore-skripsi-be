@@ -16,35 +16,39 @@ class PetRequest extends FormRequest
      */
     public function rules(): array
     {
-        $petId = $this->route('id') ? $this->route('id')->id : null;
+        $route = $this->route('pet');
+        $petId = $route ? (is_object($route) ? $route->id : $route) : null;
         $allTagTable = AllTag::TABLE;
 
-        return [
-            'type_of_animal_id' => 'required|uuid|exists:' . $allTagTable . ',id',
-            'size' => 'required|string|in:small,medium,large,extra large',
-            'name' => 'required|string|max:50',
-            'date_of_birth' => 'required|date',
-            'gender' => 'required|string|in:male,female',
-            'about' => 'required|string',
-            'breed' => 'required|string|max:255',
-            'special_needs' => 'required|boolean',
-            // Profile pictures
-            'profile_picture_ids' => ['required', 'array', 'min:1', new OwnsAttachment(
-                referenceType: ModelReferenceEnum::PET->value,
-                referenceId: $petId
-            )],
-            'profile_picture_ids.*' => 'uuid',
-            // Arrays for tags - REQUIRED
-            'physique_ids' => 'required|array|min:1',
-            'physique_ids.*' => 'uuid|exists:' . $allTagTable . ',id',
-            'personality_ids' => 'required|array|min:1',
-            'personality_ids.*' => 'uuid|exists:' . $allTagTable . ',id',
-            'additional_record_ids' => ['nullable', 'array', new OwnsAttachment(
-                referenceType: ModelReferenceEnum::PET->value,
-                referenceId: $petId
-            )],
-            'additional_record_ids.*' => 'uuid',
-        ];
-
+        return array_merge(
+            [
+                'type_of_animal_id' => 'required|uuid|exists:' . $allTagTable . ',id',
+                'size' => 'required|string|in:small,medium,large,extra large',
+                'name' => 'required|string|max:50',
+                'date_of_birth' => 'required|date',
+                'gender' => 'required|string|in:male,female',
+                'about' => 'required|string',
+                'breed' => 'required|string|max:255',
+                'special_needs' => 'required|boolean',
+                'profile_picture_ids' => ['required', 'array', 'min:1', new OwnsAttachment(
+                    referenceType: ModelReferenceEnum::PET->value,
+                    referenceId: $petId
+                )],
+                'profile_picture_ids.*' => 'uuid',
+                'physique_ids' => 'required|array|min:1',
+                'physique_ids.*' => 'uuid|exists:' . $allTagTable . ',id',
+                'personality_ids' => 'required|array|min:1',
+                'personality_ids.*' => 'uuid|exists:' . $allTagTable . ',id',
+                'additional_record_ids' => ['nullable', 'array', new OwnsAttachment(
+                    referenceType: ModelReferenceEnum::PET->value,
+                    referenceId: $petId
+                )],
+                'additional_record_ids.*' => 'uuid',
+                'use_owner_address' => 'required|boolean',
+            ],
+            $this->use_owner_address
+                ? []
+                : CreateAddressRequest::prefixedRules(),
+        );
     }
 }
