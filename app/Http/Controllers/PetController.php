@@ -162,8 +162,8 @@ class PetController extends Controller
             }
 
             DB::transaction(function () use ($request, $pet) {
-                if ($request->has('address') && $pet->address) {
-                    $pet->address->update($request->input('address'));
+                if (! $request->use_owner_address && $request->has('address') && $pet->address) {
+                    $pet->address->update($request->validated()['address']);
                 }
 
                 $pet->update($request->validated());
