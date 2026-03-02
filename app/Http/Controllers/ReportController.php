@@ -125,20 +125,18 @@ class ReportController extends Controller
             $referenceType = null;
         }
 
-        $reports = Report::with([
+        return Report::with([
             'createdBy:id,name,email',
             'tags:id,name,type,color_code',
             'status:id,name,type,color_code',
         ])
-            ->when($search, function ($q) use ($search) {
-                $q->where('id', 'ILIKE', "%{$search}%");
-            })
-            ->when($referenceType, fn ($q) => $q->where('reference_type', $referenceType))
-            ->when($tagId, function ($q) use ($tagId) {
-                $q->whereHas('tags', fn ($query) => $query->where($query->getModel()->getTable() . '.id', $tagId));
-            })
-            ->orderBy($sortBy, 'desc')->paginate($perPage);
-
-        return $reports;
+            ->when($search, fn($q) => $q->where('reference_id', 'ILIKE', "%{$search}%"))
+            ->when($referenceType, fn($q) => $q->where('reference_type', $referenceType))
+            ->when($tagId, fn($q) => $q->whereHas(
+                'tags',
+                fn($query) => $query->where($query->getModel()->getTable() . '.id', $tagId)
+            ))
+            ->orderBy($sortBy, 'desc')
+            ->paginate($perPage);
     }
 }
