@@ -23,6 +23,7 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 /.env.docker
+/docker-compose.yaml
 
 **/caddy
 frankenphp
