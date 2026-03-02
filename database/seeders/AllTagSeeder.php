@@ -105,6 +105,18 @@ class AllTagSeeder extends Seeder
             ['name' => 'Volunteer', 'type' => 'community', 'color_code' => 'bg-teal-50 text-teal-700 border-teal-200'],
             ['name' => 'Events', 'type' => 'community', 'color_code' => 'bg-cyan-50 text-cyan-700 border-cyan-200'],
             ['name' => 'Tips & Tricks', 'type' => 'community', 'color_code' => 'bg-lime-50 text-lime-700 border-lime-200'],
+
+            // ======================
+            // REPORT REASON
+            // ======================
+            ['name' => 'Spam', 'type' => 'report_reason', 'color_code' => 'bg-gray-50 text-gray-700 border-gray-200'],
+            ['name' => 'Inappropriate Content', 'type' => 'report_reason', 'color_code' => 'bg-red-50 text-red-700 border-red-200'],
+            ['name' => 'Harassment', 'type' => 'report_reason', 'color_code' => 'bg-rose-50 text-rose-700 border-rose-200'],
+            ['name' => 'Misinformation', 'type' => 'report_reason', 'color_code' => 'bg-amber-50 text-amber-700 border-amber-200'],
+            ['name' => 'Animal Abuse', 'type' => 'report_reason', 'color_code' => 'bg-orange-50 text-orange-700 border-orange-200'],
+            ['name' => 'Scam / Fraud', 'type' => 'report_reason', 'color_code' => 'bg-yellow-50 text-yellow-700 border-yellow-200'],
+            ['name' => 'Hate Speech', 'type' => 'report_reason', 'color_code' => 'bg-purple-50 text-purple-700 border-purple-200'],
+            ['name' => 'Other', 'type' => 'report_reason', 'color_code' => 'bg-slate-100 text-slate-700 border-slate-300'],
         ];
 
         foreach ($tags as $tag) {
