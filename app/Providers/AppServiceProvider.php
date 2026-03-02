@@ -26,6 +26,7 @@ class AppServiceProvider extends ServiceProvider
             ModelReferenceEnum::PET->value => \App\Models\Pet::class,
             ModelReferenceEnum::COMMUNITY->value => \App\Models\Community::class,
             ModelReferenceEnum::POST->value => \App\Models\Post::class,
+            ModelReferenceEnum::ADOPTION->value => \App\Models\Adoption::class,
         ]);
     }
 }
