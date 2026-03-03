@@ -94,17 +94,6 @@ class AdoptionController extends Controller
                 return $this->sendError('This pet is not available for adoption.');
             }
 
-            $petRegencyId = $pet->effective_address?->regency_id;
-            $userRegencyId = $user->address?->regency_id;
-
-            if (! $petRegencyId || ! $userRegencyId) {
-                return $this->sendError('Both adopter and pet must have a valid regency address.');
-            }
-
-            if ($petRegencyId !== $userRegencyId) {
-                return $this->sendError('You can only adopt pets within the same regency.');
-            }
-
             $adoption = Adoption::create([
                 'adopter_id' => $user->id,
                 'pet_id' => $pet->id,
