@@ -229,6 +229,7 @@ class PetController extends Controller
             [$age, $ageUnit] = $this->calculateAgeAndUnit($pet->date_of_birth);
             $data = [
                 'id' => $pet->id,
+                'user_id' => $pet->user_id,
                 'type_of_animal_id' => $pet->type_of_animal_id,
                 'size' => $pet->size,
                 'name' => $pet->name,
