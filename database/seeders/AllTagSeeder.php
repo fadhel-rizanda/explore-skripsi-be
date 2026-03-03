@@ -105,6 +105,22 @@ class AllTagSeeder extends Seeder
             ['name' => 'Volunteer', 'type' => 'community', 'color_code' => 'bg-teal-50 text-teal-700 border-teal-200'],
             ['name' => 'Events', 'type' => 'community', 'color_code' => 'bg-cyan-50 text-cyan-700 border-cyan-200'],
             ['name' => 'Tips & Tricks', 'type' => 'community', 'color_code' => 'bg-lime-50 text-lime-700 border-lime-200'],
+
+            // ======================
+            // POST TAGS (FORUM/DISCUSSION)
+            // ======================
+            ['name' => 'Discussion', 'type' => 'post', 'color_code' => 'bg-slate-100 text-slate-700 border-slate-300'],
+            ['name' => 'Ask Pawsitive', 'type' => 'post', 'color_code' => 'bg-amber-50 text-amber-700 border-amber-200'],
+            ['name' => 'Tips & Tutorial', 'type' => 'post', 'color_code' => 'bg-emerald-50 text-emerald-700 border-emerald-200'],
+            ['name' => 'Success Story', 'type' => 'post', 'color_code' => 'bg-pink-50 text-pink-700 border-pink-200'],
+            ['name' => 'Health Advice', 'type' => 'post', 'color_code' => 'bg-purple-50 text-purple-700 border-purple-200'],
+            ['name' => 'Urgent', 'type' => 'post', 'color_code' => 'bg-red-50 text-red-700 border-red-200'],
+            ['name' => 'Review', 'type' => 'post', 'color_code' => 'bg-blue-50 text-blue-700 border-blue-200'],
+            ['name' => 'Funny', 'type' => 'post', 'color_code' => 'bg-yellow-50 text-yellow-700 border-yellow-200'],
+            ['name' => 'Daily Life', 'type' => 'post', 'color_code' => 'bg-indigo-50 text-indigo-700 border-indigo-200'],
+            ['name' => 'Lost Pet', 'type' => 'post', 'color_code' => 'bg-rose-50 text-rose-700 border-rose-200'],
+            ['name' => 'Adoption Info', 'type' => 'post', 'color_code' => 'bg-teal-50 text-teal-700 border-teal-200'],
+            ['name' => 'Grooming', 'type' => 'post', 'color_code' => 'bg-cyan-50 text-cyan-700 border-cyan-200'],
         ];
 
         foreach ($tags as $tag) {

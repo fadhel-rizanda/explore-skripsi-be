@@ -22,7 +22,7 @@ class ActivationCodeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'token' => 'required|string|digits:8',
+            'token' => ['required', 'string', 'size:8', 'regex:/^[A-Z0-9]+$/i'],
         ];
     }
 }
