@@ -289,6 +289,10 @@ class PetController extends Controller
                 ] : null,
             ];
 
+            if (auth('api')->check()) {
+                $data['user_id'] = $pet->user_id;
+            }
+
             return $this->sendSuccess('Pet detail retrieved successfully', $data);
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
