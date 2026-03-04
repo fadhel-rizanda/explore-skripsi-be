@@ -271,6 +271,7 @@ class CommunityController extends Controller
                 'members_count' => $community->members_count,
                 'is_member' => $community->is_member ?? false,
                 'is_admin' => $community->is_admin ?? false,
+                'is_active' => $community->is_active ?? false,
                 'created_at' => $community->created_at,
                 'updated_at' => $community->updated_at,
                 'tags' => $community->tags,
