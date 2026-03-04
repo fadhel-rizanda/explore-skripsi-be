@@ -172,11 +172,18 @@ class ChatController extends Controller
             ->values()
             ->toArray();
 
+        $userCount = count($userIds);
+
         try {
             $chatRoom = Chat::where('type', $request->type)
-                ->whereHas('users', function ($query) use ($userIds) {
-                    $query->whereIn('user_id', $userIds);
-                }, '=', count($userIds))
+                ->has('users', '=', $userCount)
+                ->where(function ($query) use ($userIds) {
+                    foreach ($userIds as $id) {
+                        $query->whereHas('users', function ($q) use ($id) {
+                            $q->where('user_id', $id);
+                        });
+                    }
+                })
                 ->with(['users', 'lastMessage'])
                 ->first();
             if (! $chatRoom) {
