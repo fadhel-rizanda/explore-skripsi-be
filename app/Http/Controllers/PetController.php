@@ -53,6 +53,10 @@ class PetController extends Controller
                     'age' => $age,
                     'age_unit' => $ageUnit,
                     'profile_picture' => $profilePictureData,
+                    'user_id' => $pet->user_id,
+                    'breed' => $pet->breed,
+                    'created_at' => $pet->created_at,
+                    'is_active' => $pet->is_active ?? false,
                 ];
             });
 
@@ -288,6 +292,11 @@ class PetController extends Controller
                     'link' => $pet->address->link,
                 ] : null,
             ];
+
+            $user = auth('api')->user();
+            if ($user && ($user->hasRole('admin') || $user->id === $pet->user_id)) {
+                $data['user_id'] = $pet->user_id;
+            }
 
             return $this->sendSuccess('Pet detail retrieved successfully', $data);
 
