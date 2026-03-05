@@ -45,6 +45,7 @@ class User extends Authenticatable implements JWTSubject
         'about_me',
         'personality',
         'pet_experience',
+        'pet_experience_description',
         'pet_preferences',
         'open_to_special_needs',
         'password',

@@ -18,9 +18,10 @@ class UserBackgroundRequest extends FormRequest
     public static function baseRules(): array
     {
         return [
-            'personality' => 'sometimes|string|max:1000',
-            'pet_experience' => 'sometimes|string|max:1000',
-            'pet_preferences' => 'sometimes|string|max:1000',
+            'personality' => 'sometimes|nullable|string|max:1000',
+            'pet_experience' => 'sometimes|nullable|string|max:1000',
+            'pet_experience_description' => 'sometimes|nullable|string|max:1000',
+            'pet_preferences' => 'sometimes|nullable|string|max:1000',
 
             'personality_tags' => 'sometimes|array',
             'personality_tags.*' => 'uuid|exists:' . (new AllTag())->getTable() . ',id',

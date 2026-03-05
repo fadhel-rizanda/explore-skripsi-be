@@ -118,10 +118,11 @@ class UserController extends Controller
                 'phone' => $user->phone,
                 'about_me' => $user->about_me,
                 'avatar' => $user->avatar ?? optional($user->attachment)->public_url,
-                'street' => $user->street,
+                'address' => $user->address,
                 'role_name' => $user->roles->first()?->name,
                 'personality' => $user->personality,
                 'pet_experience' => $user->pet_experience,
+                'pet_experience_description' => $user->pet_experience_description,
                 'pet_preferences' => $user->pet_preferences,
                 'personality_tags' => $user->personalityTags,
                 'pet_experience_tags' => $user->petExperienceTags,
@@ -154,6 +155,7 @@ class UserController extends Controller
                 'about_me',
                 'personality',
                 'pet_experience',
+                'pet_experience_description',
                 'pet_preferences',
                 'open_to_special_needs',
                 'attachment_id',
@@ -181,7 +183,7 @@ class UserController extends Controller
                 'link',
             ];
 
-            if ($request->hasAny($addressFields)) {
+            if ($request->anyFilled($addressFields)) {
                 if ($user->address) {
                     $user->address->update(
                         $request->only($addressFields)
