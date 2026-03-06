@@ -97,6 +97,7 @@ class AuthController extends BaseController
                 'roles.permissions:id,name',
                 'communities',
                 'chatRooms',
+                'attachment',
             ]);
 
             $refreshToken = RefreshToken::createToken($user->id);
@@ -578,7 +579,7 @@ class AuthController extends BaseController
                 'name' => $user->name,
                 'email' => $user->email,
                 'roles' => $user->roles,
-                'avatar' => $user->avatar,
+                'avatar' => $user->attachment?->public_url ?? $user->avatar,
                 'channels' => $channels,
             ],
             'access_token' => $token,
