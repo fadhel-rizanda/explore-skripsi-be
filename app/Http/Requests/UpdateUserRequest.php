@@ -27,20 +27,22 @@ class UpdateUserRequest extends FormRequest
         return array_merge(
             [
                 'name' => 'sometimes|string|max:255',
-                'phone' => 'sometimes|string|max:20|unique:' . (new User())->getTable() . ',phone,' . $this->user()->id . ',id',
-                'about_me' => 'sometimes|string|max:1000',
+                'phone' => 'sometimes|nullable|string|max:20|unique:' . (new User())->getTable() . ',phone,' . $this->user()->id . ',id',
+                'about_me' => 'sometimes|nullable|string|max:1000',
+
                 'open_to_special_needs' => 'sometimes|boolean',
                 'attachment_id' => [
                     'sometimes',
+                    'bail',
                     'uuid',
                     new OwnsAttachment(
                         referenceType: ModelReferenceEnum::USER->value,
-                        referenceId: $this->route('user') ? $this->route('user')->id : null,
+                        referenceId: $this->user()->id,
                     ),
                 ],
             ],
             UpdateAddressRequest::prefixedRules(),
-            UserBackgroundRequest::prefixedRules()
+            UserBackgroundRequest::prefixedRules('')
         );
     }
 }
