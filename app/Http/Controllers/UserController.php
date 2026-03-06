@@ -145,30 +145,21 @@ class UserController extends Controller
 
             $user = auth('api')->user();
 
-            $background = $request->input('background', []);
-
-            $user->update([
-                'name' => $request->input('name', $user->name),
-                'phone' => $request->input('phone', $user->phone),
-                'about_me' => $request->input('about_me', $user->about_me),
-                'open_to_special_needs' => $request->input('open_to_special_needs', $user->open_to_special_needs),
-                'attachment_id' => $request->input('attachment_id', $user->attachment_id),
-
-                'personality' => $background['personality'] ?? $user->personality,
-                'pet_experience' => $background['pet_experience'] ?? $user->pet_experience,
-            ]);
+            $user->update($request->only([
+                'name',
+                'phone',
+                'about_me',
+                'personality',
+                'pet_experience',
+                'pet_preferences',
+                'open_to_special_needs',
+                'attachment_id',
+            ]));
 
             $user->setAttachmentMetadata(
                 attachmentId: $request->input('attachment_id'),
                 modelReference: ModelReferenceEnum::USER->value,
             );
-
-            $requiredAddressFields = [
-                'street',
-                'province_id',
-                'regency_id',
-                'district_id',
-            ];
 
             $addressFields = [
                 'street',
@@ -180,33 +171,46 @@ class UserController extends Controller
                 'link',
             ];
 
-            if ($request->hasAny($addressFields)) {
+            $requiredAddressFields = [
+                'street',
+                'province_id',
+                'regency_id',
+                'district_id',
+            ];
+
+            $addressData = $request->input('address', []);
+            $filteredAddressData = collect($addressData)
+                ->only($addressFields)
+                ->filter(fn ($value) => ! is_null($value))
+                ->toArray();
+
+            if (! empty($filteredAddressData)) {
                 if ($user->address) {
-                    $user->address->update(
-                        $request->only($addressFields)
-                    );
+                    $user->address->update($filteredAddressData);
                 } else {
-                    if (! $request->filled($requiredAddressFields)) {
+                    $missingRequired = array_diff(
+                        $requiredAddressFields,
+                        array_keys(array_filter($filteredAddressData, fn ($v) => filled($v)))
+                    );
+
+                    if (! empty($missingRequired)) {
                         return $this->sendError(
                             'To create an address, street, province, regency, and district are required.',
                             422
                         );
                     }
-                    $address = Address::create(
-                        $request->only($addressFields)
-                    );
-                    $user->update([
-                        'address_id' => $address->id,
-                    ]);
+
+                    $address = Address::create($filteredAddressData);
+                    $user->update(['address_id' => $address->id]);
                 }
             }
 
-            if (isset($background['personality_tags'])) {
-                $user->personalityTags()->sync($background['personality_tags']);
+            if ($request->has('personality_tags')) {
+                $user->personalityTags()->sync($request->input('personality_tags'));
             }
 
-            if (isset($background['pet_experience_tags'])) {
-                $user->petExperienceTags()->sync($background['pet_experience_tags']);
+            if ($request->has('pet_experience_tags')) {
+                $user->petExperienceTags()->sync($request->input('pet_experience_tags'));
             }
 
             DB::commit();
@@ -223,12 +227,11 @@ class UserController extends Controller
             $user->avatar = $user->avatar ?? optional($user->attachment)->public_url;
 
             return $this->sendSuccess('User profile updated successfully.', $user);
+
         } catch (\Exception $e) {
             DB::rollBack();
 
-            \Log::error('Error updating user profile', [
-                'error' => $e->getMessage(),
-            ]);
+            \Log::error('Error updating user profile', ['error' => $e->getMessage()]);
 
             return $this->sendError('Error updating user profile.');
         }
