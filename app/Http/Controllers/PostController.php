@@ -39,7 +39,7 @@ class PostController extends Controller
     {
         try {
             $post->load([
-                'attachment:id,public_url',
+                'attachment',
                 'createdBy:id,name,email,avatar,is_active',
                 'createdBy.attachment:id,public_url',
                 'tags:id,name,type,color_code',
