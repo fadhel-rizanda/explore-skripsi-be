@@ -94,7 +94,7 @@ class ChatController extends Controller
                             'id' => $u->id,
                             'name' => $u->name,
                             'email' => $u->email,
-                            'avatar' => $u->avatar ?? $u->attachment?->public_url,
+                            'avatar' => $u->attachment?->public_url ?? $u->avatar,
                         ])
                         ->values(),
 
@@ -147,8 +147,8 @@ class ChatController extends Controller
                         'id' => $chatMessage->user->id,
                         'name' => $chatMessage->user->name,
                         'email' => $chatMessage->user->email,
-                        'avatar' => $chatMessage->user->avatar
-                            ?? $chatMessage->user->attachment?->public_url,
+                        'avatar' => $chatMessage->user->attachment?->public_url
+                            ?? $chatMessage->user->avatar,
                     ],
                 ];
             })
@@ -220,7 +220,7 @@ class ChatController extends Controller
                     'id' => $u->id,
                     'name' => $u->name,
                     'email' => $u->email,
-                    'avatar' => $u->avatar ?? $u->attachment?->public_url,
+                    'avatar' => $u->attachment?->public_url ?? $u->avatar,
                 ])->values(),
                 'name' => $chatRoom->name,
                 'created_at' => $chatRoom->created_at,
@@ -284,8 +284,8 @@ class ChatController extends Controller
                     'id' => $message->user->id,
                     'name' => $message->user->name,
                     'email' => $message->user->email,
-                    'avatar' => $message->user->avatar
-                        ?? $message->user->attachment?->public_url,
+                    'avatar' => $message->user->attachment?->public_url
+                        ?? $message->user->avatar,
                 ],
             ];
             broadcast(new MessageSent($message));
