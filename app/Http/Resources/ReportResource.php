@@ -18,6 +18,7 @@ class ReportResource extends JsonResource
             'id' => $this->id,
             'reference_type' => $this->reference_type,
             'reference_id' => $this->reference_id,
+            'is_target_active' => (bool) optional($this->reference)->is_active,
             'status' => $this->status,
             'notes' => $this->notes,
             'created_at' => $this->created_at,
