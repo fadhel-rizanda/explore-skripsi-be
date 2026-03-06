@@ -45,7 +45,6 @@ class User extends Authenticatable implements JWTSubject
         'about_me',
         'personality',
         'pet_experience',
-        'pet_preferences',
         'open_to_special_needs',
         'password',
         'avatar',
@@ -54,8 +53,6 @@ class User extends Authenticatable implements JWTSubject
         'email_verified_at',
         'remember_token',
         'token_version',
-        'provider',
-        'provider_id',
         'is_active',
     ];
 
@@ -138,11 +135,6 @@ class User extends Authenticatable implements JWTSubject
     public function petExperienceTags(): BelongsToMany
     {
         return $this->belongsToMany(AllTag::class, 'tr_all_tag_user_experience_record', 'user_id', 'tag_id');
-    }
-
-    public function petPreferencesTags(): BelongsToMany
-    {
-        return $this->belongsToMany(AllTag::class, 'tr_all_tag_user_preferences_record', 'user_id', 'tag_id');
     }
 
     public function adoptionsAsAdopter()
