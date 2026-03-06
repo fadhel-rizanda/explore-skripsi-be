@@ -107,7 +107,6 @@ class UserController extends Controller
                 'address',
                 'personalityTags:id,name,type,color_code',
                 'petExperienceTags:id,name,type,color_code',
-                'petPreferencesTags:id,name,type,color_code',
                 'roles:id,name',
             ]);
 
@@ -118,14 +117,12 @@ class UserController extends Controller
                 'phone' => $user->phone,
                 'about_me' => $user->about_me,
                 'avatar' => $user->avatar ?? optional($user->attachment)->public_url,
-                'street' => $user->street,
+                'address' => $user->address,
                 'role_name' => $user->roles->first()?->name,
                 'personality' => $user->personality,
                 'pet_experience' => $user->pet_experience,
-                'pet_preferences' => $user->pet_preferences,
                 'personality_tags' => $user->personalityTags,
                 'pet_experience_tags' => $user->petExperienceTags,
-                'pet_preferences_tags' => $user->petPreferencesTags,
                 'open_to_special_needs' => $user->open_to_special_needs,
                 'created_at' => $user->created_at,
                 'updated_at' => $user->updated_at,
@@ -148,16 +145,18 @@ class UserController extends Controller
 
             $user = auth('api')->user();
 
-            $user->update($request->only([
-                'name',
-                'phone',
-                'about_me',
-                'personality',
-                'pet_experience',
-                'pet_preferences',
-                'open_to_special_needs',
-                'attachment_id',
-            ]));
+            $background = $request->input('background', []);
+
+            $user->update([
+                'name' => $request->input('name', $user->name),
+                'phone' => $request->input('phone', $user->phone),
+                'about_me' => $request->input('about_me', $user->about_me),
+                'open_to_special_needs' => $request->input('open_to_special_needs', $user->open_to_special_needs),
+                'attachment_id' => $request->input('attachment_id', $user->attachment_id),
+
+                'personality' => $background['personality'] ?? $user->personality,
+                'pet_experience' => $background['pet_experience'] ?? $user->pet_experience,
+            ]);
 
             $user->setAttachmentMetadata(
                 attachmentId: $request->input('attachment_id'),
@@ -202,17 +201,13 @@ class UserController extends Controller
                 }
             }
 
-            if ($request->has('personality_tags')) {
-                $user->personalityTags()->sync($request->input('personality_tags'));
-            }
-            if ($request->has('pet_experience_tags')) {
-                $user->petExperienceTags()->sync($request->input('pet_experience_tags'));
-            }
-            if ($request->has('pet_preferences_tags')) {
-                $user->petPreferencesTags()->sync($request->input('pet_preferences_tags'));
+            if (isset($background['personality_tags'])) {
+                $user->personalityTags()->sync($background['personality_tags']);
             }
 
-            $user->touch();
+            if (isset($background['pet_experience_tags'])) {
+                $user->petExperienceTags()->sync($background['pet_experience_tags']);
+            }
 
             DB::commit();
 
@@ -222,7 +217,6 @@ class UserController extends Controller
                 'address.district:id,name',
                 'personalityTags:id,name,type,color_code',
                 'petExperienceTags:id,name,type,color_code',
-                'petPreferencesTags:id,name,type,color_code',
                 'attachment:id,public_url',
             ]);
 
@@ -231,9 +225,12 @@ class UserController extends Controller
             return $this->sendSuccess('User profile updated successfully.', $user);
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Error updating user profile: ' . $e->getMessage());
 
-            return $this->sendError('Error updating user profile: ' . $e->getMessage());
+            \Log::error('Error updating user profile', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return $this->sendError('Error updating user profile.');
         }
     }
 
