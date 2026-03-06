@@ -224,7 +224,7 @@ class UserController extends Controller
                 'attachment:id,public_url',
             ]);
 
-            $user->avatar = optional($user->attachment)->public_url ?? $user->avatar;
+            $user->avatar = $user->attachment?->public_url ?? $user->avatar;
 
             return $this->sendSuccess('User profile updated successfully.', $user);
 
