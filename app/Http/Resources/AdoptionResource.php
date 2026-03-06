@@ -39,16 +39,14 @@ class AdoptionResource extends JsonResource
                 'id' => $this->provider?->id,
                 'name' => $this->provider?->name,
                 'email' => $this->provider?->email,
-                'avatar' => $this->provider?->avatar
-                    ?? optional($this->provider?->attachment)->public_url,
+                'avatar' => $this->provider?->attachment?->public_url ?? $this->provider?->avatar,
             ]),
 
             'adopter' => $this->whenLoaded('adopter', fn () => [
                 'id' => $this->adopter?->id,
                 'name' => $this->adopter?->name,
                 'email' => $this->adopter?->email,
-                'avatar' => $this->adopter?->avatar
-                    ?? optional($this->adopter?->attachment)->public_url,
+                'avatar' => $this->adopter?->attachment?->public_url ?? $this->adopter?->avatar,
                 'is_active' => $this->adopter?->is_active,
             ]),
 

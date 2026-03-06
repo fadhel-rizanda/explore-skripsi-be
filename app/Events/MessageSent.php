@@ -55,7 +55,7 @@ class MessageSent implements ShouldBroadcast
                     'id' => $message->user->id,
                     'name' => $message->user->name,
                     'email' => $message->user->email,
-                    'avatar' => $message->user->avatar ?? $message->user->attachment?->public_url,
+                    'avatar' => $message->user->attachment?->public_url ?? $message->user->avatar,
                 ],
                 'attachment' => $message->attachment ? [
                     'id' => $message->attachment->id,
