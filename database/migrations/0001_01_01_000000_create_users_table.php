@@ -20,14 +20,11 @@ return new class() extends Migration
             $table->text('about_me')->nullable();
             $table->text('personality')->nullable();
             $table->text('pet_experience')->nullable();
-            $table->text('pet_preferences')->nullable();
             $table->boolean('open_to_special_needs')->default(false);
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();
             $table->timestamps();
-            $table->string('provider')->nullable();
-            $table->string('provider_id')->nullable();
             $table->string('avatar')->nullable();
             $table->integer('token_version')->default(0)->after('password');
             $table->boolean('is_active')->default(true);

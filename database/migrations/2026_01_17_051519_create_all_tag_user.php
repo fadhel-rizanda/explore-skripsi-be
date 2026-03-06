@@ -22,12 +22,6 @@ return new class() extends Migration
             $table->foreignUuid('tag_id')->constrained('mt_all_tag')->onDelete('cascade');
             $table->primary(['user_id', 'tag_id']);
         });
-
-        Schema::create('tr_all_tag_user_preferences_record', function (Blueprint $table) {
-            $table->foreignUuid('user_id')->constrained('mt_user')->onDelete('cascade');
-            $table->foreignUuid('tag_id')->constrained('mt_all_tag')->onDelete('cascade');
-            $table->primary(['user_id', 'tag_id']);
-        });
     }
 
     /**
@@ -37,6 +31,5 @@ return new class() extends Migration
     {
         Schema::dropIfExists('tr_all_tag_user_personality_record');
         Schema::dropIfExists('tr_all_tag_user_experience_record');
-        Schema::dropIfExists('tr_all_tag_user_preferences_record');
     }
 };
