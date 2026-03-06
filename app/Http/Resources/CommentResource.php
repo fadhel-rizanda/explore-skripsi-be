@@ -24,7 +24,7 @@ class CommentResource extends JsonResource
                 'id' => $this->createdBy->id,
                 'name' => $this->createdBy->name,
                 'email' => $this->createdBy->email,
-                'avatar' => $this->createdBy->avatar ?? optional($this->createdBy->attachment)->public_url,
+                'avatar' => $this->createdBy->attachment?->public_url ?? $this->createdBy->avatar,
                 'is_active' => $this->createdBy->is_active,
             ],
         ];

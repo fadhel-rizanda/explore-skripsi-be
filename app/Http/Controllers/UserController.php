@@ -76,7 +76,7 @@ class UserController extends Controller
             $data = [
                 'id' => $user->id,
                 'name' => $user->name,
-                'avatar' => $user->avatar ?? optional($user->attachment)->public_url,
+                'avatar' => $user->attachment?->public_url ?? $user->avatar,
                 'role_name' => $user->roles->first()?->name,
                 'is_active' => $user->is_active,
                 'created_at' => $user->created_at,
@@ -116,7 +116,7 @@ class UserController extends Controller
                 'email' => $user->email,
                 'phone' => $user->phone,
                 'about_me' => $user->about_me,
-                'avatar' => $user->avatar ?? optional($user->attachment)->public_url,
+                'avatar' => $user->attachment?->public_url ?? $user->avatar,
                 'address' => $user->address,
                 'role_name' => $user->roles->first()?->name,
                 'personality' => $user->personality,
@@ -224,7 +224,7 @@ class UserController extends Controller
                 'attachment:id,public_url',
             ]);
 
-            $user->avatar = $user->avatar ?? optional($user->attachment)->public_url;
+            $user->avatar = optional($user->attachment)->public_url ?? $user->avatar;
 
             return $this->sendSuccess('User profile updated successfully.', $user);
 
