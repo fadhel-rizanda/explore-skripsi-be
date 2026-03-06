@@ -33,15 +33,16 @@ class UpdateUserRequest extends FormRequest
                 'open_to_special_needs' => 'sometimes|boolean',
                 'attachment_id' => [
                     'sometimes',
+                    'bail',
                     'uuid',
                     new OwnsAttachment(
                         referenceType: ModelReferenceEnum::USER->value,
-                        referenceId: $this->route('user') ? $this->route('user')->id : null,
+                        referenceId: $this->user()->id,
                     ),
                 ],
             ],
             UpdateAddressRequest::prefixedRules(),
-            UserBackgroundRequest::prefixedRules()
+            UserBackgroundRequest::prefixedRules('')
         );
     }
 }

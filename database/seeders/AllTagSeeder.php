@@ -105,6 +105,24 @@ class AllTagSeeder extends Seeder
             ['name' => 'Volunteer', 'type' => 'community', 'color_code' => 'bg-teal-50 text-teal-700 border-teal-200'],
             ['name' => 'Events', 'type' => 'community', 'color_code' => 'bg-cyan-50 text-cyan-700 border-cyan-200'],
             ['name' => 'Tips & Tricks', 'type' => 'community', 'color_code' => 'bg-lime-50 text-lime-700 border-lime-200'],
+
+            // ======================
+            // USER PET EXPERIENCE
+            // ======================
+            ['name' => 'Never Owned a Pet', 'type' => 'user.pet_experience', 'color_code' => 'bg-slate-100 text-slate-700 border-slate-300'],
+            ['name' => 'Currently Own a Pet', 'type' => 'user.pet_experience', 'color_code' => 'bg-emerald-50 text-emerald-700 border-emerald-200'],
+            ['name' => 'Previously Owned a Pet', 'type' => 'user.pet_experience', 'color_code' => 'bg-blue-50 text-blue-700 border-blue-200'],
+            ['name' => 'Dog Owner', 'type' => 'user.pet_experience', 'color_code' => 'bg-amber-50 text-amber-700 border-amber-200'],
+            ['name' => 'Cat Owner', 'type' => 'user.pet_experience', 'color_code' => 'bg-orange-50 text-orange-700 border-orange-200'],
+            ['name' => 'Small Animal Owner', 'type' => 'user.pet_experience', 'color_code' => 'bg-yellow-50 text-yellow-700 border-yellow-200'],
+            ['name' => 'Bird Owner', 'type' => 'user.pet_experience', 'color_code' => 'bg-sky-50 text-sky-700 border-sky-200'],
+            ['name' => 'Reptile Owner', 'type' => 'user.pet_experience', 'color_code' => 'bg-teal-50 text-teal-700 border-teal-200'],
+            ['name' => 'Special Needs Pet Experience', 'type' => 'user.pet_experience', 'color_code' => 'bg-purple-50 text-purple-700 border-purple-200'],
+            ['name' => 'Fostered Pets Before', 'type' => 'user.pet_experience', 'color_code' => 'bg-pink-50 text-pink-700 border-pink-200'],
+            ['name' => 'Rescue Experience', 'type' => 'user.pet_experience', 'color_code' => 'bg-rose-50 text-rose-700 border-rose-200'],
+            ['name' => 'Multi-Pet Household', 'type' => 'user.pet_experience', 'color_code' => 'bg-indigo-50 text-indigo-700 border-indigo-200'],
+            ['name' => 'Basic Training Knowledge', 'type' => 'user.pet_experience', 'color_code' => 'bg-cyan-50 text-cyan-700 border-cyan-200'],
+            ['name' => 'Veterinary Background', 'type' => 'user.pet_experience', 'color_code' => 'bg-green-50 text-green-700 border-green-200'],
         ];
 
         foreach ($tags as $tag) {
