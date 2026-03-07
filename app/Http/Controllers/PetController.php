@@ -224,6 +224,7 @@ class PetController extends Controller
                 'physiqueTags:id,name,type,color_code',
                 'personalityTags:id,name,type,color_code',
                 'additionalRecords:id,public_url,filename,mime_type,path',
+                'status:id,name,color_code',
                 'address',
                 'address.province',
                 'address.regency',
@@ -233,6 +234,10 @@ class PetController extends Controller
             [$age, $ageUnit] = $this->calculateAgeAndUnit($pet->date_of_birth);
             $data = [
                 'id' => $pet->id,
+                'status' => [
+                    'name'       => $pet->status->name,
+                    'color_code' => $pet->status->color_code,
+                ],
                 'type_of_animal_id' => $pet->type_of_animal_id,
                 'size' => $pet->size,
                 'name' => $pet->name,
