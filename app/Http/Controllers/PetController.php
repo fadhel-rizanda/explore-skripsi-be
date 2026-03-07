@@ -234,10 +234,10 @@ class PetController extends Controller
             [$age, $ageUnit] = $this->calculateAgeAndUnit($pet->date_of_birth);
             $data = [
                 'id' => $pet->id,
-                'status' => [
-                    'name'       => $pet->status->name,
+                'status' => $pet->status ? [
+                    'name' => $pet->status->name,
                     'color_code' => $pet->status->color_code,
-                ],
+                ] : null,
                 'type_of_animal_id' => $pet->type_of_animal_id,
                 'size' => $pet->size,
                 'name' => $pet->name,
