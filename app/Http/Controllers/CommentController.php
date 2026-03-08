@@ -46,13 +46,13 @@ class CommentController extends Controller
 
             $replies = $comment->replies()
                 ->with([
-                    'createdBy:id,name,email,avatar,is_active',
+                    'createdBy:id,name,avatar,is_active',
                     'createdBy.attachment:id,user_id,public_url',
                 ])
                 ->oldest()
                 ->simplePaginate($perPage, ['*'], 'page', $page);
 
-            return $this->sendSuccessPagination('Replies retrieved successfully.', $replies);
+            return $this->sendSuccessPagination('Replies retrieved successfully.', $replies, CommentResource::collection($replies->items()));
 
         } catch (\Throwable $e) {
             \Log::error('Error fetching replies', ['error' => $e->getMessage()]);
