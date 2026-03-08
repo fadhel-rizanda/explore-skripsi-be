@@ -41,7 +41,6 @@ class CommentController extends Controller
     public function listReplies(Post $post, Comment $comment, GetAllRequest $request)
     {
         try {
-            $page = (int) $request->query('page', 1);
             $perPage = min((int) $request->query('per_page', 15), 100);
 
             $replies = $comment->replies()
@@ -50,10 +49,11 @@ class CommentController extends Controller
                     'createdBy.attachment:id,user_id,public_url',
                 ])
                 ->oldest()
-                ->simplePaginate($perPage, ['*'], 'page', $page);
+                ->paginate($perPage);
 
-            return $this->sendSuccessPagination('Replies retrieved successfully.', $replies, CommentResource::collection($replies->items()));
+            $replies->getCollection()->transform(fn ($reply) => new CommentResource($reply));
 
+            return $this->sendSuccessPagination('Replies retrieved successfully.', $replies);
         } catch (\Throwable $e) {
             \Log::error('Error fetching replies', ['error' => $e->getMessage()]);
             return $this->sendError('Error fetching replies.');
