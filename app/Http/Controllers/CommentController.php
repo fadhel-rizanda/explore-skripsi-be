@@ -18,12 +18,15 @@ class CommentController extends Controller
         try {
             $perPage = min((int) $request->query('per_page', 15), 100);
 
-            $comments = $post->comments()->with([
-                'createdBy' => function ($query) {
-                    $query->select('id', 'name', 'email', 'avatar', 'is_active')
-                        ->with('attachment:id,user_id,public_url');
-                },
-            ])->latest()->paginate($perPage);
+            $comments = $post->comments()
+                ->whereNull('parent_id')
+                ->with([
+                    'createdBy:id,name,avatar,is_active',
+                    'createdBy.attachment:id,user_id,public_url',
+                ])
+                ->withCount('replies')
+                ->latest()
+                ->paginate($perPage);
 
             $comments->getCollection()->transform(fn ($comment) => new CommentResource($comment));
 
@@ -32,6 +35,28 @@ class CommentController extends Controller
             \Log::error('Error fetching comments', ['error' => $e->getMessage()]);
 
             return $this->sendError('Error fetching comments.');
+        }
+    }
+
+    public function listReplies(Post $post, Comment $comment, GetAllRequest $request)
+    {
+        try {
+            $page = (int) $request->query('page', 1);
+            $perPage = min((int) $request->query('per_page', 15), 100);
+
+            $replies = $comment->replies()
+                ->with([
+                    'createdBy:id,name,email,avatar,is_active',
+                    'createdBy.attachment:id,user_id,public_url',
+                ])
+                ->oldest()
+                ->simplePaginate($perPage, ['*'], 'page', $page);
+
+            return $this->sendSuccessPagination('Replies retrieved successfully.', $replies);
+
+        } catch (\Throwable $e) {
+            \Log::error('Error fetching replies', ['error' => $e->getMessage()]);
+            return $this->sendError('Error fetching replies.');
         }
     }
 
