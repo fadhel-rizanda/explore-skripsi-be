@@ -12,7 +12,7 @@ Route::prefix('posts')->group(function () {
     Route::middleware(['model.isActive:' . ModelReferenceEnum::POST->value])->group(function () {
         Route::get('/{post}', [PostController::class, 'postDetail']);
         Route::get('/{post}/comments', [CommentController::class, 'listComments']);
-        Route::get('/{post}/comments/{comment}', [CommentController::class, 'listReplies']);
+        Route::get('/{post}/comments/{comment}', [CommentController::class, 'listReplies'])->scopeBindings();
     });
 
     Route::middleware(['auth:api', 'check.token.version'])->group(function () {

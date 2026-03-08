@@ -20,11 +20,10 @@ class CommentResource extends JsonResource
             'parent_id' => $this->parent_id,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
-            'replies_count' => $this->whenHas('replies_count'),
+            'replies_count' => $this->whenCounted('replies'),
             'created_by' => [
                 'id' => $this->createdBy->id,
                 'name' => $this->createdBy->name,
-                'email' => $this->createdBy->email,
                 'avatar' => $this->createdBy->attachment?->public_url ?? $this->createdBy->avatar,
                 'is_active' => $this->createdBy->is_active,
             ],
