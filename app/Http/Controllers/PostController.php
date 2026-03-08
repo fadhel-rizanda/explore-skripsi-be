@@ -43,7 +43,7 @@ class PostController extends Controller
                 'createdBy:id,name,email,avatar,is_active',
                 'createdBy.attachment:id,public_url',
                 'tags:id,name,type,color_code',
-            ])->withCount(['likes', 'comments']);
+            ])->loadCount(['likes', 'comments']);
 
             if ($userId = auth('api')->id()) {
                 $post->loadExists([
