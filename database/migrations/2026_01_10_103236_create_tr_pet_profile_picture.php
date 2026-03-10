@@ -15,6 +15,7 @@ return new class() extends Migration
             $table->foreignUuid('pet_id')->constrained('tr_pet')->onDelete('cascade');
             $table->foreignUuid('attachment_id')->constrained('mt_attachment')->onDelete('cascade');
             $table->primary(['pet_id', 'attachment_id']);
+            $table->index('attachment_id');
         });
     }
 

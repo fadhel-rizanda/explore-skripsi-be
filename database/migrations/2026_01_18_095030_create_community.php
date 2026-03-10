@@ -33,12 +33,14 @@ return new class() extends Migration
             $table->foreignUuid('user_id')->constrained('mt_user')->onDelete('cascade');
             $table->foreignUuid('community_id')->constrained('mt_community')->onDelete('cascade');
             $table->primary(['user_id', 'community_id']);
+            $table->index('community_id');
         });
 
         Schema::create('tr_tag_community_record', function (Blueprint $table) {
             $table->foreignUuid('tag_id')->constrained('mt_all_tag')->onDelete('cascade');
             $table->foreignUuid('community_id')->constrained('mt_community')->onDelete('cascade');
             $table->primary(['tag_id', 'community_id']);
+            $table->index('community_id');
         });
     }
 

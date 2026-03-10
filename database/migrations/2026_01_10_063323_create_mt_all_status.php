@@ -15,7 +15,7 @@ return new class() extends Migration
             $table->uuid('id')->primary();
             $table->string('name');
             $table->string('color_code')->nullable();
-            $table->string('type');
+            $table->string('type')->index();
         });
     }
 

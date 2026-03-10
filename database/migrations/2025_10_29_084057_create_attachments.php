@@ -15,15 +15,17 @@ return new class() extends Migration
             $table->uuid('id')->primary();
             $table->foreignUuid('uploaded_by')->constrained('mt_user')->onDelete('cascade');
             $table->string('filename');
+//            $table->string('label')->nullable();
             $table->string('path');
             $table->integer('file_size');
             $table->string('mime_type');
-            $table->enum('status', ['pending', 'completed', 'failed'])->default('pending');
+            $table->enum('status', ['pending', 'completed', 'failed'])->default('pending')->index();
             $table->timestamp('uploaded_at')->nullable();
             $table->string('public_url')->nullable();
-            $table->string('reference_by')->nullable();
-            $table->uuid('reference_id')->nullable();
+            $table->string('reference_by')->nullable()->index();
+            $table->uuid('reference_id')->nullable()->index();
             $table->timestamps();
+            $table->index(['reference_by', 'reference_id']);
         });
 
         Schema::table('mt_user', function (Blueprint $table) {

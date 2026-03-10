@@ -19,13 +19,14 @@ return new class() extends Migration
             $table->foreignUuid('attachment_id')->nullable()->constrained('mt_attachment')->onDelete('set null');
             $table->foreignUuid('created_by')->constrained('mt_user')->onDelete('set null');
             $table->timestamps();
-            $table->boolean('is_active')->default(true);
+            $table->boolean('is_active')->default(true)->index();
         });
 
         Schema::create('tr_like_post', function (Blueprint $table) {
             $table->foreignUuid('user_id')->constrained('mt_user')->onDelete('cascade');
             $table->foreignUuid('post_id')->constrained('mt_post')->onDelete('cascade');
             $table->primary(['user_id', 'post_id']);
+            $table->index('post_id');
         });
 
         Schema::create('tr_tag_post_record', function (Blueprint $table) {
@@ -37,9 +38,9 @@ return new class() extends Migration
         Schema::create('mt_comment', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->text('content');
-            $table->foreignUuid('post_id')->constrained('mt_post')->onDelete('cascade');
+            $table->foreignUuid('post_id')->constrained('mt_post')->onDelete('cascade')->index();
             $table->foreignUuid('created_by')->constrained('mt_user')->onDelete('set null');
-            $table->uuid('parent_id')->nullable();
+            $table->uuid('parent_id')->nullable()->index();
             $table->timestamps();
         });
 

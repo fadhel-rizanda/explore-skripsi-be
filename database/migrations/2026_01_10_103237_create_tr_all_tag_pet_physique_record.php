@@ -15,6 +15,7 @@ return new class() extends Migration
             $table->foreignUuid('pet_id')->constrained('tr_pet')->onDelete('cascade');
             $table->foreignUuid('all_tag_id')->constrained('mt_all_tag')->onDelete('cascade');
             $table->primary(['pet_id', 'all_tag_id']);
+            $table->index('all_tag_id');
         });
     }
 

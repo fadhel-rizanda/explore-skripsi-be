@@ -16,10 +16,12 @@ return new class() extends Migration
             $table->string('title');
             $table->text('message');
             $table->foreignUuid('user_id')->constrained('mt_user')->onDelete('cascade');
-            $table->uuid('reference_id')->nullable();
-            $table->string('reference_type')->nullable();
-            $table->timestamp('read_at')->nullable();
+            $table->uuid('reference_id')->nullable()->index();
+            $table->string('reference_type')->nullable()->index();
+            $table->timestamp('read_at')->nullable()->index();
+
             $table->timestamps();
+            $table->index(['user_id', 'created_at']);
         });
     }
 
