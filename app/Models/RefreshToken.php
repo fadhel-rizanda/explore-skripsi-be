@@ -3,19 +3,30 @@
 namespace App\Models;
 
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 class RefreshToken extends Model
 {
+    use HasUuids;
+
     public const TABLE = 'mt_refresh_token';
 
     protected $table = self::TABLE;
 
-    protected $fillable = ['user_id', 'token', 'expires_at', 'used_at'];
+    protected $fillable = [
+        'user_id',
+        'token',
+        'expires_at',
+        'used_at',
+        'ip_address',
+        'user_agent',
+    ];
 
     protected $casts = [
         'expires_at' => 'datetime',
+        'used_at' => 'datetime',
     ];
 
     public function user()
@@ -33,14 +44,17 @@ class RefreshToken extends Model
             'user_id' => $userId,
             'token' => hash('sha256', $plainToken),
             'expires_at' => Carbon::now()->addDays($expiresInDays),
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
         ]);
 
         return $plainToken;
     }
 
-    public static function findByToken($token)
+    public static function findByToken(string $token)
     {
         return self::where('token', hash('sha256', $token))
+            ->whereNull('used_at')
             ->where('expires_at', '>', Carbon::now())
             ->first();
     }

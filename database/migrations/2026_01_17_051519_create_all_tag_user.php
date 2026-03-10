@@ -15,12 +15,14 @@ return new class() extends Migration
             $table->foreignUuid('user_id')->constrained('mt_user')->onDelete('cascade');
             $table->foreignUuid('tag_id')->constrained('mt_all_tag')->onDelete('cascade');
             $table->primary(['user_id', 'tag_id']);
+            $table->index('tag_id');
         });
 
         Schema::create('tr_all_tag_user_experience_record', function (Blueprint $table) {
             $table->foreignUuid('user_id')->constrained('mt_user')->onDelete('cascade');
             $table->foreignUuid('tag_id')->constrained('mt_all_tag')->onDelete('cascade');
             $table->primary(['user_id', 'tag_id']);
+            $table->index('tag_id');
         });
     }
 

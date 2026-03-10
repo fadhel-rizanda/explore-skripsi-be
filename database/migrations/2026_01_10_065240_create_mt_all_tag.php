@@ -14,8 +14,8 @@ return new class() extends Migration
         Schema::create('mt_all_tag', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('name');
-            $table->string('type');
             $table->string('color_code')->nullable();
+            $table->string('type')->index();
         });
     }
 

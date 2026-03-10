@@ -22,13 +22,15 @@ return new class() extends Migration
 
         Schema::create('mt_adoption_application', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->boolean('is_active')->default(true);
+            $table->boolean('is_active')->default(true)->index();
             $table->foreignUuid('adopter_id')->constrained('mt_user')->onDelete('cascade');
             $table->foreignUuid('pet_id')->unique()->constrained('tr_pet')->onDelete('cascade');
-            $table->foreignUuid('status_id')->constrained('mt_all_status')->onDelete('restrict'); // data mt gabisa dihapus
+            $table->foreignUuid('status_id')->constrained('mt_all_status')->onDelete('restrict');
             $table->foreignUuid('stage_tag_id')->constrained('mt_all_tag')->onDelete('restrict');
+
             $table->foreignUuid('updated_by')->nullable()->constrained('mt_user')->onDelete('cascade');
             $table->timestamps();
+            $table->index(['adopter_id', 'is_active', 'status_id']);
         });
 
         Schema::create('tr_adoption_meet_greet', function (Blueprint $table) {

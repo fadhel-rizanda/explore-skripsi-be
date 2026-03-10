@@ -13,18 +13,20 @@ return new class() extends Migration
     {
         Schema::create('mt_report', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->string('reference_type');
-            $table->uuid('reference_id');
+            $table->string('reference_type')->index();
+            $table->uuid('reference_id')->index();
             $table->text('notes')->nullable();
-            $table->foreignUuid('status_id')->constrained('mt_all_status')->onDelete('cascade');
+            $table->foreignUuid('status_id')->constrained('mt_all_status')->onDelete('cascade')->index();
             $table->foreignUuid('created_by')->constrained('mt_user')->onDelete('cascade');
-            $table->timestamp('created_at')->useCurrent();
+            $table->timestamp('created_at')->useCurrent()->index(); // INDEX: Untuk mengurutkan laporan terbaru
+            $table->index(['reference_type', 'reference_id']);
         });
 
         Schema::create('tr_all_tag_report_record', function (Blueprint $table) {
             $table->foreignUuid('report_id')->constrained('mt_report')->onDelete('cascade');
             $table->foreignUuid('all_tag_id')->constrained('mt_all_tag')->onDelete('cascade');
             $table->primary(['report_id', 'all_tag_id']);
+            $table->index('all_tag_id');
         });
     }
 
