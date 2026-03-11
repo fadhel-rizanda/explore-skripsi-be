@@ -58,6 +58,7 @@ return new class() extends Migration
             $table->foreignUuid('status_id')->constrained('mt_all_status')->onDelete('restrict');
             $table->foreignUuid('tag_id')->constrained('mt_all_tag')->onDelete('restrict');
             $table->foreignUuid('created_by')->constrained('mt_user')->onDelete('cascade');
+            $table->boolean('is_active')->default(true);
             $table->foreignUuid('updated_by')->constrained('mt_user')->onDelete('cascade');
             $table->timestamps();
         });

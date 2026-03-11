@@ -20,7 +20,7 @@ class ModerationController extends Controller
         private ModerationService $moderationService
     ) {}
 
-    public function deactivateUser(ModerationActionRequest $request, User $user)
+    public function deactivateUser(User $user, ModerationActionRequest $request)
     {
         $this->moderationService->execute(
             entity: $user,
@@ -36,7 +36,7 @@ class ModerationController extends Controller
         return $this->sendSuccess('User deactivated successfully.');
     }
 
-    public function activateUser(ModerationActionRequest $request, User $user)
+    public function activateUser(User $user, ModerationActionRequest $request)
     {
         $this->moderationService->execute(
             entity: $user,
@@ -52,7 +52,7 @@ class ModerationController extends Controller
         return $this->sendSuccess('User activated successfully.');
     }
 
-    public function takeDownPost(ModerationActionRequest $request, Post $post)
+    public function takeDownPost(Post $post, ModerationActionRequest $request)
     {
         $owner = $post->createdBy;
 
@@ -74,7 +74,7 @@ class ModerationController extends Controller
         return $this->sendSuccess('Post taken down successfully.');
     }
 
-    public function restorePost(ModerationActionRequest $request, Post $post)
+    public function restorePost(Post $post, ModerationActionRequest $request)
     {
         $owner = $post->createdBy;
 
@@ -96,7 +96,7 @@ class ModerationController extends Controller
         return $this->sendSuccess('Post restored successfully.');
     }
 
-    public function takeDownCommunity(ModerationActionRequest $request, Community $community)
+    public function takeDownCommunity(Community $community, ModerationActionRequest $request)
     {
         $recipients = collect($community->getCommunityRecipients())->pluck('id')->all();
 
@@ -118,7 +118,7 @@ class ModerationController extends Controller
         return $this->sendSuccess('Community taken down successfully.');
     }
 
-    public function restoreCommunity(ModerationActionRequest $request, Community $community)
+    public function restoreCommunity(Community $community, ModerationActionRequest $request)
     {
         $recipients = collect($community->getCommunityRecipients())->pluck('id')->all();
 
@@ -140,7 +140,7 @@ class ModerationController extends Controller
         return $this->sendSuccess('Community restored successfully.');
     }
 
-    public function takeDownPet(ModerationActionRequest $request, Pet $pet)
+    public function takeDownPet(Pet $pet, ModerationActionRequest $request)
     {
         $owner = $pet->user;
 
@@ -162,7 +162,7 @@ class ModerationController extends Controller
         return $this->sendSuccess('Pet taken down successfully.');
     }
 
-    public function restorePet(ModerationActionRequest $request, Pet $pet)
+    public function restorePet(Pet $pet, ModerationActionRequest $request)
     {
         $owner = $pet->user;
 
