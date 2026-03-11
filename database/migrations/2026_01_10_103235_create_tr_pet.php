@@ -16,16 +16,16 @@ return new class() extends Migration
             $table->foreignUuid('user_id')->constrained('mt_user')->onDelete('cascade');
             $table->foreignUuid('status_id')->constrained('mt_all_status')->onDelete('cascade');
             $table->foreignUuid('type_of_animal_id')->constrained('mt_all_tag');
-            $table->foreignUuid('address_id')->nullable()->constrained('mt_address')->nullOnDelete();
-            $table->string('size', 20);
-            $table->string('name', 50);
+            $table->string('size', 20)->index();
+            $table->string('name', 50)->index();
             $table->date('date_of_birth');
-            $table->string('gender', 20);
+            $table->string('gender', 20)->index();
             $table->text('about');
-            $table->string('breed');
-            $table->boolean('special_needs')->default(false);
+            $table->string('breed')->index();
+            $table->boolean('special_needs')->default(false)->index();
             $table->timestamps();
-            $table->boolean('is_active')->default(true);
+            $table->boolean('is_active')->default(true)->index();
+            $table->index(['type_of_animal_id', 'is_active']);
         });
     }
 

@@ -15,12 +15,10 @@ return new class() extends Migration
             $table->uuid('id')->primary();
             $table->string('name')->nullable();
             $table->text('description')->nullable();
-            $table->enum('type', ['private', 'public'])->default('private');
+            $table->enum('type', ['private', 'public'])->default('private')->index();
             $table->foreignUuid('created_by')->nullable()->constrained('mt_user')->nullOnDelete();
             $table->foreignUuid('updated_by')->nullable()->constrained('mt_user')->nullOnDelete();
             $table->timestamps();
-
-            $table->index('type');
         });
 
         Schema::create('tr_chat_room', function (Blueprint $table) {

@@ -9,13 +9,17 @@ return new class() extends Migration
     public function up()
     {
         Schema::create('mt_refresh_token', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->foreignUuid('user_id')->constrained('mt_user')->cascadeOnDelete();
             $table->string('token', 500)->unique();
-            $table->timestamp('used_at')->nullable();
-            $table->timestamp('expires_at');
+            $table->string('ip_address', 45)->nullable();
+            $table->text('user_agent')->nullable();
+
+            $table->timestamp('used_at')->nullable()->index();
+            $table->timestamp('expires_at')->index();
             $table->timestamps();
-            $table->index(['token', 'expires_at']);
+
+            $table->index(['token', 'expires_at', 'used_at']);
         });
     }
 

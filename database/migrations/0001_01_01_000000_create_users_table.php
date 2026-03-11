@@ -13,7 +13,7 @@ return new class() extends Migration
     {
         Schema::create('mt_user', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->string('name');
+            $table->string('name')->index();
             $table->string('email')->unique();
             $table->string('phone')->unique()->nullable();
             $table->date('date_of_birth')->nullable();
@@ -27,7 +27,7 @@ return new class() extends Migration
             $table->timestamps();
             $table->string('avatar')->nullable();
             $table->integer('token_version')->default(0)->after('password');
-            $table->boolean('is_active')->default(true);
+            $table->boolean('is_active')->default(true)->index();
         });
 
         Schema::create('tr_password_reset_token', function (Blueprint $table) {
@@ -47,8 +47,8 @@ return new class() extends Migration
 
         Schema::create('tr_user_activation', function (Blueprint $table) {
             $table->foreignUuid('user_id')->primary()->constrained('mt_user')->onDelete('cascade');
-            $table->string('activation_token');
-            $table->timestamp('expires_at');
+            $table->string('activation_token')->index();
+            $table->timestamp('expires_at')->index();
             $table->timestamp('created_at');
         });
     }

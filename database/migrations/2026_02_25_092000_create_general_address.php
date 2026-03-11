@@ -13,13 +13,13 @@ return new class extends Migration
     {
         Schema::create('mt_province', function (Blueprint $table) {
             $table->string('id', 10)->primary();
-            $table->string('name');
+            $table->string('name')->index();
         });
 
         Schema::create('mt_regency', function (Blueprint $table) {
             $table->string('id', 10)->primary();
             $table->string('province_id', 10);
-            $table->string('name');
+            $table->string('name')->index();
             $table->foreign('province_id')->references('id')->on('mt_province')->cascadeOnDelete();
 
             $table->index('province_id');
@@ -32,6 +32,12 @@ return new class extends Migration
             $table->foreign('regency_id')->references('id')->on('mt_regency')->cascadeOnDelete();
 
             $table->index('regency_id');
+        });
+
+        Schema::table('mt_address', function (Blueprint $table) {
+            $table->foreign('province_id')->references('id')->on('mt_province');
+            $table->foreign('regency_id')->references('id')->on('mt_regency');
+            $table->foreign('district_id')->references('id')->on('mt_district');
         });
     }
 
