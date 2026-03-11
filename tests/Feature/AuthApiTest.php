@@ -224,7 +224,13 @@ class AuthApiTest extends TestCase
     {
         $user = User::factory()->create(['is_active' => true, 'token_version' => 1]);
         $token = auth('api')->login($user);
-        RefreshToken::createToken($user->id, request()->ip(), request()->userAgent());
+
+        $refreshToken = RefreshToken::createToken($user->id, request()->ip(), request()->userAgent());
+
+        $this->assertDatabaseHas('mt_refresh_token', [
+            'user_id' => $user->id,
+            'token' => hash('sha256', $refreshToken),
+        ]);
 
         $response = $this->withHeaders([
             'Authorization' => "Bearer {$token}",
