@@ -109,7 +109,6 @@ class UserApiTest extends TestCase
     {
         $admin = User::factory()->create(['is_active' => true, 'token_version' => 1]);
         $admin->assignRole(RoleEnum::ADMIN->value);
-        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions(); // ← tambah ini
         $token = auth('api')->login($admin);
 
         $user = User::factory()->create(['is_active' => true, 'token_version' => 1]);
