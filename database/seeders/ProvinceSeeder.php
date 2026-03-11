@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -13,25 +12,11 @@ class ProvinceSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->seedFromCsv(
-            database_path('data/provinces.csv'),
-            'mt_province',
-            ['id', 'name']
-        );
-    }
-
-    private function seedFromCsv($path, $table, $columns)
-    {
-        $handle = fopen($path, 'r');
-
-        $data = [];
-
-        while (($row = fgetcsv($handle)) !== false) {
-            $data[] = array_combine($columns, $row);
-        }
-
-        fclose($handle);
-
-        DB::table($table)->insert($data);
+        DB::table('mt_province')->upsert([
+            ['id' => 1,  'name' => 'Online'],
+            ['id' => 31, 'name' => 'DKI JAKARTA'],
+            ['id' => 32, 'name' => 'JAWA BARAT'],
+            ['id' => 36, 'name' => 'BANTEN'],
+        ], ['id'], ['name']);
     }
 }
