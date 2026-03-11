@@ -14,19 +14,20 @@ return new class() extends Migration
         Schema::create('mt_address', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('street');
-            $table->string('province_id');
-            $table->string('regency_id');
-            $table->string('district_id');
+            $table->string('province_id')->index();
+            $table->string('regency_id')->index();
+            $table->string('district_id')->index();
             $table->string('zip_code')->nullable();
             $table->text('notes')->nullable();
             $table->string('link')->nullable();
             $table->timestamps();
-            $table->foreign('province_id')->references('id')->on('mt_province');
-            $table->foreign('regency_id')->references('id')->on('mt_regency');
-            $table->foreign('district_id')->references('id')->on('mt_district');
         });
 
         Schema::table('mt_user', function (Blueprint $table) {
+            $table->foreignUuid('address_id')->nullable()->constrained('mt_address')->onDelete('set null');
+        });
+
+        Schema::table('tr_pet', function (Blueprint $table) {
             $table->foreignUuid('address_id')->nullable()->constrained('mt_address')->onDelete('set null');
         });
     }

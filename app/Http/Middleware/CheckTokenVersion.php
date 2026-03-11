@@ -2,10 +2,10 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\RefreshToken;
 use App\Traits\ResponseAPI;
 use Closure;
 use Illuminate\Http\Request;
-use Spatie\Permission\Exceptions\UnauthorizedException;
 use Symfony\Component\HttpFoundation\Response;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
@@ -21,27 +21,28 @@ class CheckTokenVersion
     public function handle(Request $request, Closure $next): Response
     {
         try {
-            // Get token from request
-            $token = JWTAuth::parseToken();
-            $payload = $token->getPayload();
-
-            $tokenVersion = $payload->get('token_version', 0);
-
             $user = auth('api')->user();
 
             if (! $user) {
-                throw UnauthorizedException::notLoggedIn();
+                return $this->sendError('Unauthorized', 401);
             }
 
             if (! $user->is_active) {
                 return $this->sendError('User account is deactivated.', 403);
             }
 
-            if ($tokenVersion !== $user->token_version) {
-                return $this->sendError('Token has been invalidated. Please login again.', 401);
+            $payload = JWTAuth::parseToken()->getPayload();
+            $tokenVersionInJwt = $payload->get('token_version');
+
+            if ($tokenVersionInJwt !== $user->token_version) {
+                RefreshToken::where('user_id', $user->id)->delete();
+
+                return $this->sendError('Session invalidated. Please login again.', 401);
             }
 
             return $next($request);
+        } catch (\Tymon\JWTAuth\Exceptions\TokenExpiredException $e) {
+            return $this->sendError('Token expired', 401);
         } catch (\Exception $e) {
             return $this->sendError('Invalid token', 401);
         }

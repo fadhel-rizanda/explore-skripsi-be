@@ -1,29 +1,49 @@
 *.log
 .DS_Store
+Thumbs.db
+
+# Env files
 .env
+.env.*
+!.env.example
+!.env.testing.example
 .env.backup
 .env.production
+.env.testing
+/.env.docker
+
+# PHP tooling / test caches
 .phpactor.json
 .phpunit.result.cache
+.phpunit.cache/
+.phpunit.cache.test/
+
+# IDEs
 /.fleet
 /.idea
 /.nova
-/.phpunit.cache
 /.vscode
 /.zed
+
+# Auth / secrets
 /auth.json
+
+# Dependencies & build outputs
 /node_modules
+/vendor
 /public/build
 /public/hot
 /public/storage
+
+# App runtime files
 /storage/*.key
 /storage/pail
-/vendor
+
+# Homestead
 Homestead.json
 Homestead.yaml
-Thumbs.db
-/.env.docker
 
+# Server binaries / artifacts
 **/caddy
 frankenphp
 frankenphp-worker.php

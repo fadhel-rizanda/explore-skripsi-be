@@ -43,7 +43,7 @@ class AuthController extends BaseController
 
             // Generate JWT token
             $token = auth('api')->login($user);
-            $refreshToken = RefreshToken::createToken($user->id);
+            $refreshToken = RefreshToken::createToken($user->id, request()->ip(), request()->userAgent());
 
             $data = [
                 'user' => [
@@ -100,7 +100,7 @@ class AuthController extends BaseController
                 'attachment',
             ]);
 
-            $refreshToken = RefreshToken::createToken($user->id);
+            $refreshToken = RefreshToken::createToken($user->id, request()->ip(), request()->userAgent());
 
             $data = $this->getCompleteData($user, $token, $refreshToken);
 
@@ -149,7 +149,7 @@ class AuthController extends BaseController
             $tokenModel->update(['used_at' => now()]);
 
             $newAccessToken = auth('api')->login($user);
-            $newRefreshToken = RefreshToken::createToken($user->id);
+            $newRefreshToken = RefreshToken::createToken($user->id, request()->ip(), request()->userAgent());
 
             DB::commit();
 
@@ -328,7 +328,7 @@ class AuthController extends BaseController
             }
 
             $token = auth('api')->login($user);
-            $refreshToken = RefreshToken::createToken($user->id);
+            $refreshToken = RefreshToken::createToken($user->id, request()->ip(), request()->userAgent());
             $user->load([
                 'roles:id,name',
                 'roles.permissions:id,name',
