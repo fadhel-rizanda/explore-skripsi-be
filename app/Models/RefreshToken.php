@@ -54,7 +54,6 @@ class RefreshToken extends Model
     public static function findByToken(string $token)
     {
         return self::where('token', hash('sha256', $token))
-            ->whereNull('used_at')
             ->where('expires_at', '>', Carbon::now())
             ->first();
     }

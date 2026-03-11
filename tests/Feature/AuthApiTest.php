@@ -177,6 +177,13 @@ class AuthApiTest extends TestCase
 
         $refreshToken = RefreshToken::createToken($user->id, request()->ip(), request()->userAgent());
 
+        $oldHashedToken = hash('sha256', $refreshToken);
+
+        $this->assertDatabaseHas('mt_refresh_token', [
+            'token' => $oldHashedToken,
+            'user_id' => $user->id,
+        ]);
+
         $response = $this->postJson('/api/v1/auth/refresh', [
             'refresh_token' => $refreshToken,
         ]);
@@ -198,12 +205,16 @@ class AuthApiTest extends TestCase
             ]);
 
         $this->assertDatabaseMissing('mt_refresh_token', [
-            'token' => $refreshToken,
+            'token' => $oldHashedToken,
         ]);
 
         $newRefreshTokenString = $response->json('data.refresh_token');
         $this->assertNotNull($newRefreshTokenString);
+
+        $newHashedToken = hash('sha256', $newRefreshTokenString);
+
         $this->assertDatabaseHas('mt_refresh_token', [
+            'token' => $newHashedToken,
             'user_id' => $user->id,
             'used_at' => null,
         ]);
