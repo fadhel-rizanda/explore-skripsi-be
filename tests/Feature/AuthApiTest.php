@@ -175,7 +175,7 @@ class AuthApiTest extends TestCase
         $user = User::factory()->create(['is_active' => true]);
         auth('api')->login($user);
 
-        $refreshToken = RefreshToken::createToken($user->id);
+        $refreshToken = RefreshToken::createToken($user->id, request()->ip(), request()->userAgent());
 
         $response = $this->postJson('/api/v1/auth/refresh', [
             'refresh_token' => $refreshToken,
@@ -213,7 +213,7 @@ class AuthApiTest extends TestCase
     {
         $user = User::factory()->create(['is_active' => true, 'token_version' => 1]);
         $token = auth('api')->login($user);
-        RefreshToken::createToken($user->id);
+        RefreshToken::createToken($user->id, request()->ip(), request()->userAgent());
 
         $response = $this->withHeaders([
             'Authorization' => "Bearer {$token}",

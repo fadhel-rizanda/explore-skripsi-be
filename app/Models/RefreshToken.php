@@ -34,7 +34,7 @@ class RefreshToken extends Model
         return $this->belongsTo(User::class);
     }
 
-    public static function createToken($userId, $expiresInDays = 30): string
+    public static function createToken(string $userId, string $ipAddress, string $userAgent, int $expiresInDays = 30): string
     {
         self::where('user_id', $userId)->delete();
 
@@ -44,8 +44,8 @@ class RefreshToken extends Model
             'user_id' => $userId,
             'token' => hash('sha256', $plainToken),
             'expires_at' => Carbon::now()->addDays($expiresInDays),
-            'ip_address' => request()->ip(),
-            'user_agent' => request()->userAgent(),
+            'ip_address' => $ipAddress,
+            'user_agent' => $userAgent,
         ]);
 
         return $plainToken;
