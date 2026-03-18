@@ -10,8 +10,4 @@
     encode zstd gzip
 
     php_server
-
-    log {
-            output file /app/storage/logs/caddy_access.log
-        }
 }
