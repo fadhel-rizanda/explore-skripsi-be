@@ -17,3 +17,6 @@ tests/
 docker-compose*.yml
 Dockerfile*
 .dockerignore
+.vscode/
+.idea/
+public/hot

@@ -12,6 +12,6 @@
     php_server
 
     log {
-            output file /var/log/caddy/access.log
+            output file /app/storage/logs/caddy_access.log
         }
 }
