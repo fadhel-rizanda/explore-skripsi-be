@@ -17,11 +17,14 @@ Route::group(['prefix' => 'auth'], function () {
 
     Route::post('/refresh', [AuthController::class, 'refresh']);
 
+    Route::middleware(['auth:api'])->group(function () {
+        Route::post('/activation-code/resend', [AuthController::class, 'resendActivationCode']);
+        Route::post('/activation-code/verify', [AuthController::class, 'validateActivationCode']);
+    });
+
     // harus 2 biar semua token yang ke invalid
     Route::middleware(['auth:api', 'check.token.version'])->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::post('/change-password', [AuthController::class, 'changePassword']);
-        Route::post('/activation-code/resend', [AuthController::class, 'resendActivationCode']);
-        Route::post('/activation-code/verify', [AuthController::class, 'validateActivationCode']);
     });
 });
