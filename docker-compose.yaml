@@ -110,10 +110,11 @@ services:
     networks:
       - laravel
     healthcheck:
-      test: ["CMD-SHELL", "php -r \"exit(0);\""]
+      test: [ "CMD-SHELL", "curl -s http://localhost:8080 > /dev/null || exit 1" ]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 60s
     command: sh -c "php artisan reverb:start --host=0.0.0.0 --port=8080 --debug"
 
   queue:
@@ -137,7 +138,7 @@ services:
     networks:
       - laravel
     healthcheck:
-      test: ["CMD-SHELL", "php -r \"exit(0);\""]
+      test: [ "CMD-SHELL", "php -r \"exit(file_exists('/proc/1/status') ? 0 : 1);\"" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -164,7 +165,7 @@ services:
     networks:
       - laravel
     healthcheck:
-      test: [ "CMD-SHELL", "php -r \"exit(0);\"" ]
+      test: [ "CMD-SHELL", "php -r \"exit(file_exists('/proc/1/status') ? 0 : 1);\"" ]
       interval: 30s
       timeout: 10s
       retries: 3
