@@ -29,7 +29,7 @@ class MeetNGreetController extends Controller
     {
         $meetNGreet = $adoption->meetNGreets()
             ->where('stage', 'default')
-            ->with(['schedule', 'schedule.address', 'status'])
+            ->with(['schedule', 'schedule.address', 'status', 'schedule.address.province', 'schedule.address.regency', 'schedule.address.district'])
             ->orderBy('updated_at', 'desc')
             ->first();
 

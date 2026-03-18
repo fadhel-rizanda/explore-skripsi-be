@@ -1,0 +1,17 @@
+{
+    frankenphp {
+                   worker ./public/index.php 4
+               }
+}
+
+:80 {
+    root * public/
+
+    encode zstd gzip
+
+    php_server
+
+    log {
+            output file /var/log/caddy/access.log
+        }
+}
