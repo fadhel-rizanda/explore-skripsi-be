@@ -6,7 +6,7 @@ x-base-env: &base-env
   DB_PORT: 5432
   DB_DATABASE: explore_skripsi_dev
   DB_USERNAME: postgres
-  DB_PASSWORD: yourpassword
+  DB_PASSWORD: ${DB_PASSWORD}
   REDIS_HOST: redis_dev
   REDIS_PORT: 6379
 
@@ -46,7 +46,7 @@ services:
       timeout: 10s
       retries: 3
       start_period: 90s
-    command: sh -c "if [ ! -f .env ]; then cp .env.dev .env && php artisan key:generate && php artisan jwt:secret; fi && php artisan migrate --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan octane:start --server=frankenphp --host=0.0.0.0 --port=80 --admin-port=2019"
+    command: sh -c "if [ ! -f .env ]; then cp .env.dev .env && php artisan key:generate && php artisan jwt:secret; fi && php artisan migrate --force && php artisan octane:start --server=frankenphp --host=0.0.0.0 --port=80 --admin-port=2019"
 
   db_dev:
     image: postgres:15-alpine
@@ -55,7 +55,7 @@ services:
     environment:
       - POSTGRES_DB=explore_skripsi_dev
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=yourpassword
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
       - PGDATA=/var/lib/postgresql/data/pgdata
     volumes:
       - postgres_data_dev:/var/lib/postgresql/data/pgdata
