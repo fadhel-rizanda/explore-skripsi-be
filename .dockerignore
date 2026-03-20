@@ -10,7 +10,9 @@ storage/framework/views/*
 bootstrap/cache/*.php
 .env
 .env.*
-!.env.docker
+!.env.dev
+!.env.prod
+!.env.example
 *.md
 README*
 tests/

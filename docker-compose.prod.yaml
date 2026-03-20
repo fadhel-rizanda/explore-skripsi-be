@@ -2,82 +2,83 @@ version: '3.8'
 
 x-base-env: &base-env
   DB_CONNECTION: pgsql
-  DB_HOST: db
+  DB_HOST: db_prod
   DB_PORT: 5432
-  DB_DATABASE: explore_skripsi
+  DB_DATABASE: explore_skripsi_prod
   DB_USERNAME: postgres
   DB_PASSWORD: yourpassword
-  REDIS_HOST:  redis
-  REDIS_PORT:  6379
+  REDIS_HOST: redis_prod
+  REDIS_PORT: 6379
 
 services:
-  app:
+  app_prod:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: laravel_frankenphp
+    image: skripsi-be-app-prod
+    container_name: laravel_frankenphp_prod
     restart: unless-stopped
     working_dir: /app
     volumes:
-      - ./:/app
       - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./storage:/app/storage
     ports:
-      - "8000:80"
-      - "8443:443"
+      - "8001:80"
+      - "8444:443"
     environment:
       <<: *base-env
       SERVER_NAME: :80
-      REVERB_HOST: reverb
-      REVERB_PORT: 8080
+      REVERB_HOST: reverb_prod
+      REVERB_PORT: 8081
       OCTANE_SERVER: frankenphp
       FRANKENPHP_CONFIG: worker ./public/index.php
       NUM_THREADS: 4
     depends_on:
-      db:
+      db_prod:
         condition: service_healthy
-      redis:
+      redis_prod:
         condition: service_healthy
     networks:
-      - laravel
+      - laravel_prod
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost" ]
+      test: ["CMD", "curl", "-f", "http://localhost"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 90s
-    command: sh -c "if [ ! -f .env ]; then cp .env.docker .env && php artisan key:generate && php artisan jwt:secret; fi && php artisan migrate --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan octane:start --server=frankenphp --host=0.0.0.0 --port=80 --admin-port=2019"
+    command: sh -c "if [ ! -f .env ]; then cp .env.prod .env && php artisan key:generate && php artisan jwt:secret; fi && php artisan migrate --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan octane:start --server=frankenphp --host=0.0.0.0 --port=80 --admin-port=2019"
 
-  db:
+  db_prod:
     image: postgres:15-alpine
-    container_name: postgres_db
+    container_name: postgres_db_prod
     restart: unless-stopped
     environment:
-      - POSTGRES_DB=explore_skripsi
+      - POSTGRES_DB=explore_skripsi_prod
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=yourpassword
       - PGDATA=/var/lib/postgresql/data/pgdata
     volumes:
-      - postgres_data:/var/lib/postgresql/data/pgdata
+      - postgres_data_prod:/var/lib/postgresql/data/pgdata
     ports:
-      - "5432:5432"
+      - "5433:5432"
     networks:
-      - laravel
+      - laravel_prod
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  redis:
+  redis_prod:
     image: redis:7-alpine
-    container_name: redis_cache
+    container_name: redis_cache_prod
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "6380:6379"
     volumes:
-      - redis_data:/data
+      - redis_data_prod:/data
     networks:
-      - laravel
+      - laravel_prod
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -85,97 +86,102 @@ services:
       retries: 5
     command: redis-server --appendonly yes
 
-  reverb:
+  reverb_prod:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: laravel_reverb
+    image: skripsi-be-reverb-prod
+    container_name: laravel_reverb_prod
     restart: unless-stopped
     working_dir: /app
     volumes:
-      - ./:/app
+      - ./storage:/app/storage
     ports:
-      - "8080:8080"
+      - "8081:8081"
     environment:
       <<: *base-env
       REVERB_SERVER_HOST: 0.0.0.0
-      REVERB_SERVER_PORT: 8080
+      REVERB_SERVER_PORT: 8081
     depends_on:
-      db:
+      db_prod:
         condition: service_healthy
-      redis:
+      redis_prod:
         condition: service_healthy
-      app:
+      app_prod:
         condition: service_healthy
     networks:
-      - laravel
+      - laravel_prod
     healthcheck:
-      test: [ "CMD-SHELL", "curl -s http://localhost:8080 > /dev/null || exit 1" ]
+      test: ["CMD-SHELL", "curl -s http://localhost:8081 > /dev/null || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 60s
-    command: sh -c "php artisan reverb:start --host=0.0.0.0 --port=8080 --debug"
+    command: sh -c "php artisan reverb:start --host=0.0.0.0 --port=8081 --debug"
 
-  queue:
+  queue_prod:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: laravel_queue
+    image: skripsi-be-queue-prod
+    container_name: laravel_queue_prod
     restart: unless-stopped
     working_dir: /app
     volumes:
-      - ./:/app
+      - ./storage:/app/storage
     environment:
       <<: *base-env
     depends_on:
-      db:
+      db_prod:
         condition: service_healthy
-      redis:
+      redis_prod:
         condition: service_healthy
-      app:
+      app_prod:
         condition: service_healthy
     networks:
-      - laravel
+      - laravel_prod
     healthcheck:
-      test: [ "CMD-SHELL", "php -r \"exit(file_exists('/proc/1/status') ? 0 : 1);\"" ]
+      test: ["CMD-SHELL", "php -r \"exit(file_exists('/proc/1/status') ? 0 : 1);\""]
       interval: 30s
       timeout: 10s
       retries: 3
     command: sh -c "php artisan queue:work --sleep=3 --tries=3 --max-time=3600 --verbose"
 
-  scheduler:
+  scheduler_prod:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: laravel_scheduler
+    image: skripsi-be-scheduler-prod
+    container_name: laravel_scheduler_prod
     restart: unless-stopped
     working_dir: /app
     volumes:
-      - ./:/app
+      - ./storage:/app/storage
     environment:
       <<: *base-env
     depends_on:
-      db:
+      db_prod:
         condition: service_healthy
-      redis:
-        condition:  service_healthy
-      app:
+      redis_prod:
+        condition: service_healthy
+      app_prod:
         condition: service_healthy
     networks:
-      - laravel
+      - laravel_prod
     healthcheck:
-      test: [ "CMD-SHELL", "php -r \"exit(file_exists('/proc/1/status') ? 0 : 1);\"" ]
+      test: ["CMD-SHELL", "php -r \"exit(file_exists('/proc/1/status') ? 0 : 1);\""]
       interval: 30s
       timeout: 10s
       retries: 3
     command: sh -c "while true; do php artisan schedule:run --verbose --no-interaction; sleep 60; done"
+
 volumes:
-  postgres_data:
+  postgres_data_prod:
     driver: local
-  redis_data:
+  redis_data_prod:
     driver: local
 
 networks:
-  laravel:
+  laravel_prod:
+    name: skripsi-be_laravel_prod
     driver: bridge

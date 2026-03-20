@@ -3,12 +3,12 @@
 Thumbs.db
 
 # Env files
-.env
+.env.dev
+.env.prod
 .env.*
 !.env.example
 !.env.testing.example
 .env.backup
-.env.production
 .env.testing
 /.env.docker
 
