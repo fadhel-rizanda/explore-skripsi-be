@@ -1,0 +1,179 @@
+version: '3.8'
+
+x-base-env: &base-env
+  DB_CONNECTION: pgsql
+  DB_HOST: db
+  DB_PORT: 5432
+  DB_DATABASE: explore_skripsi
+  DB_USERNAME: postgres
+  DB_PASSWORD: ${DB_PASSWORD}
+  REDIS_HOST: redis
+  REDIS_PORT: 6379
+
+# Shared build definition — queue, scheduler, reverb all reuse the app image
+# so we only build once. Override `command` per service.
+x-app-base: &app-base
+  image: skripsi-be-app
+  build:
+    context: .
+    dockerfile: Dockerfile
+  env_file: .env
+  restart: unless-stopped
+  working_dir: /app
+  volumes:
+    - ./storage:/app/storage
+  networks:
+    - laravel
+
+services:
+  app:
+    <<: *app-base
+    container_name: laravel_frankenphp
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./storage:/app/storage
+    ports:
+      - "8000:80"
+      - "8444:443"
+    environment:
+      <<: *base-env
+      SERVER_NAME: :80
+      REVERB_HOST: reverb
+      REVERB_PORT: 8081
+      OCTANE_SERVER: frankenphp
+      FRANKENPHP_CONFIG: worker ./public/index.php
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+    command: >
+      sh -c "
+        if [ ! -f .env ]; then
+          cp .env.example .env &&
+          php artisan key:generate &&
+          php artisan jwt:secret;
+        fi &&
+        php artisan migrate --force &&
+        php artisan config:cache &&
+        php artisan route:cache &&
+        php artisan view:cache &&
+        php artisan octane:start --server=frankenphp --host=0.0.0.0 --port=80 --admin-port=2019
+      "
+
+  db:
+    image: postgres:15-alpine
+    container_name: postgres_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: explore_skripsi
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/pgdata
+    ports:
+      - "5433:5432"
+    networks:
+      - laravel
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis_cache
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - laravel
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: redis-server --appendonly yes
+
+  reverb:
+    <<: *app-base
+    container_name: laravel_reverb
+    ports:
+      - "8081:8081"
+    environment:
+      <<: *base-env
+      REVERB_SERVER_HOST: 0.0.0.0
+      REVERB_SERVER_PORT: 8081
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      app:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "php -r \"exit(file_exists('/proc/1/status') ? 0 : 1);\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    command: php artisan reverb:start --host=0.0.0.0 --port=8081
+
+  queue:
+    <<: *app-base
+    container_name: laravel_queue
+    environment:
+      <<: *base-env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      app:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "php -r \"exit(file_exists('/proc/1/status') ? 0 : 1);\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    command: php artisan queue:work --sleep=3 --tries=3 --max-time=3600
+
+  scheduler:
+    <<: *app-base
+    container_name: laravel_scheduler
+    environment:
+      <<: *base-env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      app:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "php -r \"exit(file_exists('/proc/1/status') ? 0 : 1);\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    command: sh -c "while true; do php artisan schedule:run --no-interaction; sleep 60; done"
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  laravel:
+    name: skripsi-be_laravel
+    driver: bridge
