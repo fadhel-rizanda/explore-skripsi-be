@@ -6,7 +6,7 @@ x-base-env: &base-env
   DB_PORT: 5432
   DB_DATABASE: explore_skripsi_prod
   DB_USERNAME: postgres
-  DB_PASSWORD: yourpassword
+  DB_PASSWORD: ${DB_PASSWORD}
   REDIS_HOST: redis_prod
   REDIS_PORT: 6379
 
@@ -55,7 +55,7 @@ services:
     environment:
       - POSTGRES_DB=explore_skripsi_prod
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=yourpassword
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
       - PGDATA=/var/lib/postgresql/data/pgdata
     volumes:
       - postgres_data_prod:/var/lib/postgresql/data/pgdata
@@ -117,7 +117,7 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
-    command: sh -c "php artisan reverb:start --host=0.0.0.0 --port=8081 --debug"
+    command: sh -c "php artisan reverb:start --host=0.0.0.0 --port=8081"
 
   queue_prod:
     build:
@@ -145,7 +145,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-    command: sh -c "php artisan queue:work --sleep=3 --tries=3 --max-time=3600 --verbose"
+    command: sh -c "php artisan queue:work --sleep=3 --tries=3 --max-time=3600"
 
   scheduler_prod:
     build:
@@ -173,7 +173,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-    command: sh -c "while true; do php artisan schedule:run --verbose --no-interaction; sleep 60; done"
+    command: sh -c "while true; do php artisan schedule:run --no-interaction; sleep 60; done"
 
 volumes:
   postgres_data_prod:
