@@ -1,13 +1,18 @@
 {
     frankenphp {
-                   worker ./public/index.php 4
+                   worker /app/public/index.php 4
                }
 }
 
 :80 {
-    root * public/
+    root * /app/public
 
     encode zstd gzip
+
+    @sensitive {
+                   path /.env /.git* /storage/logs/*
+               }
+    respond @sensitive 403
 
     php_server
 }
