@@ -19,11 +19,9 @@ class MeetNGreetController extends Controller
     use ResponseAPI;
 
     public function __construct(
-        private MeetNGreetService   $meetNGreetService,
+        private MeetNGreetService $meetNGreetService,
         private NotificationService $notificationService
-    )
-    {
-    }
+    ) {}
 
     public function meetNGreet(Adoption $adoption)
     {
@@ -119,7 +117,6 @@ class MeetNGreetController extends Controller
             ))->getNotifications()->first();
 
             broadcast(new AdoptionUpdated($notification, $adoption->id));
-
 
             $data = [
                 'id' => $meetNGreet->id,

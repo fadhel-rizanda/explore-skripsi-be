@@ -10,7 +10,6 @@ class RegencySeeder extends Seeder
     /**
      * Run the database seeds.
      */
-
     public function run(): void
     {
         DB::table('mt_regency')->upsert([

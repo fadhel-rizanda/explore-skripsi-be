@@ -37,6 +37,7 @@ class AdoptionController extends Controller
             $paginator = $this->getAdoptionsQuery($request, $isAdmin);
 
             $adoptions = AdoptionResource::collection($paginator->items());
+
             return $this->sendSuccessPagination(
                 'Adoptions retrieved successfully.',
                 $paginator,
