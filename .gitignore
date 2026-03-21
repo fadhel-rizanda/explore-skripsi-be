@@ -9,7 +9,7 @@ Thumbs.db
 !.env.example
 !.env.testing.example
 .env.backup
-!.env.testing
+.env.testing
 /.env.docker
 
 # PHP tooling / test caches

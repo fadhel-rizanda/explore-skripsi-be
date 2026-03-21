@@ -46,7 +46,7 @@ jobs:
         run: vendor/bin/pint --test
 
       - name: Copy env
-        run: cp .env.testing .env
+        run: cp .env.testing.example .env
 
       - name: Generate key
         run: php artisan key:generate
