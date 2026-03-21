@@ -14,7 +14,7 @@
 
 2. **Copy the Docker environment file:**
    ```sh
-   cp .env.docker.example .env.docker
+    cp .env.docker.example .env.docker
    ```
 
 3. **Build and start the containers:**
