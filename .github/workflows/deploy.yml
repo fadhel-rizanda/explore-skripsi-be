@@ -40,7 +40,7 @@ jobs:
           extensions: pdo_pgsql, redis, zip, bcmath, intl, exif, gd, pcntl
 
       - name: Install dependencies
-        run: composer install --no-interaction --prefer-dist --no-dev --ignore-platform-reqs
+        run: composer install --no-interaction --prefer-dist --ignore-platform-reqs
 
       - name: Lint
         run: vendor/bin/pint --test
