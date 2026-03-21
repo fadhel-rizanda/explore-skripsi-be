@@ -130,11 +130,11 @@ class ReportController extends Controller
             'tags:id,name,type,color_code',
             'status:id,name,type,color_code',
         ])
-            ->when($search, fn($q) => $q->where('reference_id', 'ILIKE', "%{$search}%"))
-            ->when($referenceType, fn($q) => $q->where('reference_type', $referenceType))
-            ->when($tagId, fn($q) => $q->whereHas(
+            ->when($search, fn ($q) => $q->where('reference_id', 'ILIKE', "%{$search}%"))
+            ->when($referenceType, fn ($q) => $q->where('reference_type', $referenceType))
+            ->when($tagId, fn ($q) => $q->whereHas(
                 'tags',
-                fn($query) => $query->where($query->getModel()->getTable() . '.id', $tagId)
+                fn ($query) => $query->where($query->getModel()->getTable() . '.id', $tagId)
             ))
             ->orderBy($sortBy, 'desc')
             ->paginate($perPage);

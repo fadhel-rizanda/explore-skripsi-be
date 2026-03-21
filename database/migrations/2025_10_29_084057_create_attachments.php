@@ -15,7 +15,7 @@ return new class() extends Migration
             $table->uuid('id')->primary();
             $table->foreignUuid('uploaded_by')->constrained('mt_user')->onDelete('cascade');
             $table->string('filename');
-//            $table->string('label')->nullable();
+            //            $table->string('label')->nullable();
             $table->string('path');
             $table->integer('file_size');
             $table->string('mime_type');

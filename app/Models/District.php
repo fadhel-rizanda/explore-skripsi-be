@@ -10,7 +10,9 @@ class District extends Model
     protected $table = 'mt_district';
 
     protected $keyType = 'string';
+
     public $incrementing = false;
+
     public $timestamps = false;
 
     protected $fillable = [

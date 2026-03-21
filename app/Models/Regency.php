@@ -11,7 +11,9 @@ class Regency extends Model
     protected $table = 'mt_regency';
 
     protected $keyType = 'string';
+
     public $incrementing = false;
+
     public $timestamps = false;
 
     protected $fillable = [

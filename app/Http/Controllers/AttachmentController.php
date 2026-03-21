@@ -226,7 +226,7 @@ class AttachmentController extends Controller
     private function getRelatedModel(Attachment $document)
     {
         if (! $document->reference_by || ! $document->reference_id) {
-            return null;
+            return;
         }
 
         try {
@@ -235,14 +235,14 @@ class AttachmentController extends Controller
             if (! $reference) {
                 Log::warning('Unknown reference_by: ' . $document->reference_by);
 
-                return null;
+                return;
             }
 
             return $reference?->resolve($document->reference_id);
         } catch (\Exception $e) {
             Log::error('Error getting related model: ' . $e->getMessage());
         }
-        return null;
+
     }
 
     private function checkUserAccessToModel($user, $model)
@@ -292,9 +292,10 @@ class AttachmentController extends Controller
             }
         });
     }
+
     private function sanitizeFilename(string $filename): string
     {
-        $filename = str_replace(['"', "'", "\r", "\n", "\t", "\0", "\\"], '', $filename);
+        $filename = str_replace(['"', "'", "\r", "\n", "\t", "\0", '\\'], '', $filename);
 
         $filename = Str::ascii($filename);
 

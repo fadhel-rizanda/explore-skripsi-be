@@ -15,6 +15,7 @@ class AdoptionUpdated implements ShouldBroadcast
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public $notification;
+
     public $adoptionId;
 
     /**
