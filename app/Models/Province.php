@@ -10,7 +10,9 @@ class Province extends Model
     protected $table = 'mt_province';
 
     protected $keyType = 'string';
+
     public $incrementing = false;
+
     public $timestamps = false;
 
     protected $fillable = [

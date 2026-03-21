@@ -56,6 +56,7 @@ class CommentController extends Controller
 
         } catch (\Throwable $e) {
             \Log::error('Error fetching replies', ['error' => $e->getMessage()]);
+
             return $this->sendError('Error fetching replies.');
         }
     }

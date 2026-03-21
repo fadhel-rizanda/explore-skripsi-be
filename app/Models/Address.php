@@ -15,7 +15,9 @@ class Address extends Model
     protected $table = self::TABLE;
 
     public $incrementing = false;
+
     protected $keyType = 'string';
+
     protected $primaryKey = 'id';
 
     protected $fillable = [

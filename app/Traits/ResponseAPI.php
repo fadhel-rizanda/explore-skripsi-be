@@ -31,15 +31,15 @@ trait ResponseAPI
 
         return response()->json(
             array_merge([
-                    'error' => false,
-                    'status' => 'success',
-                    'message' => $message,
-                    'data' => $data ?? $pagination->items(),
-                    'current_page' => $pagination->currentPage(),
-                    'per_page' => $pagination->perPage(),
-                    'total' => $hasTotal ? $pagination->total() : null,
-                    'has_more_pages' => $pagination->hasMorePages(),
-                ], $extra),
+                'error' => false,
+                'status' => 'success',
+                'message' => $message,
+                'data' => $data ?? $pagination->items(),
+                'current_page' => $pagination->currentPage(),
+                'per_page' => $pagination->perPage(),
+                'total' => $hasTotal ? $pagination->total() : null,
+                'has_more_pages' => $pagination->hasMorePages(),
+            ], $extra),
             $code,
             [],
             JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT

@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Http\Services\NotificationService;
+use App\Models\Notification;
 use App\Traits\ResponseAPI;
 use Illuminate\Http\Request;
-use App\Models\Notification;
 
 class NotificationController extends Controller
 {
@@ -26,8 +26,8 @@ class NotificationController extends Controller
             ->simplePaginate($request->query('per_page', 15));
 
         $unreadCount = Notification::where('user_id', $userId)
-                ->whereNull('read_at')
-                ->count();
+            ->whereNull('read_at')
+            ->count();
 
         return $this->sendSuccessPagination('Notifications retrieved successfully', $notifications, null, 200, ['unread_count' => $unreadCount]);
     }

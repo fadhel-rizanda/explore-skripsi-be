@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests;
 
-use App\Models\MeetNGreet;
 use Illuminate\Foundation\Http\FormRequest;
 
 class CreateScheduleRequest extends FormRequest
