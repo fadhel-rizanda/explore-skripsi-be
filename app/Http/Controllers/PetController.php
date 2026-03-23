@@ -299,7 +299,7 @@ class PetController extends Controller
             ];
 
             $user = auth('api')->user();
-            if ($user && ($user->hasRole('admin') || $user->id === $pet->user_id)) {
+            if ($user && ($user->hasRole(['admin', 'adopter']) || $user->id === $pet->user_id)) {
                 $data['user_id'] = $pet->user_id;
             }
 
