@@ -9,6 +9,7 @@ x-base-env: &base-env
   DB_PASSWORD: ${DB_PASSWORD}
   REDIS_HOST: redis
   REDIS_PORT: 6379
+  REDIS_PASSWORD: ${REDIS_PASSWORD}
 
 # Shared build definition — queue, scheduler, reverb all reuse the app image
 # so we only build once. Override `command` per service.
@@ -32,16 +33,18 @@ services:
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
       - ./storage:/app/storage
+      - caddy_data:/data
+      - caddy_config:/config
     ports:
-      - "8000:80"
-      - "8444:443"
+      - "80:80"
+      - "443:443"
     environment:
       <<: *base-env
-      SERVER_NAME: :80
+      SERVER_NAME: api.pawsitivehub.site, pawsitivehub.site
       REVERB_HOST: reverb
-      REVERB_PORT: 8081
-      OCTANE_SERVER: frankenphp
-      FRANKENPHP_CONFIG: worker ./public/index.php
+      REVERB_PORT: 8080
+      APP_FRONTEND_URL: https://pawsitivehub.site
+      FRONTEND_URL: https://pawsitivehub.site
     depends_on:
       db:
         condition: service_healthy
@@ -64,7 +67,7 @@ services:
         php artisan config:cache &&
         php artisan route:cache &&
         php artisan view:cache &&
-        php artisan octane:start --server=frankenphp --host=0.0.0.0 --port=80 --admin-port=2019
+        frankenphp run --config /etc/caddy/Caddyfile --adapter caddyfile
       "
 
   db:
@@ -78,8 +81,6 @@ services:
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - postgres_data:/var/lib/postgresql/data/pgdata
-    ports:
-      - "5433:5432"
     networks:
       - laravel
     healthcheck:
@@ -92,8 +93,6 @@ services:
     image: redis:7-alpine
     container_name: redis_cache
     restart: unless-stopped
-    ports:
-      - "6380:6379"
     volumes:
       - redis_data:/data
     networks:
@@ -109,11 +108,11 @@ services:
     <<: *app-base
     container_name: laravel_reverb
     ports:
-      - "8081:8081"
+      - "8080:8080"
     environment:
       <<: *base-env
       REVERB_SERVER_HOST: 0.0.0.0
-      REVERB_SERVER_PORT: 8081
+      REVERB_SERVER_PORT: 8080
     depends_on:
       db:
         condition: service_healthy
@@ -127,7 +126,7 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
-    command: php artisan reverb:start --host=0.0.0.0 --port=8081
+    command: php artisan reverb:start --host=0.0.0.0 --port=8080
 
   queue:
     <<: *app-base
@@ -172,8 +171,13 @@ volumes:
     driver: local
   redis_data:
     driver: local
+  caddy_data:
+    driver: local
+  caddy_config:
+    driver: local
 
 networks:
   laravel:
     name: skripsi-be_laravel
     driver: bridge
+

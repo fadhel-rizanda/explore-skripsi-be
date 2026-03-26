@@ -1,18 +1,33 @@
 {
-    frankenphp {
-                   worker /app/public/index.php 4
-               }
+    frankenphp
+    email pawsitivehub.site@gmail.com
+    acme_ca https://acme.zerossl.com/v2/DV90
 }
 
-:80 {
+api.pawsitivehub.site {
     root * /app/public
-
     encode zstd gzip
 
     @sensitive {
-                   path /.env /.git* /storage/logs/*
-               }
+        path /.env /.git* /storage/logs/*
+    }
     respond @sensitive 403
 
+    @app_websocket {
+        path /app/*
+        header Upgrade websocket
+    }
+    reverse_proxy @app_websocket laravel_reverb:8080
+
+    php_server
+}
+
+pawsitivehub.site, www.pawsitivehub.site {
+    reverse_proxy skripsi-fe-frontend-1:3000
+}
+
+laravel_frankenphp:80 {
+    root * /app/public
+    encode zstd gzip
     php_server
 }

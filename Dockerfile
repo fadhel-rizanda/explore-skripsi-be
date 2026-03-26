@@ -71,4 +71,4 @@ EOF
 EXPOSE 80 443
 
 # Default command
-CMD ["php", "artisan", "octane:start", "--server=frankenphp", "--host=0.0.0.0", "--port=80"]
+CMD ["frankenphp", "run"]
