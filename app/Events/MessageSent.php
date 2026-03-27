@@ -51,6 +51,7 @@ class MessageSent implements ShouldBroadcast
                 'chat_id' => $message->chat_id,
                 'content' => $message->content,
                 'created_at' => $message->created_at->toISOString(),
+                'updated_at' => $message->updated_at->toISOString(),
                 'sender' => [
                     'id' => $message->user->id,
                     'name' => $message->user->name,

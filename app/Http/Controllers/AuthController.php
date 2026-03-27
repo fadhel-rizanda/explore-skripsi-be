@@ -581,6 +581,8 @@ class AuthController extends BaseController
                 'roles' => $user->roles,
                 'avatar' => $user->attachment?->public_url ?? $user->avatar,
                 'channels' => $channels,
+                'email_verified_at' => $user->email_verified_at,
+                'address_street' => $user->address?->street,
             ],
             'access_token' => $token,
             'refresh_token' => $refreshToken,

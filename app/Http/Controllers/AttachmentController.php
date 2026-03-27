@@ -35,11 +35,13 @@ class AttachmentController extends Controller
     {
         $allowedTypes = [
             'image/jpeg' => ['jpg', 'jpeg'],
+            'image/gif' => ['gif'],
             'image/png' => ['png'],
             'image/webp' => ['webp'],
             'application/pdf' => ['pdf'],
-            'application/msword' => ['doc'],
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => ['docx'],
+            'video/mp4' => ['mp4'],
+            'video/quicktime' => ['mov'],
+            'video/webm' => ['webm'],
         ];
 
         $mimeType = $request->input('mime_type');
@@ -280,6 +282,8 @@ class AttachmentController extends Controller
                     return (string) $model->id === $userId;
                 case \App\Models\Chat::class:
                     return $model->users()->where('mt_user.id', $userId)->exists();
+                case \App\Models\Message::class:
+                    return $model->room?->users()->where('mt_user.id', $userId)->exists();
                 case \App\Models\MeetNGreet::class:
                 case \App\Models\Handover::class:
                 case \App\Models\Requirement::class:

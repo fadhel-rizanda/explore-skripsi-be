@@ -15,6 +15,7 @@ Route::group([
         Route::patch('/{chat}/read', [ChatController::class, 'markRoomAsRead']);
         Route::delete('/{chat}/chat', [ChatController::class, 'deleteChat']);
         Route::delete('/{chat}/messages/{message}', [ChatController::class, 'deleteMessage']);
+        Route::put('/{chat}/messages/{message}', [ChatController::class, 'updateMessage']);
         Route::delete('/{chat}/leave', [ChatController::class, 'leaveChat']);
         Route::delete('/{chat}/members/{user}', [ChatController::class, 'removeUserFromChat']);
     });
