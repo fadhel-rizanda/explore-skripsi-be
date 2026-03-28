@@ -41,7 +41,7 @@ class MessageUpdated implements ShouldBroadcast
                 'message' => $this->data['sender']['name'] . ' has updated a message',
                 'sender' => $this->data['sender'],
                 'content' => $this->data['content'],
-                'updated_at' => now()->toISOString(),
+                'updated_at' => $this->data['updated_at']->toISOString(),
             ],
         ];
     }

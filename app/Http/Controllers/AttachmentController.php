@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Constants\GeneralConfig;
 use App\Enums\AdoptionStatusEnum;
 use App\Enums\AttachmentTypeEnum;
 use App\Enums\ModelReferenceEnum;
@@ -33,20 +34,9 @@ class AttachmentController extends Controller
 
     public function generatePresignedUrl(GeneratePresignedUrlRequest $request)
     {
-        $allowedTypes = [
-            'image/jpeg' => ['jpg', 'jpeg'],
-            'image/gif' => ['gif'],
-            'image/png' => ['png'],
-            'image/webp' => ['webp'],
-            'application/pdf' => ['pdf'],
-            'video/mp4' => ['mp4'],
-            'video/quicktime' => ['mov'],
-            'video/webm' => ['webm'],
-        ];
-
         $mimeType = $request->input('mime_type');
 
-        if (! isset($allowedTypes[$mimeType])) {
+        if (! isset(GeneralConfig::ALLOWED_ATTACHMENT_TYPES[$mimeType])) {
             return $this->sendError('Unsupported file type.', 400);
         }
 
@@ -58,8 +48,8 @@ class AttachmentController extends Controller
             return $this->sendError('Filename must include a file extension (e.g., document.pdf, image.jpg).', 400);
         }
 
-        if (! in_array($extension, $allowedTypes[$mimeType])) {
-            return $this->sendError("File extension $extension does not match content type $mimeType. Expected: " . implode(', ', $allowedTypes[$mimeType]), 400);
+        if (! in_array($extension, GeneralConfig::ALLOWED_ATTACHMENT_TYPES[$mimeType])) {
+            return $this->sendError("File extension $extension does not match content type $mimeType. Expected: " . implode(', ', GeneralConfig::ALLOWED_ATTACHMENT_TYPES[$mimeType]), 400);
         }
 
         try {

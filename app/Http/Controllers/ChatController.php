@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Constants\GeneralConfig;
 use App\Enums\ActionEnum;
 use App\Enums\AttachmentTypeEnum;
 use App\Enums\ChatTypeEnum;
@@ -408,8 +409,8 @@ class ChatController extends Controller
                 return $this->sendError('Unauthorized to delete this message', 403);
             }
 
-            if ($message->created_at->diffInMinutes(now()) > 15) {
-                return $this->sendError('Message can only be deleted within 15 minutes of sending', 403);
+            if ($message->created_at->diffInMinutes(now()) > GeneralConfig::MESSAGE_DELETION_WINDOW_MINUTES) {
+                return $this->sendError('Message can only be deleted within ' . GeneralConfig::MESSAGE_DELETION_WINDOW_MINUTES . ' minutes of sending', 403);
             }
 
             if ($message->attachment_id) {
@@ -483,8 +484,8 @@ class ChatController extends Controller
                 return $this->sendError('Unauthorized to update this message', 403);
             }
 
-            if ($message->created_at->diffInMinutes(now()) > 10) {
-                return $this->sendError('Message can only be edited within 10 minutes of sending', 403);
+            if ($message->created_at->diffInMinutes(now()) > GeneralConfig::MESSAGE_EDIT_WINDOW_MINUTES) {
+                return $this->sendError('Message can only be edited within ' . GeneralConfig::MESSAGE_EDIT_WINDOW_MINUTES . ' minutes of sending', 403);
             }
 
             $message->update([

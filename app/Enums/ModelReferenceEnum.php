@@ -26,7 +26,7 @@ enum ModelReferenceEnum: string
             self::ADOPTION => \App\Models\Adoption::class,
             self::REPORT => \App\Models\Report::class,
             self::CHAT => \App\Models\Chat::class,
-            self::MESSAGE => \App\Models\MESSAGE::class,
+            self::MESSAGE => \App\Models\Message::class,
             self::REQUIREMENT => \App\Models\Requirement::class,
             self::MEETNGREET => \App\Models\MeetNGreet::class,
             self::HANDOVER => \App\Models\Handover::class,
