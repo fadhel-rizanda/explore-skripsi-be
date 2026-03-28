@@ -11,6 +11,7 @@ enum ModelReferenceEnum: string
     case ADOPTION = 'adoption';
     case REPORT = 'report';
     case CHAT = 'chat';
+    case MESSAGE = 'message';
     case REQUIREMENT = 'requirement';
     case MEETNGREET = 'meetngreet';
     case HANDOVER = 'handover';
@@ -25,6 +26,7 @@ enum ModelReferenceEnum: string
             self::ADOPTION => \App\Models\Adoption::class,
             self::REPORT => \App\Models\Report::class,
             self::CHAT => \App\Models\Chat::class,
+            self::MESSAGE => \App\Models\Message::class,
             self::REQUIREMENT => \App\Models\Requirement::class,
             self::MEETNGREET => \App\Models\MeetNGreet::class,
             self::HANDOVER => \App\Models\Handover::class,
@@ -41,6 +43,7 @@ enum ModelReferenceEnum: string
             self::ADOPTION->value,
             self::REPORT->value,
             self::CHAT->value,
+            self::MESSAGE->value,
             self::REQUIREMENT->value,
             self::MEETNGREET->value,
             self::HANDOVER->value,

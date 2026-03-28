@@ -38,7 +38,7 @@ class CreateCommunityRequest extends FormRequest
                 ],
                 'tag_ids' => 'required|array|min:1',
                 'tag_ids.*' => 'uuid|exists:' . AllTag::TABLE . ',id',
-                'admin_ids' => 'sometimes|array|min:1',
+                'admin_ids' => 'sometimes|array',
                 'admin_ids.*' => [
                     'uuid',
                     Rule::exists(User::TABLE, 'id')->where('is_active', true),
