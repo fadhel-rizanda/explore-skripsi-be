@@ -4,10 +4,11 @@ namespace App\Notifications;
 
 use App\Models\Chat;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class ChatNotification extends Notification
+class ChatNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
@@ -39,7 +40,7 @@ class ChatNotification extends Notification
 
         return (new MailMessage())
             ->subject("Chat {$this->action}: " . ($this->chat->name ?? 'Private Chat'))
-            ->markdown('emails.chat-notification', [
+            ->view('emails.chat-notification', [
                 'chatId' => $this->chat->id,
                 'chatName' => $this->chat->name,
                 'chatType' => $this->chat->type,
