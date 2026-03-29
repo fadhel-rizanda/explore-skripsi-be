@@ -47,8 +47,7 @@
                                 font-size:14px;
                                 line-height:1.5;
                             ">
-                                <strong>Moderator Notes:</strong><br>
-                                {{ $notes }}
+                                <strong>Moderator Notes:</strong> {{ $notes }}
                             </div>
                         @endif
 
