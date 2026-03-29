@@ -11,15 +11,12 @@ class ActivationCodeNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
-    public $token;
-
     /**
      * Create a new notification instance.
      */
-    public function __construct($token)
-    {
-        $this->token = $token;
-    }
+    public function __construct(
+        public string $token,
+    ) {}
 
     /**
      * Get the notification's delivery channels.

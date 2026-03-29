@@ -2,29 +2,21 @@
 
 namespace App\Notifications;
 
-use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
-use Illuminate\Queue\SerializesModels;
 
 class WeeklyNotificationReminderNotification extends Notification implements ShouldQueue
 {
-    use Queueable, SerializesModels;
-
-    public User $user;
-
-    public int $unreadCount;
+    use Queueable;
 
     /**
      * Create a new notification instance.
      */
-    public function __construct(User $user, int $unreadCount)
-    {
-        $this->user = $user;
-        $this->unreadCount = $unreadCount;
-    }
+    public function __construct(
+        public int $unreadCount,
+    ) {}
 
     /**
      * Get the notification's delivery channels.
@@ -43,8 +35,8 @@ class WeeklyNotificationReminderNotification extends Notification implements Sho
     {
         return (new MailMessage())
             ->subject('Weekly Notification Reminder')
-            ->view('emails.weekly-notification-reminder', [ // param dikirim ke file email blade
-                'userName' => $this->user->name ?? $this->user->email,
+            ->view('emails.weekly-notification-reminder', [
+                'userName' => $notifiable->name ?? $notifiable->email,
                 'unreadCount' => $this->unreadCount,
                 'notificationUrl' => url('/notifications'),
             ]);
