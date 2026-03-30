@@ -43,7 +43,7 @@ class SendWeeklyReminderEmail implements ShouldQueue
             if (! $user) {
                 return;
             }
-            $user->notify(new WeeklyNotificationReminderNotification($user, $this->unreadCount));
+            $user->notify(new WeeklyNotificationReminderNotification($this->unreadCount));
         } catch (\Exception $exception) {
             Log::error('Failed to send weekly reminder email to user ID ' . $this->userId . ': ' . $exception->getMessage());
 

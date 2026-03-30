@@ -38,7 +38,7 @@ class AdoptionMailNotification extends Notification implements ShouldQueue
     {
         return (new MailMessage())
             ->subject("Adoption {$this->action} for {$this->adoption->pet->name}")
-            ->markdown('emails.adoption-action', [
+            ->view('emails.adoption-action', [
                 'adoptionId' => $this->adoption->id,
                 'action' => $this->action,
                 'petId' => $this->adoption->pet->id,

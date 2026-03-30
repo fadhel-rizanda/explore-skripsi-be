@@ -117,13 +117,15 @@ class AdoptionController extends Controller
                 message: 'An adoption application has been submitted for the pet: ' . ($pet->name ?? 'Unnamed Pet'),
                 referenceType: ModelReferenceEnum::ADOPTION->value,
                 referenceId: $adoption->id,
-            )->notifyUsers(
-                new AdoptionMailNotification(
-                    action: AdoptionStageEnum::APPLICATION_SUBMITTED->value,
-                    adoption: $adoption,
-                    notes: 'An adoption application has been submitted.'
-                )
-            )->getNotifications()->first();
+            )
+                ->broadcast()
+                ->notifyUsers(
+                    new AdoptionMailNotification(
+                        action: AdoptionStageEnum::APPLICATION_SUBMITTED->value,
+                        adoption: $adoption,
+                        notes: 'An adoption application has been submitted.'
+                    )
+                )->getNotifications()->first();
             broadcast(new AdoptionUpdated($notification, $adoption->id));
 
             return $this->sendSuccess(

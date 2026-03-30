@@ -31,9 +31,12 @@ trait InteractsWithAttachments
         }
     }
 
-    public function setAttachmentMetadata(?string $attachmentId, string $modelReference): void
-    {
-        Attachment::where('reference_id', $this->id)
+    public function setAttachmentMetadata(
+        ?string $attachmentId,
+        string $modelReference,
+        ?string $referenceId = null
+    ): void {
+        Attachment::where('reference_id', $referenceId ?? $this->id)
             ->where('reference_by', $modelReference)
             ->where('id', '!=', $attachmentId)
             ->update([
@@ -44,7 +47,7 @@ trait InteractsWithAttachments
 
         if ($attachmentId) {
             Attachment::where('id', $attachmentId)->update([
-                'reference_id' => $this->id,
+                'reference_id' => $referenceId ?? $this->id,
                 'reference_by' => $modelReference,
                 'status' => AttachmentTypeEnum::COMPLETED->value,
             ]);

@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Constants\GeneralConfig;
 use App\Enums\ActionEnum;
 use App\Enums\AttachmentTypeEnum;
 use App\Enums\ChatTypeEnum;
 use App\Enums\ModelReferenceEnum;
 use App\Events\ChatUpdated;
+use App\Events\MessageDeleted;
 use App\Events\MessageSent;
+use App\Events\MessageUpdated;
 use App\Http\Requests\CreateChatRequest;
 use App\Http\Requests\SendMessageRequest;
 use App\Http\Services\NotificationService;
@@ -143,6 +146,7 @@ class ChatController extends Controller
                         'mime_type' => $chatMessage->attachment->mime_type,
                     ] : null,
                     'created_at' => $chatMessage->created_at,
+                    'updated_at' => $chatMessage->updated_at,
                     'sender' => [
                         'id' => $chatMessage->user->id,
                         'name' => $chatMessage->user->name,
@@ -195,21 +199,24 @@ class ChatController extends Controller
                     'created_by' => $currentUser->id,
                 ]);
                 $chatRoom->users()->attach($userIds);
+                DB::commit();
 
+                $userIds = $chatRoom->users()->pluck('mt_user.id')->toArray();
                 $notification = $this->notificationService->createBulk(
-                    userIds: $request->user_ids,
+                    userIds: $userIds,
                     title: 'New Chat Room Created',
                     message: 'A new chat room has been created.',
                     referenceType: ModelReferenceEnum::CHAT->value,
                     referenceId: $chatRoom->id,
-                )->notifyUsers(
-                    new ChatNotification(
-                        action: ActionEnum::CREATED->value,
-                        chat: $chatRoom,
-                        notes: 'A new chat room has been created.'
-                    )
-                )->getNotifications()->first();
-                DB::commit();
+                )
+                    ->broadcast()
+                    ->notifyUsers(
+                        new ChatNotification(
+                            action: ActionEnum::CREATED->value,
+                            chat: $chatRoom,
+                            notes: 'A new chat room has been created.'
+                        )
+                    )->getNotifications()->first();
                 broadcast(new ChatUpdated($notification));
             }
 
@@ -258,7 +265,8 @@ class ChatController extends Controller
 
             $chat->setAttachmentMetadata(
                 attachmentId: $request->input('attachment_id'),
-                modelReference: ModelReferenceEnum::CHAT->value,
+                modelReference: ModelReferenceEnum::MESSAGE->value,
+                referenceId: $message->id
             );
 
             $chat->users()->updateExistingPivot(
@@ -280,6 +288,7 @@ class ChatController extends Controller
                     'mime_type' => $message->attachment->mime_type,
                 ] : null,
                 'created_at' => $message->created_at,
+                'updated_at' => $message->updated_at,
                 'sender' => [
                     'id' => $message->user->id,
                     'name' => $message->user->name,
@@ -400,6 +409,10 @@ class ChatController extends Controller
                 return $this->sendError('Unauthorized to delete this message', 403);
             }
 
+            if ($message->created_at->diffInMinutes(now()) > GeneralConfig::MESSAGE_DELETION_WINDOW_MINUTES) {
+                return $this->sendError('Message can only be deleted within ' . GeneralConfig::MESSAGE_DELETION_WINDOW_MINUTES . ' minutes of sending', 403);
+            }
+
             if ($message->attachment_id) {
                 Attachment::whereId($message->attachment_id)->update([
                     'reference_id' => null,
@@ -408,7 +421,22 @@ class ChatController extends Controller
                 ]);
             }
 
+            $messageId = $message->id;
+            $chatId = $message->chat_id;
+
             $message->delete();
+
+            broadcast(new MessageDeleted(
+                [
+                    'id' => $messageId,
+                    'sender' => [
+                        'id' => $user->id,
+                        'name' => $user->name,
+                        'email' => $user->email,
+                    ],
+                ],
+                $chatId
+            ));
 
             DB::commit();
 
@@ -442,6 +470,67 @@ class ChatController extends Controller
             ]);
 
             return $this->sendError('Failed to mark room as read', 500);
+        }
+    }
+
+    public function updateMessage(Chat $chat, Message $message, SendMessageRequest $request)
+    {
+        $user = auth('api')->user();
+
+        try {
+            DB::beginTransaction();
+
+            if ($message->user_id !== $user->id) {
+                return $this->sendError('Unauthorized to update this message', 403);
+            }
+
+            if ($message->created_at->diffInMinutes(now()) > GeneralConfig::MESSAGE_EDIT_WINDOW_MINUTES) {
+                return $this->sendError('Message can only be edited within ' . GeneralConfig::MESSAGE_EDIT_WINDOW_MINUTES . ' minutes of sending', 403);
+            }
+
+            $message->update([
+                'content' => $request->input('content'),
+            ]);
+
+            $message->load('user', 'attachment');
+
+            $data = [
+                'id' => $message->id,
+                'content' => $message->content,
+                'attachment' => $message->attachment ? [
+                    'id' => $message->attachment->id,
+                    'public_url' => $message->attachment->public_url,
+                    'filename' => $message->attachment->filename,
+                    'file_size' => $message->attachment->file_size,
+                    'mime_type' => $message->attachment->mime_type,
+                ] : null,
+                'created_at' => $message->created_at,
+                'updated_at' => $message->updated_at,
+                'sender' => [
+                    'id' => $message->user->id,
+                    'name' => $message->user->name,
+                    'email' => $message->user->email,
+                    'avatar' => $message->user->attachment?->public_url
+                        ?? $message->user->avatar,
+                ],
+            ];
+
+            broadcast(new MessageUpdated(
+                $data,
+                $chat->id
+            ));
+
+            DB::commit();
+
+            return $this->sendSuccess('Message updated successfully', $data);
+        } catch (\Exception $exception) {
+            DB::rollBack();
+            Log::error('updateMessage failed', [
+                'exception' => $exception->getMessage(),
+                'trace' => $exception->getTraceAsString(),
+            ]);
+
+            return $this->sendError('Failed to update message', 500);
         }
     }
 }

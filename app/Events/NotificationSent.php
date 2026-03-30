@@ -33,7 +33,7 @@ class NotificationSent implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel(ChannelEnum::NOTIFICATION->channel($this->notification->reference_id)),
+            new PrivateChannel(ChannelEnum::NOTIFICATION->channel($this->notification->user_id)),
         ];
     }
 
