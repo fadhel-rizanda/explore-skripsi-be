@@ -81,6 +81,8 @@ services:
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - postgres_data:/var/lib/postgresql/data/pgdata
+    ports:
+      - "100.85.54.93:5432:5432"
     networks:
       - laravel
     healthcheck:
@@ -95,6 +97,8 @@ services:
     restart: unless-stopped
     volumes:
       - redis_data:/data
+    ports:
+      - "100.85.54.93:6379:6379"
     networks:
       - laravel
     healthcheck:
