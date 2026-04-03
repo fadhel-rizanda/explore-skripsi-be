@@ -29,6 +29,7 @@ class PrometheusServiceProvider extends ServiceProvider
 
         Prometheus::addGauge('database_size_mb', function () {
             $result = DB::select('SELECT pg_database_size(current_database()) / 1024 / 1024 as size');
+
             return round($result[0]->size ?? 0, 2);
         });
     }
