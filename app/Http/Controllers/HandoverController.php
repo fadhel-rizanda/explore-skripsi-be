@@ -436,7 +436,7 @@ class HandoverController extends Controller
                 title: 'Handover Finalized',
                 message: 'The handover has been finalized for the adoption of ' . ($adoption->pet->name ?? 'Unnamed Pet'),
                 referenceType: ModelReferenceEnum::ADOPTION->value,
-                referenceId: $handover->id,
+                referenceId: $adoption->id,
             )->notifyUsers(
                 new AdoptionMailNotification(
                     action: AdoptionStageEnum::HANDOVER->value,

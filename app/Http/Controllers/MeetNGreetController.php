@@ -218,7 +218,7 @@ class MeetNGreetController extends Controller
                 title: 'Meet and Greet Finalized',
                 message: 'The Meet and Greet has been finalized for the adoption of ' . ($adoption->pet->name ?? 'Unnamed Pet'),
                 referenceType: ModelReferenceEnum::ADOPTION->value,
-                referenceId: $meetNGreet->id,
+                referenceId: $adoption->id,
             )->notifyUsers(new AdoptionMailNotification(
                 action: AdoptionStageEnum::MEET_N_GREET->value,
                 adoption: $adoption,
