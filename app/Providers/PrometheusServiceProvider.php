@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
@@ -11,20 +12,26 @@ class PrometheusServiceProvider extends ServiceProvider
 {
     public function register()
     {
-        Prometheus::addGauge('http_requests_total', function () {
+        Prometheus::addGauge('http_requests_count', function () {
             return (int) Cache::get('http_requests_count', 0);
         });
 
         Prometheus::addGauge('queue_pending', function () {
-            return DB::table('jobs')->count();
+            return Cache::remember('metrics_queue_pending_count', 60, function () {
+                return DB::table('jobs')->count();
+            });
         });
 
         Prometheus::addGauge('queue_failed', function () {
-            return DB::table('failed_jobs')->count();
+            return Cache::remember('metrics_queue_failed_count', 60, function () {
+                return DB::table('failed_jobs')->count();
+            });
         });
 
         Prometheus::addGauge('users_total', function () {
-            return \App\Models\User::count();
+            return Cache::remember('metrics_users_total_count', 300, function () {
+                return User::where('is_active', true)->count();
+            });
         });
 
         Prometheus::addGauge('database_size_mb', function () {

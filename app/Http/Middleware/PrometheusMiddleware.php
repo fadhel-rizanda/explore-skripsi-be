@@ -10,11 +10,11 @@ class PrometheusMiddleware
 {
     public function handle(Request $request, Closure $next)
     {
-        if ($request->is('prometheus*')) {
+        if ($request->is(config('prometheus.urls.default', 'prometheus') . '*')) {
             return $next($request);
         }
 
-        Cache::increment('http_requests_count');
+        Cache::store('redis')->increment('http_requests_count');
 
         return $next($request);
     }
