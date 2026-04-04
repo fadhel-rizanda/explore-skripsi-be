@@ -188,7 +188,6 @@ class PostController extends Controller
         ])
             ->withCount(['likes', 'comments'])
             ->withLikeStatus($userId)
-            ->when(! $isAdmin, fn ($q) => $q->where('is_active', true))
             ->when($search, function ($q) use ($search, $isAdmin) {
                 $q->where(function ($query) use ($search, $isAdmin) {
                     $query->where('title', 'ILIKE', "%{$search}%")
@@ -199,6 +198,12 @@ class PostController extends Controller
                 });
             })
             ->when($communityId, fn ($q) => $q->where('community_id', $communityId))
+            ->when(! $isAdmin, function ($q) use ($communityId) {
+                $q->where('is_active', true);
+                if (! $communityId) {
+                    $q->whereNull('community_id');
+                }
+            })
             ->when($tagId, fn ($q) => $q->whereHas('tags', fn ($t) => $t->where('mt_all_tag.id', $tagId)))
             ->orderBy($sortBy, 'desc')
             ->paginate($perPage);
