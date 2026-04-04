@@ -197,12 +197,11 @@ class PostController extends Controller
                     }
                 });
             })
+            ->when($communityId, fn ($q) => $q->where('community_id', $communityId))
             ->when(! $isAdmin, function ($q) use ($communityId) {
                 $q->where('is_active', true);
                 if (! $communityId) {
                     $q->whereNull('community_id');
-                } else {
-                    $q->where('community_id', $communityId);
                 }
             })
             ->when($tagId, fn ($q) => $q->whereHas('tags', fn ($t) => $t->where('mt_all_tag.id', $tagId)))
