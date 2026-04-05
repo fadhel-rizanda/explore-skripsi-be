@@ -5,9 +5,9 @@ use Illuminate\Support\Facades\Route;
 
 Route::group([
     'prefix' => 'attachments',
-    'middleware' => ['auth:api', 'check.token.version', 'throttle:read'],
+    'middleware' => ['auth:api', 'check.token.version'],
 ], function () {
-    Route::get('/{document}/download-url', [AttachmentController::class, 'generateDownloadUrl']);
+    Route::get('/{document}/download-url', [AttachmentController::class, 'generateDownloadUrl'])->middleware('throttle:read');
 
     Route::middleware(['throttle:write'])->group(function () {
         Route::post('/presigned-url', [AttachmentController::class, 'generatePresignedUrl']);

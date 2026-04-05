@@ -14,21 +14,21 @@ Route::group(['prefix' => 'auth'], function () {
     Route::group(['middleware' => ['throttle:read']], function () {
         Route::get('/{provider}', [AuthController::class, 'redirectToProvider']);
         Route::get('/{provider}/callback', [AuthController::class, 'handleProviderCallback']);
+    });
 
-        Route::middleware(['throttle:write'])->group(function () {
-            Route::post('/provider', [AuthController::class, 'loginWithProvider']);
-            Route::post('/refresh', [AuthController::class, 'refresh']);
+    Route::group(['middleware' => ['throttle:write']], function () {
+        Route::post('/provider', [AuthController::class, 'loginWithProvider']);
+        Route::post('/refresh', [AuthController::class, 'refresh']);
 
-            Route::middleware(['auth:api'])->group(function () {
-                Route::post('/activation-code/resend', [AuthController::class, 'resendActivationCode']);
-                Route::post('/activation-code/verify', [AuthController::class, 'validateActivationCode']);
-            });
+        Route::middleware(['auth:api'])->group(function () {
+            Route::post('/activation-code/resend', [AuthController::class, 'resendActivationCode']);
+            Route::post('/activation-code/verify', [AuthController::class, 'validateActivationCode']);
+        });
 
-            // harus 2 biar semua token yang ke invalid
-            Route::middleware(['auth:api', 'check.token.version'])->group(function () {
-                Route::post('/logout', [AuthController::class, 'logout']);
-                Route::post('/change-password', [AuthController::class, 'changePassword']);
-            });
+        // harus 2 biar semua token yang ke invalid
+        Route::middleware(['auth:api', 'check.token.version'])->group(function () {
+            Route::post('/logout', [AuthController::class, 'logout']);
+            Route::post('/change-password', [AuthController::class, 'changePassword']);
         });
     });
 });

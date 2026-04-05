@@ -61,7 +61,7 @@ class AppServiceProvider extends ServiceProvider
 
         RateLimiter::for('register-login', function (Request $request) {
             return Limit::perMinute(5)
-                ->by($request->ip())
+                ->by($request->input('email') ?: $request->ip())
                 ->response(function (Request $request, array $headers) {
                     return response()->json([
                         'error' => true,
