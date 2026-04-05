@@ -7,12 +7,19 @@ Route::group([
     'prefix' => 'reports',
     'middleware' => ['auth:api', 'check.token.version'],
 ], function () {
-    Route::post('/', [ReportController::class, 'createReport']);
+    Route::middleware(['throttle:write'])->group(function () {
+        Route::post('/', [ReportController::class, 'createReport']);
+    });
 
     Route::middleware(['role:admin'])->group(function () {
-        Route::get('/', [ReportController::class, 'listReports']);
-        Route::get('/{report}', [ReportController::class, 'reportDetail']);
-        Route::delete('/{report}', [ReportController::class, 'deleteReport']);
-        Route::put('/{report}/status/{status}', [ReportController::class, 'updateReportStatus']);
+        Route::middleware(['throttle:read'])->group(function () {
+            Route::get('/', [ReportController::class, 'listReports']);
+            Route::get('/{report}', [ReportController::class, 'reportDetail']);
+        });
+
+        Route::middleware(['throttle:write'])->group(function () {
+            Route::delete('/{report}', [ReportController::class, 'deleteReport']);
+            Route::put('/{report}/status/{status}', [ReportController::class, 'updateReportStatus']);
+        });
     });
 });
