@@ -20,4 +20,7 @@ scrape_configs:
         labels:
           instance: 'production-db'
 
-data
+  - job_name: 'laravel'
+    static_configs:
+      - targets: [ 'app:80' ]
+    metrics_path: '/prometheus'
