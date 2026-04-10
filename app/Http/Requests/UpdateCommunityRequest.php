@@ -8,7 +8,6 @@ use App\Models\Community;
 use App\Models\User;
 use App\Rules\OwnsAttachment;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class UpdateCommunityRequest extends FormRequest
 {
@@ -42,11 +41,6 @@ class UpdateCommunityRequest extends FormRequest
                 ],
                 'tag_ids' => 'sometimes|array|min:1',
                 'tag_ids.*' => 'uuid|exists:' . (new AllTag())->getTable() . ',id',
-                'admin_ids' => 'sometimes|array|min:1',
-                'admin_ids.*' => [
-                    'uuid',
-                    Rule::exists((new User())->getTable(), 'id')->where('is_active', true),
-                ],
             ],
             UpdateAddressRequest::prefixedRules(),
         );

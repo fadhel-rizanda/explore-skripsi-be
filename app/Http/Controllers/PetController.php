@@ -27,9 +27,10 @@ class PetController extends Controller
     {
         try {
             $isAdmin = auth('api')->user()?->hasRole('admin') ?? false;
+            $isOpenToSpecialNeeds = auth('api')->user()?->open_to_special_needs ?? true;
 
             $perPage = min((int) $request->query('per_page', 15), 100);
-            $pets = $this->buildPetQuery($request, $isAdmin)
+            $pets = $this->buildPetQuery($request, $isAdmin, $isOpenToSpecialNeeds)
                 ->orderBy('created_at', 'desc')
                 ->paginate($perPage);
 
@@ -57,6 +58,7 @@ class PetController extends Controller
                     'breed' => $pet->breed,
                     'created_at' => $pet->created_at,
                     'is_active' => $pet->is_active ?? false,
+                    'special_needs' => $pet->special_needs,
                 ];
             });
 
@@ -343,7 +345,7 @@ class PetController extends Controller
     /**
      * Build base pet query with common filters.
      */
-    private function buildPetQuery(GetAllRequest $request, bool $isAdmin)
+    private function buildPetQuery(GetAllRequest $request, bool $isAdmin, bool $isOpenToSpecialNeeds)
     {
         $search = $request->query('search');
         $typeOfAnimalId = $request->query('type_of_animal_id');
@@ -352,6 +354,7 @@ class PetController extends Controller
 
         return Pet::with('typeOfAnimal:id,name,type,color_code')->when(! $isAdmin, fn ($q) => $q->with('profilePicture:id,public_url'))
             ->when(! $isAdmin, fn ($q) => $q->where('is_active', true))
+            ->when(! $isOpenToSpecialNeeds, fn ($q) => $q->where('special_needs', false))
             ->when($search, function ($q) use ($search, $isAdmin) {
                 $q->where(function ($query) use ($search, $isAdmin) {
                     $query->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($search) . '%']);
