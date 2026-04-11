@@ -19,9 +19,10 @@ Route::group([
         Route::middleware(['throttle:write'])->group(function () {
             Route::post('/{chat}/messages', [ChatController::class, 'sendMessage']);
             Route::patch('/{chat}/read', [ChatController::class, 'markRoomAsRead']);
-            Route::delete('/{chat}/chat', [ChatController::class, 'deleteChat']);
+            Route::delete('/{chat}', [ChatController::class, 'deleteChat']);
             Route::delete('/{chat}/messages/{message}', [ChatController::class, 'deleteMessage']);
             Route::put('/{chat}/messages/{message}', [ChatController::class, 'updateMessage']);
+            Route::put('/{chat}', [ChatController::class, 'updateChat']);
             Route::delete('/{chat}/leave', [ChatController::class, 'leaveChat']);
             Route::delete('/{chat}/members/{user}', [ChatController::class, 'removeUserFromChat']);
         });

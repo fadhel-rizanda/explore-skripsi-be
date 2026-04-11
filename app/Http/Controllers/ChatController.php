@@ -36,16 +36,16 @@ class ChatController extends Controller
     {
         $user = auth('api')->user();
 
-        //        TODO: Optimalkan query untuk menghitung unread_count
         $chatRooms = $user->chatRooms()
             ->with([
                 'users' => function ($query) use ($user) {
-                    $query->select('mt_user.id', 'name', 'email', 'avatar', 'attachment_id')
+                    $query->select('mt_user.id', 'name', 'avatar', 'attachment_id')
                         ->where('mt_user.id', '!=', $user->id);
                 },
                 'users.attachment:id,public_url',
                 'lastMessage:id,chat_id,user_id,content,created_at',
             ])
+            ->wherePivot('is_active', true)
             ->leftJoin('tr_message as latest_msg', function ($join) {
                 $join->on('mt_chat.id', '=', 'latest_msg.chat_id')
                     ->whereRaw('latest_msg.id = (
@@ -57,62 +57,73 @@ class ChatController extends Controller
             })
             ->orderByRaw('latest_msg.created_at DESC NULLS LAST')
             ->select('mt_chat.*')
-            ->get()
-            ->map(function ($chat) use ($user) {
-                // Hitung unread_count secara manual
-                $userChatRoom = DB::table('tr_chat_room')
-                    ->where('chat_id', $chat->id)
-                    ->where('user_id', $user->id)
-                    ->first();
+            ->get();
 
-                $unreadCount = 0;
-                if ($userChatRoom) {
-                    $query = DB::table('tr_message')
-                        ->where('chat_id', $chat->id)
-                        ->where('user_id', '!=', $user->id); // pesan dari user lain
+        $chatIds = $chatRooms->pluck('id');
 
-                    if ($userChatRoom->last_read_at) {
-                        $query->where('created_at', '>', $userChatRoom->last_read_at);
-                    } else {
-                        // Jika belum pernah baca, hitung semua pesan
-                        $query->whereNotNull('created_at');
-                    }
+        $userChatRooms = DB::table('tr_chat_room')
+            ->whereIn('chat_id', $chatIds)
+            ->get(['chat_id', 'user_id', 'is_active', 'last_read_at']);
 
-                    $unreadCount = $query->count();
-                }
+        $allMemberStatus = $userChatRooms->groupBy('chat_id')
+            ->map(fn ($rows) => $rows->pluck('is_active', 'user_id'));
 
-                $otherUser = $chat->users->first();
-                $chatName = ($chat->type === ChatTypeEnum::PRIVATE->value && $otherUser)
-                    ? ($otherUser->name ?: $otherUser->email)
-                    : $chat->name;
+        $currentUserSettings = $userChatRooms->where('user_id', $user->id)->keyBy('chat_id');
 
-                return [
-                    'id' => $chat->id,
-                    'name' => $chatName,
-                    'type' => $chat->type,
+        $allActiveCounts = DB::table('tr_chat_room')
+            ->whereIn('chat_id', $chatIds)
+            ->where('is_active', true)
+            ->groupBy('chat_id')
+            ->selectRaw('chat_id, COUNT(*) as count')
+            ->pluck('count', 'chat_id');
 
-                    'users' => $chat->users
-                        ->where('id', '!=', $user->id)
-                        ->map(fn ($u) => [
-                            'id' => $u->id,
-                            'name' => $u->name,
-                            'email' => $u->email,
-                            'avatar' => $u->attachment?->public_url ?? $u->avatar,
-                        ])
-                        ->values(),
+        $allUnreadCounts = [];
+        foreach ($currentUserSettings as $chatId => $settings) {
+            $allUnreadCounts[$chatId] = DB::table('tr_message')
+                ->where('chat_id', $chatId)
+                ->where('user_id', '!=', $user->id)
+                ->when($settings->last_read_at, function ($q) use ($settings) {
+                    return $q->where('created_at', '>', $settings->last_read_at);
+                })
+                ->count();
+        }
 
-                    'unread_count' => $unreadCount,
+        $result = $chatRooms->map(function ($chat) use ($allMemberStatus, $allActiveCounts) {
+            $memberStatus = $allMemberStatus[$chat->id] ?? collect();
 
-                    'last_message' => $chat->lastMessage ? [
-                        'id' => $chat->lastMessage->id,
-                        'user_id' => $chat->lastMessage->user_id,
-                        'content' => $chat->lastMessage->content,
-                        'created_at' => $chat->lastMessage->created_at,
-                    ] : null,
-                ];
-            });
+            $otherUser = $chat->users->first();
 
-        return $this->sendSuccess('Chat rooms retrieved successfully', $chatRooms);
+            $chatName = ! empty($chat->name) ? $chat->name : (
+                $chat->type === ChatTypeEnum::PRIVATE->value && $otherUser
+                ? ($otherUser->name ?: $otherUser->email)
+                : 'Unknown Chat'
+            );
+
+            return [
+                'id' => $chat->id,
+                'name' => $chatName,
+                'type' => $chat->type,
+                'description' => $chat->description,
+                'users' => $chat->users->map(fn ($u) => [
+                    'id' => $u->id,
+                    'name' => $u->name,
+                    'avatar' => $u->attachment?->public_url ?? $u->avatar,
+                    'is_active_member' => (bool) ($memberStatus[$u->id] ?? true),
+                ])->values(),
+                'active_member_count' => (int) ($allActiveCounts[$chat->id] ?? 0),
+
+                'last_message' => $chat->lastMessage ? [
+                    'id' => $chat->lastMessage->id,
+                    'user_id' => $chat->lastMessage->user_id,
+                    'content' => $chat->lastMessage->content,
+                    'created_at' => $chat->lastMessage->created_at,
+                ] : null,
+
+                'created_by' => $chat->created_by,
+            ];
+        });
+
+        return $this->sendSuccess('Chat rooms retrieved successfully', $result);
     }
 
     public function getMessages(Chat $chat, Request $request)
@@ -150,7 +161,6 @@ class ChatController extends Controller
                     'sender' => [
                         'id' => $chatMessage->user->id,
                         'name' => $chatMessage->user->name,
-                        'email' => $chatMessage->user->email,
                         'avatar' => $chatMessage->user->attachment?->public_url
                             ?? $chatMessage->user->avatar,
                     ],
@@ -179,29 +189,32 @@ class ChatController extends Controller
         $userCount = count($userIds);
 
         try {
+            DB::beginTransaction();
+
             $chatRoom = Chat::where('type', $request->type)
+                ->where('name', $request->name)
                 ->has('users', '=', $userCount)
                 ->where(function ($query) use ($userIds) {
                     foreach ($userIds as $id) {
                         $query->whereHas('users', function ($q) use ($id) {
-                            $q->where('user_id', $id);
+                            $q->where('tr_chat_room.user_id', $id);
                         });
                     }
                 })
-                ->with(['users', 'lastMessage'])
+                ->with(['users:id,name'])
                 ->first();
+
             if (! $chatRoom) {
-                DB::beginTransaction();
                 $chatRoom = Chat::create([
                     'name' => $request->name,
                     'description' => $request->description,
                     'type' => $request->type,
                     'created_by' => $currentUser->id,
                 ]);
-                $chatRoom->users()->attach($userIds);
-                DB::commit();
 
-                $userIds = $chatRoom->users()->pluck('mt_user.id')->toArray();
+                $chatRoom->users()->attach($userIds);
+                $chatRoom->load(['users:id,name']);
+
                 $notification = $this->notificationService->createBulk(
                     userIds: $userIds,
                     title: 'New Chat Room Created',
@@ -217,43 +230,58 @@ class ChatController extends Controller
                             notes: 'A new chat room has been created.'
                         )
                     )->getNotifications()->first();
-                broadcast(new ChatUpdated($notification));
+
+                if ($notification) {
+                    broadcast(new ChatUpdated($notification));
+                }
             }
+
+            DB::table('tr_chat_room')
+                ->where('chat_id', $chatRoom->id)
+                ->where('user_id', $currentUser->id)
+                ->update([
+                    'is_active' => true,
+                    'updated_at' => now(),
+                ]);
+
+            DB::commit();
 
             $data = [
                 'id' => $chatRoom->id,
                 'type' => $chatRoom->type,
+                'name' => $chatRoom->name,
+                'description' => $chatRoom->description,
+                'created_at' => $chatRoom->created_at,
                 'users' => $chatRoom->users->map(fn ($u) => [
                     'id' => $u->id,
                     'name' => $u->name,
-                    'email' => $u->email,
-                    'avatar' => $u->attachment?->public_url ?? $u->avatar,
                 ])->values(),
-                'name' => $chatRoom->name,
-                'created_at' => $chatRoom->created_at,
-                'last_message' => $chatRoom->lastMessage ? [
-                    'id' => $chatRoom->lastMessage->id,
-                    'user_id' => $chatRoom->lastMessage->user_id,
-                    'content' => $chatRoom->lastMessage->content,
-                    'created_at' => $chatRoom->lastMessage->created_at,
-                ] : null,
             ];
 
-            return $this->sendSuccess('Chat room created successfully', $data);
+            return $this->sendSuccess('Chat room initialized successfully', $data);
         } catch (\Exception $exception) {
             DB::rollBack();
             Log::error('createChat failed', [
-                'exception' => $exception->getMessage(),
+                'message' => $exception->getMessage(),
                 'trace' => $exception->getTraceAsString(),
             ]);
 
-            return $this->sendError('Failed to create chat', 500);
+            return $this->sendError('Failed to initialize chat', 500);
         }
     }
 
     public function sendMessage(Chat $chat, SendMessageRequest $request)
     {
         $user = auth('api')->user();
+
+        $activeMemberCount = DB::table('tr_chat_room')
+            ->where('chat_id', $chat->id)
+            ->where('is_active', true)
+            ->count();
+
+        if ($activeMemberCount < 2) {
+            return $this->sendError('This conversation is currently unavailable. Please start a new chat.', 400);
+        }
 
         try {
             DB::beginTransaction();
@@ -292,7 +320,6 @@ class ChatController extends Controller
                 'sender' => [
                     'id' => $message->user->id,
                     'name' => $message->user->name,
-                    'email' => $message->user->email,
                     'avatar' => $message->user->attachment?->public_url
                         ?? $message->user->avatar,
                 ],
@@ -315,21 +342,41 @@ class ChatController extends Controller
     {
         $user = auth('api')->user();
 
-        if ($chat->created_by !== $user->id) {
-            return $this->sendError('Unauthorized to delete this chat', 403);
-        }
-
         try {
             DB::beginTransaction();
 
-            $chat->setAttachmentMetadata(
-                attachmentId: null,
-                modelReference: ModelReferenceEnum::CHAT->value,
-            );
+            $activeMembers = DB::table('tr_chat_room')
+                ->where('chat_id', $chat->id)
+                ->where('is_active', true)
+                ->lockForUpdate()
+                ->get();
 
-            $chat->delete();
+            $activeMemberCount = $activeMembers->count();
+
+            $chatDataForNotify = clone $chat;
+
+            if ($activeMemberCount > 1) {
+                DB::table('tr_chat_room')
+                    ->where('chat_id', $chat->id)
+                    ->where('user_id', $user->id)
+                    ->update(['is_active' => false]);
+            } else {
+                $chat->setAttachmentMetadata(
+                    attachmentId: null,
+                    modelReference: ModelReferenceEnum::CHAT->value,
+                );
+                $chat->delete();
+            }
 
             DB::commit();
+
+            $this->notificationService->createBulk(
+                userIds: [$user->id],
+                title: 'Chat Room Deleted',
+                message: 'A chat room has been deleted.',
+                referenceType: ModelReferenceEnum::CHAT->value,
+                referenceId: $chatDataForNotify->id,
+            )->broadcast();
 
             return $this->sendSuccess('Chat deleted successfully');
         } catch (\Exception $exception) {
@@ -509,7 +556,6 @@ class ChatController extends Controller
                 'sender' => [
                     'id' => $message->user->id,
                     'name' => $message->user->name,
-                    'email' => $message->user->email,
                     'avatar' => $message->user->attachment?->public_url
                         ?? $message->user->avatar,
                 ],
@@ -531,6 +577,55 @@ class ChatController extends Controller
             ]);
 
             return $this->sendError('Failed to update message', 500);
+        }
+    }
+
+    public function updateChat(Chat $chat, CreateChatRequest $request)
+    {
+        $user = auth('api')->user();
+
+        if ((string) $chat->created_by !== (string) $user->id) {
+            return $this->sendError('Only the chat creator can update the chat', 403);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $chat->update([
+                'type' => $request->type,
+                'name' => $request->name,
+                'description' => $request->description,
+            ]);
+
+            $chat->users()->sync(
+                collect($request->user_ids)
+                    ->push($user->id)
+                    ->unique()
+                    ->sort()
+                    ->values()
+                    ->toArray()
+            );
+
+            DB::commit();
+
+            return $this->sendSuccess('Chat updated successfully', [
+                'id' => $chat->id,
+                'name' => $chat->name,
+                'description' => $chat->description,
+                'type' => $chat->type,
+                'created_by' => $chat->created_by,
+                'updated_by' => $chat->updated_by,
+                'created_at' => $chat->created_at,
+                'updated_at' => $chat->updated_at,
+            ]);
+        } catch (\Exception $exception) {
+            DB::rollBack();
+            Log::error('updateChat failed', [
+                'exception' => $exception->getMessage(),
+                'trace' => $exception->getTraceAsString(),
+            ]);
+
+            return $this->sendError('Failed to update chat', 500);
         }
     }
 }
