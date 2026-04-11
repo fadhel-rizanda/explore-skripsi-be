@@ -574,12 +574,6 @@ class AuthController extends BaseController
             ->groupBy('target.chat_id')
             ->havingRaw('COUNT(counts.user_id) >= 2')
             ->pluck('chat_id');
-        $channels = [
-            [
-                'name' => ChannelEnum::NOTIFICATION->channel($user->id),
-                'event' => ChannelEnum::NOTIFICATION->event(),
-            ],
-        ];
         foreach ($activeChatIds as $id) {
             $channels[] = [
                 'name' => ChannelEnum::CHAT->channel($id),

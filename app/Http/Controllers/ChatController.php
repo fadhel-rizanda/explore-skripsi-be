@@ -61,14 +61,15 @@ class ChatController extends Controller
 
         $chatIds = $chatRooms->pluck('id');
 
-        // 1 query untuk semua member status
-        $allMemberStatus = DB::table('tr_chat_room')
+        $userChatRooms = DB::table('tr_chat_room')
             ->whereIn('chat_id', $chatIds)
-            ->get(['chat_id', 'user_id', 'is_active'])
-            ->groupBy('chat_id')
+            ->get(['chat_id', 'user_id', 'is_active', 'last_read_at']);
+
+        $allMemberStatus = $userChatRooms->groupBy('chat_id')
             ->map(fn ($rows) => $rows->pluck('is_active', 'user_id'));
 
-        // 1 query untuk semua active member count
+        $currentUserSettings = $userChatRooms->where('user_id', $user->id)->keyBy('chat_id');
+
         $allActiveCounts = DB::table('tr_chat_room')
             ->whereIn('chat_id', $chatIds)
             ->where('is_active', true)
@@ -76,61 +77,40 @@ class ChatController extends Controller
             ->selectRaw('chat_id, COUNT(*) as count')
             ->pluck('count', 'chat_id');
 
-        // 1 query untuk semua user chat room (untuk unread)
-        $allUserChatRooms = DB::table('tr_chat_room')
-            ->whereIn('chat_id', $chatIds)
-            ->where('user_id', $user->id)
-            ->get(['chat_id', 'last_read_at'])
-            ->keyBy('chat_id');
+        $allUnreadCounts = [];
+        foreach ($currentUserSettings as $chatId => $settings) {
+            $allUnreadCounts[$chatId] = DB::table('tr_message')
+                ->where('chat_id', $chatId)
+                ->where('user_id', '!=', $user->id)
+                ->when($settings->last_read_at, function ($q) use ($settings) {
+                    return $q->where('created_at', '>', $settings->last_read_at);
+                })
+                ->count();
+        }
 
-        // 1 query untuk semua unread counts
-        $allUnreadCounts = DB::table('tr_message')
-            ->whereIn('chat_id', $chatIds)
-            ->where('user_id', '!=', $user->id)
-            ->get(['chat_id', 'created_at'])
-            ->groupBy('chat_id')
-            ->map(function ($messages, $chatId) use ($allUserChatRooms) {
-                $userChatRoom = $allUserChatRooms[$chatId] ?? null;
-                if (! $userChatRoom) {
-                    return 0;
-                }
-
-                return $messages->when(
-                    $userChatRoom->last_read_at,
-                    fn ($q) => $q->where('created_at', '>', $userChatRoom->last_read_at),
-                )->count();
-            });
-
-        $result = $chatRooms->map(function ($chat) use ($user, $allMemberStatus, $allActiveCounts, $allUnreadCounts) {
+        $result = $chatRooms->map(function ($chat) use ($allMemberStatus, $allActiveCounts) {
             $memberStatus = $allMemberStatus[$chat->id] ?? collect();
 
             $otherUser = $chat->users->first();
-            $chatName = ! empty($chat->name)
-                ? $chat->name
-                : (
-                    $chat->type === ChatTypeEnum::PRIVATE->value && $otherUser
-                    ? ($otherUser->name ?: $otherUser->email)
-                    : 'Unknown Chat'
-                );
+
+            $chatName = ! empty($chat->name) ? $chat->name : (
+                $chat->type === ChatTypeEnum::PRIVATE->value && $otherUser
+                ? ($otherUser->name ?: $otherUser->email)
+                : 'Unknown Chat'
+            );
 
             return [
                 'id' => $chat->id,
                 'name' => $chatName,
                 'type' => $chat->type,
                 'description' => $chat->description,
-
-                'users' => $chat->users
-                    ->where('id', '!=', $user->id)
-                    ->map(fn ($u) => [
-                        'id' => $u->id,
-                        'name' => $u->name,
-                        'avatar' => $u->attachment?->public_url ?? $u->avatar,
-                        'is_active_member' => (bool) ($memberStatus[$u->id] ?? true),
-                    ])
-                    ->values(),
-
+                'users' => $chat->users->map(fn ($u) => [
+                    'id' => $u->id,
+                    'name' => $u->name,
+                    'avatar' => $u->attachment?->public_url ?? $u->avatar,
+                    'is_active_member' => (bool) ($memberStatus[$u->id] ?? true),
+                ])->values(),
                 'active_member_count' => (int) ($allActiveCounts[$chat->id] ?? 0),
-                'unread_count' => (int) ($allUnreadCounts[$chat->id] ?? 0),
 
                 'last_message' => $chat->lastMessage ? [
                     'id' => $chat->lastMessage->id,
@@ -209,7 +189,8 @@ class ChatController extends Controller
         $userCount = count($userIds);
 
         try {
-            // Cari chat room yang AKTIF untuk semua user
+            DB::beginTransaction();
+
             $chatRoom = Chat::where('type', $request->type)
                 ->where('name', $request->name)
                 ->has('users', '=', $userCount)
@@ -220,21 +201,20 @@ class ChatController extends Controller
                         });
                     }
                 })
-                ->with(['users', 'lastMessage'])
+                ->with(['users:id,name'])
                 ->first();
 
             if (! $chatRoom) {
-                DB::beginTransaction();
                 $chatRoom = Chat::create([
                     'name' => $request->name,
                     'description' => $request->description,
                     'type' => $request->type,
                     'created_by' => $currentUser->id,
                 ]);
-                $chatRoom->users()->attach($userIds);
-                DB::commit();
 
-                $userIds = $chatRoom->users()->pluck('mt_user.id')->toArray();
+                $chatRoom->users()->attach($userIds);
+                $chatRoom->load(['users:id,name']);
+
                 $notification = $this->notificationService->createBulk(
                     userIds: $userIds,
                     title: 'New Chat Room Created',
@@ -250,57 +230,43 @@ class ChatController extends Controller
                             notes: 'A new chat room has been created.'
                         )
                     )->getNotifications()->first();
-                broadcast(new ChatUpdated($notification));
+
+                if ($notification) {
+                    broadcast(new ChatUpdated($notification));
+                }
             }
 
-            // Hitung active member count
-            $activeMemberCount = DB::table('tr_chat_room')
-                ->where('chat_id', $chatRoom->id)
-                ->where('is_active', true)
-                ->count();
-
-            $isUserActiveInChat = DB::table('tr_chat_room')
+            DB::table('tr_chat_room')
                 ->where('chat_id', $chatRoom->id)
                 ->where('user_id', $currentUser->id)
-                ->where('is_active', true)
-                ->exists();
+                ->update([
+                    'is_active' => true,
+                    'updated_at' => now(),
+                ]);
 
-            if (! $isUserActiveInChat) {
-                return $this->sendError(
-                    'This conversation is no longer available because you previously deleted it. Please start a new chat to continue.',
-                    400
-                );
-            }
+            DB::commit();
 
             $data = [
                 'id' => $chatRoom->id,
                 'type' => $chatRoom->type,
+                'name' => $chatRoom->name,
+                'description' => $chatRoom->description,
+                'created_at' => $chatRoom->created_at,
                 'users' => $chatRoom->users->map(fn ($u) => [
                     'id' => $u->id,
                     'name' => $u->name,
-                    'avatar' => $u->attachment?->public_url ?? $u->avatar,
                 ])->values(),
-                'name' => $chatRoom->name,
-                'description' => $chatRoom->description,
-                'active_member_count' => $activeMemberCount,
-                'created_at' => $chatRoom->created_at,
-                'last_message' => $chatRoom->lastMessage ? [
-                    'id' => $chatRoom->lastMessage->id,
-                    'user_id' => $chatRoom->lastMessage->user_id,
-                    'content' => $chatRoom->lastMessage->content,
-                    'created_at' => $chatRoom->lastMessage->created_at,
-                ] : null,
             ];
 
-            return $this->sendSuccess('Chat room created successfully', $data);
+            return $this->sendSuccess('Chat room initialized successfully', $data);
         } catch (\Exception $exception) {
             DB::rollBack();
             Log::error('createChat failed', [
-                'exception' => $exception->getMessage(),
+                'message' => $exception->getMessage(),
                 'trace' => $exception->getTraceAsString(),
             ]);
 
-            return $this->sendError('Failed to create chat', 500);
+            return $this->sendError('Failed to initialize chat', 500);
         }
     }
 

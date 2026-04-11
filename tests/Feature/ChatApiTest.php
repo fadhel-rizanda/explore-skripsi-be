@@ -195,7 +195,7 @@ class ChatApiTest extends TestCase
             ->deleteJson("/api/v1/chats/{$chat->id}");
 
         $response->assertStatus(200);
-//        $this->assertDatabaseMissing('mt_chat', ['id' => $chat->id]);
+        //        $this->assertDatabaseMissing('mt_chat', ['id' => $chat->id]);
     }
 
     public function test_user_can_leave_chat()
