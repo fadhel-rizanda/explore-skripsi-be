@@ -565,7 +565,16 @@ class AuthController extends BaseController
             ];
         }
 
-        foreach ($user->chatRooms->pluck('id') as $id) {
+        $activeChatIds = DB::table('tr_chat_room as target')
+            ->join('tr_chat_room as counts', 'target.chat_id', '=', 'counts.chat_id')
+            ->where('target.user_id', $user->id)
+            ->where('target.is_active', true)
+            ->where('counts.is_active', true)
+            ->select('target.chat_id')
+            ->groupBy('target.chat_id')
+            ->havingRaw('COUNT(counts.user_id) >= 2')
+            ->pluck('chat_id');
+        foreach ($activeChatIds as $id) {
             $channels[] = [
                 'name' => ChannelEnum::CHAT->channel($id),
                 'event' => ChannelEnum::CHAT->event(),
