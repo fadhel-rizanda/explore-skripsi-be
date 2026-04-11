@@ -68,8 +68,6 @@ class ChatController extends Controller
         $allMemberStatus = $userChatRooms->groupBy('chat_id')
             ->map(fn ($rows) => $rows->pluck('is_active', 'user_id'));
 
-        $currentUserSettings = $userChatRooms->where('user_id', $user->id)->keyBy('chat_id');
-
         $allActiveCounts = DB::table('tr_chat_room')
             ->whereIn('chat_id', $chatIds)
             ->where('is_active', true)
@@ -77,18 +75,19 @@ class ChatController extends Controller
             ->selectRaw('chat_id, COUNT(*) as count')
             ->pluck('count', 'chat_id');
 
-        $allUnreadCounts = [];
-        foreach ($currentUserSettings as $chatId => $settings) {
-            $allUnreadCounts[$chatId] = DB::table('tr_message')
-                ->where('chat_id', $chatId)
-                ->where('user_id', '!=', $user->id)
-                ->when($settings->last_read_at, function ($q) use ($settings) {
-                    return $q->where('created_at', '>', $settings->last_read_at);
-                })
-                ->count();
-        }
+        $allUnreadCounts = DB::table('tr_message as m')
+            ->join('tr_chat_room as cr', function ($join) use ($user) {
+                $join->on('m.chat_id', '=', 'cr.chat_id')
+                    ->where('cr.user_id', '=', $user->id);
+            })
+            ->whereIn('m.chat_id', $chatIds)
+            ->where('m.user_id', '!=', $user->id)
+            ->whereRaw('(cr.last_read_at IS NULL OR m.created_at > cr.last_read_at)')
+            ->groupBy('m.chat_id')
+            ->selectRaw('m.chat_id, COUNT(*) as count')
+            ->pluck('count', 'chat_id');
 
-        $result = $chatRooms->map(function ($chat) use ($allMemberStatus, $allActiveCounts) {
+        $result = $chatRooms->map(function ($chat) use ($allMemberStatus, $allActiveCounts, $allUnreadCounts) {
             $memberStatus = $allMemberStatus[$chat->id] ?? collect();
 
             $otherUser = $chat->users->first();
@@ -111,7 +110,7 @@ class ChatController extends Controller
                     'is_active_member' => (bool) ($memberStatus[$u->id] ?? true),
                 ])->values(),
                 'active_member_count' => (int) ($allActiveCounts[$chat->id] ?? 0),
-
+                'unread_count' => (int) ($allUnreadCounts[$chat->id] ?? 0),
                 'last_message' => $chat->lastMessage ? [
                     'id' => $chat->lastMessage->id,
                     'user_id' => $chat->lastMessage->user_id,
@@ -179,14 +178,10 @@ class ChatController extends Controller
     public function createChat(CreateChatRequest $request)
     {
         $currentUser = auth('api')->user();
-        $userIds = collect($request->user_ids)
-            ->push($currentUser->id)
-            ->unique()
-            ->sort()
-            ->values()
-            ->toArray();
-
+        $userIds = collect($request->user_ids)->push($currentUser->id)->unique()->sort()->values()->toArray();
         $userCount = count($userIds);
+
+        $pendingNotification = null;
 
         try {
             DB::beginTransaction();
@@ -196,9 +191,7 @@ class ChatController extends Controller
                 ->has('users', '=', $userCount)
                 ->where(function ($query) use ($userIds) {
                     foreach ($userIds as $id) {
-                        $query->whereHas('users', function ($q) use ($id) {
-                            $q->where('tr_chat_room.user_id', $id);
-                        });
+                        $query->whereHas('users', fn ($q) => $q->where('tr_chat_room.user_id', $id));
                     }
                 })
                 ->with(['users:id,name'])
@@ -215,7 +208,7 @@ class ChatController extends Controller
                 $chatRoom->users()->attach($userIds);
                 $chatRoom->load(['users:id,name']);
 
-                $notification = $this->notificationService->createBulk(
+                $pendingNotification = $this->notificationService->createBulk(
                     userIds: $userIds,
                     title: 'New Chat Room Created',
                     message: 'A new chat room has been created.',
@@ -230,10 +223,6 @@ class ChatController extends Controller
                             notes: 'A new chat room has been created.'
                         )
                     )->getNotifications()->first();
-
-                if ($notification) {
-                    broadcast(new ChatUpdated($notification));
-                }
             }
 
             DB::table('tr_chat_room')
@@ -245,6 +234,10 @@ class ChatController extends Controller
                 ]);
 
             DB::commit();
+
+            if ($pendingNotification) {
+                broadcast(new ChatUpdated($pendingNotification));
+            }
 
             $data = [
                 'id' => $chatRoom->id,
