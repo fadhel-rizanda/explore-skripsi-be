@@ -85,7 +85,6 @@ class CommunityApiTest extends TestCase
         $tag = $this->createTag('COMMUNITY_TOPIC', 'Testing');
         $community->tags()->attach($tag->id);
 
-        $community->admins()->attach($creator->id);
         $community->members()->attach($creator->id);
 
         return $community;

@@ -31,12 +31,8 @@ class CommunityAdmin
                 return $next($request);
             }
 
-            $isAdmin = $community->admins()
-                ->where('user_id', $user->id)
-                ->exists();
-
-            if (! $isAdmin && $community->created_by !== $user->id) {
-                return $this->sendError('You do not have admin access to this community.', 403);
+            if ($community->created_by !== $user->id) {
+                return $this->sendError('You do not have owner access to this community.', 403);
             }
 
             return $next($request);

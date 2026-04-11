@@ -98,10 +98,10 @@ class ModerationController extends Controller
 
     public function takeDownCommunity(Community $community, ModerationActionRequest $request)
     {
-        $recipients = collect($community->getCommunityRecipients())->pluck('id')->all();
+        $owner = $community->createdBy;
 
-        if (empty($recipients)) {
-            return $this->sendError('Community owners not found.');
+        if (! $owner) {
+            return $this->sendError('Community owner not found.');
         }
 
         $this->moderationService->execute(
@@ -109,7 +109,7 @@ class ModerationController extends Controller
             isActive: false,
             referenceType: ModelReferenceEnum::COMMUNITY,
             action: ActionEnum::TAKEDOWN,
-            recipientIds: $recipients,
+            recipientIds: [$owner->id],
             moderatorId: auth('api')->id(),
             reportId: $request->report_id,
             notes: $request->notes
@@ -120,10 +120,10 @@ class ModerationController extends Controller
 
     public function restoreCommunity(Community $community, ModerationActionRequest $request)
     {
-        $recipients = collect($community->getCommunityRecipients())->pluck('id')->all();
+        $owner = $community->createdBy;
 
-        if (empty($recipients)) {
-            return $this->sendError('Community owners not found.');
+        if (! $owner) {
+            return $this->sendError('Community owner not found.');
         }
 
         $this->moderationService->execute(
@@ -131,7 +131,7 @@ class ModerationController extends Controller
             isActive: true,
             referenceType: ModelReferenceEnum::COMMUNITY,
             action: ActionEnum::RESTORED,
-            recipientIds: $recipients,
+            recipientIds: [$owner->id],
             moderatorId: auth('api')->id(),
             reportId: $request->report_id,
             notes: $request->notes

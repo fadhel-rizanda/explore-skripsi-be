@@ -42,13 +42,12 @@ class CommunityController extends Controller
                 'attachment:id,public_url,filename,mime_type,path',
                 'address',
                 'tags',
-                'admins:id,name',
+                'createdBy',
             ])->loadCount('members');
 
             if ($userId) {
                 $community->loadExists([
                     'members as is_member' => fn ($q) => $q->where('user_id', $userId),
-                    'admins as is_admin' => fn ($q) => $q->where('user_id', $userId),
                 ]);
             }
 
@@ -61,12 +60,14 @@ class CommunityController extends Controller
                 'address' => $community->address,
                 'attachment' => $community->attachment,
                 'tags' => $community->tags,
-                'admins' => $community->admins,
                 'members_count' => $community->members_count,
                 'is_member' => $community->is_member ?? false,
-                'is_admin' => $community->is_admin ?? false,
                 'created_at' => $community->created_at,
                 'updated_at' => $community->updated_at,
+                'created_by' => [
+                    'id' => $community->createdBy?->id,
+                    'name' => $community->createdBy?->name,
+                ],
             ];
 
             return $this->sendSuccess('Community details retrieved successfully.', $data);
@@ -84,8 +85,9 @@ class CommunityController extends Controller
         try {
             DB::beginTransaction();
 
+            $user = auth('api')->user();
             if ($request->use_owner_address) {
-                $ownerAddress = auth('api')->user()->address;
+                $ownerAddress = $user->address;
                 if (! $ownerAddress) {
                     DB::rollBack();
 
@@ -104,7 +106,7 @@ class CommunityController extends Controller
                 'website' => $request->website,
                 'attachment_id' => $request->attachment_id,
                 'address_id' => $address->id,
-                'created_by' => auth('api')->id(),
+                'created_by' => $user->id,
             ]);
 
             $community->setAttachmentMetadata(
@@ -116,23 +118,14 @@ class CommunityController extends Controller
                 $community->tags()->sync($request->tag_ids);
             }
 
-            $creatorId = auth('api')->id();
-
-            $adminIds = collect($request->admin_ids ?? [])
-                ->push($creatorId)
-                ->unique()
-                ->values()
-                ->toArray();
-
-            $community->admins()->sync($adminIds);
-            $community->members()->syncWithoutDetaching($adminIds);
+            $community->members()->syncWithoutDetaching($user->id);
 
             DB::commit();
 
             return $this->sendSuccess(
                 'Community created successfully.',
                 new CommunityResource(
-                    $community->load(['tags', 'admins'])
+                    $community->load(['tags'])
                 )
             );
         } catch (\Throwable $e) {
@@ -171,24 +164,11 @@ class CommunityController extends Controller
                 $community->tags()->sync($request->tag_ids);
             }
 
-            if ($request->has('admin_ids')) {
-                $creatorId = $community->created_by;
-
-                $adminIds = collect($request->admin_ids)
-                    ->push($creatorId)
-                    ->unique()
-                    ->values()
-                    ->toArray();
-
-                $community->admins()->sync($adminIds);
-                $community->members()->syncWithoutDetaching($adminIds);
-            }
-
             DB::commit();
 
             return $this->sendSuccess(
                 'Community updated successfully.',
-                new CommunityResource($community->load(['tags', 'admins']))
+                new CommunityResource($community->load(['tags']))
             );
         } catch (\Throwable $e) {
             DB::rollBack();
@@ -270,7 +250,6 @@ class CommunityController extends Controller
                 'image_url' => optional($community->attachment)->public_url,
                 'members_count' => $community->members_count,
                 'is_member' => $community->is_member ?? false,
-                'is_admin' => $community->is_admin ?? false,
                 'is_active' => $community->is_active ?? false,
                 'created_at' => $community->created_at,
                 'updated_at' => $community->updated_at,
@@ -293,13 +272,9 @@ class CommunityController extends Controller
         try {
             $user = auth('api')->user();
 
-            $isAdmin = $community->admins()
-                ->where('user_id', $user->id)
-                ->exists() || $community->created_by === $user->id || $user->hasRole('admin');
-
-            if ($isAdmin) {
+            if ($community->created_by === $user->id) {
                 return $this->sendError(
-                    'Admin cannot unfollow the community. Remove admin role first.',
+                    'Owner cannot unfollow the community.',
                     403
                 );
             }
