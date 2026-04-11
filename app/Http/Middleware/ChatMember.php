@@ -27,6 +27,7 @@ class ChatMember
             }
             $isMember = $chat->users()
                 ->where('mt_user.id', $user->id)
+                ->wherePivot('is_active', true)
                 ->exists();
             if (! $isMember) {
                 return $this->sendError('You are not a member of this chat room.', 403);

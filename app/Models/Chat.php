@@ -41,7 +41,7 @@ class Chat extends Model
     {
         return $this->belongsToMany(User::class, 'tr_chat_room', 'chat_id', 'user_id')
             ->withTimestamps()
-            ->withPivot('last_read_at', 'joined_at');
+            ->withPivot('last_read_at', 'joined_at', 'is_active');
     }
 
     public function lastMessage(): HasOne

@@ -27,11 +27,12 @@ class CreateChatRequest extends FormRequest
         $type = $this->input('type');
         $currentUserId = auth('api')->id();
         $userTable = User::TABLE;
+        $isManual = $this->boolean('is_create_manually');
 
         return [
             'name' => [
                 Rule::when(
-                    $type === ChatTypeEnum::PUBLIC->value,
+                    $isManual,
                     ['required'],
                     ['nullable']
                 ),
@@ -52,9 +53,11 @@ class CreateChatRequest extends FormRequest
             'user_ids.*' => [
                 'uuid',
                 'distinct',
-                Rule::notIn(array_filter([$currentUserId])),
+                Rule::notIn([$currentUserId]),
                 Rule::exists($userTable, 'id')->where('is_active', true),
             ],
+
+            'is_create_manually' => 'required|boolean',
         ];
     }
 }
