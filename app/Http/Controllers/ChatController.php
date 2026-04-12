@@ -3,11 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Constants\GeneralConfig;
-use App\Enums\ActionEnum;
 use App\Enums\AttachmentTypeEnum;
 use App\Enums\ChatTypeEnum;
 use App\Enums\ModelReferenceEnum;
-use App\Events\ChatUpdated;
 use App\Events\MessageDeleted;
 use App\Events\MessageSent;
 use App\Events\MessageUpdated;
@@ -18,7 +16,6 @@ use App\Models\Attachment;
 use App\Models\Chat;
 use App\Models\Message;
 use App\Models\User;
-use App\Notifications\ChatNotification;
 use App\Traits\ResponseAPI;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
