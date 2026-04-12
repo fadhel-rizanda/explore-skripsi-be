@@ -181,7 +181,6 @@ class ChatController extends Controller
         $userIds = collect($request->user_ids)->push($currentUser->id)->unique()->sort()->values()->toArray();
         $userCount = count($userIds);
 
-        $pendingNotification = null;
         $reactivatedUserIds = [];
 
         try {
@@ -209,13 +208,13 @@ class ChatController extends Controller
                 $chatRoom->users()->attach($userIds);
                 $chatRoom->load(['users:id,name']);
 
-                $pendingNotification = $this->notificationService->createBulk(
+                $this->notificationService->createBulk(
                     userIds: $userIds,
                     title: 'New Chat Room Initialized',
                     message: 'A new chat room has been initialized.',
                     referenceType: ModelReferenceEnum::CHAT->value,
                     referenceId: $chatRoom->id,
-                )->getNotifications()->first();
+                )->broadcast();
             }
 
             $reactivatedUserIds = DB::table('tr_chat_room')
@@ -252,17 +251,6 @@ class ChatController extends Controller
             ]);
 
             return $this->sendError('Failed to initialize chat', 500);
-        }
-
-        if ($pendingNotification) {
-            $this->notificationService->broadcast()
-                ->notifyUsers(new ChatNotification(
-                    action: ActionEnum::CREATED->value,
-                    chat: $chatRoom,
-                    notes: 'A new chat room has been initialized.'
-                ));
-
-            broadcast(new ChatUpdated($pendingNotification));
         }
 
         if (! empty($reactivatedUserIds)) {
@@ -385,9 +373,9 @@ class ChatController extends Controller
             DB::commit();
 
             $this->notificationService->createBulk(
-                userIds: [$user->id],
-                title: 'Chat Room Deleted',
-                message: 'A chat room has been deleted.',
+                userIds: $chat->users()->pluck('id')->toArray(),
+                title: $activeMemberCount > 1 ? 'Chat Room Deactivated' : 'Chat Room Deleted',
+                message: $activeMemberCount > 1 ? 'A chat room has been deactivated.' : 'A chat room has been deleted.',
                 referenceType: ModelReferenceEnum::CHAT->value,
                 referenceId: $chatDataForNotify->id,
             )->broadcast();
