@@ -35,7 +35,6 @@ class Community extends Model
 
     protected $casts = [
         'is_member' => 'boolean',
-        'is_admin' => 'boolean',
     ];
 
     public function address(): BelongsTo
@@ -53,11 +52,6 @@ class Community extends Model
         return $this->belongsToMany(AllTag::class, 'tr_tag_community_record', 'community_id', 'tag_id');
     }
 
-    public function admins(): BelongsToMany
-    {
-        return $this->belongsToMany(User::class, 'tr_community_admin', 'community_id', 'user_id');
-    }
-
     public function members(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'tr_follow_community', 'community_id', 'user_id');
@@ -68,23 +62,11 @@ class Community extends Model
         return $this->belongsTo(User::class, 'created_by', 'id');
     }
 
-    public function getCommunityRecipients(): array
-    {
-        return collect()
-            ->merge($this->admins()->get())
-            ->push($this->createdBy()->first())
-            ->filter()
-            ->unique('id')
-            ->values()
-            ->all();
-    }
-
     public function scopeWithMemberStatus($query, ?string $userId)
     {
         return $query->when($userId, function ($q) use ($userId) {
             $q->withCount([
                 'members as is_member' => fn ($sub) => $sub->where('user_id', $userId),
-                'admins as is_admin' => fn ($sub) => $sub->where('user_id', $userId),
             ]);
         });
     }

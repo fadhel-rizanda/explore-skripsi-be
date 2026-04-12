@@ -27,9 +27,10 @@ class PetController extends Controller
     {
         try {
             $isAdmin = auth('api')->user()?->hasRole('admin') ?? false;
+            $isOpenToSpecialNeeds = auth('api')->user()?->open_to_special_needs ?? true;
 
             $perPage = min((int) $request->query('per_page', 15), 100);
-            $pets = $this->buildPetQuery($request, $isAdmin)
+            $pets = $this->buildPetQuery($request, $isAdmin, $isOpenToSpecialNeeds)
                 ->orderBy('created_at', 'desc')
                 ->paginate($perPage);
 
@@ -343,15 +344,30 @@ class PetController extends Controller
     /**
      * Build base pet query with common filters.
      */
-    private function buildPetQuery(GetAllRequest $request, bool $isAdmin)
+    private function buildPetQuery(GetAllRequest $request, bool $isAdmin, bool $isOpenToSpecialNeeds)
     {
         $search = $request->query('search');
         $typeOfAnimalId = $request->query('type_of_animal_id');
         $age = $request->query('age');
         $tagPersonalityId = $request->query('tag_personality_id');
 
-        return Pet::with('typeOfAnimal:id,name,type,color_code')->when(! $isAdmin, fn ($q) => $q->with('profilePicture:id,public_url'))
-            ->when(! $isAdmin, fn ($q) => $q->where('is_active', true))
+        $statusName = $request->query('status');
+        $statusModel = null;
+
+        if ($statusName) {
+            $statusModel = Status::getCache(StatusTypeEnum::PET->value, $statusName);
+        }
+
+        return Pet::with('typeOfAnimal:id,name,type,color_code')
+            ->when(! $isAdmin, function ($q) use ($isOpenToSpecialNeeds) {
+                $q->where('is_active', true)
+                    ->with('profilePicture:id,public_url');
+
+                if (! $isOpenToSpecialNeeds) {
+                    $q->where('special_needs', false);
+                }
+            })
+            ->when($statusModel, fn ($q) => $q->where('status_id', $statusModel->id))
             ->when($search, function ($q) use ($search, $isAdmin) {
                 $q->where(function ($query) use ($search, $isAdmin) {
                     $query->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($search) . '%']);
@@ -360,9 +376,7 @@ class PetController extends Controller
                     }
                 });
             })
-            ->when($typeOfAnimalId, function ($q) use ($typeOfAnimalId) {
-                $q->where('type_of_animal_id', $typeOfAnimalId);
-            })
+            ->when($typeOfAnimalId, fn ($q) => $q->where('type_of_animal_id', $typeOfAnimalId))
             ->when($age !== null, function ($q) use ($age) {
                 $now = now();
                 if ($age === 'baby') {

@@ -7,7 +7,6 @@ use App\Models\Community;
 use App\Models\User;
 use App\Rules\OwnsAttachment;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class CreateCommunityRequest extends FormRequest
 {
@@ -38,11 +37,6 @@ class CreateCommunityRequest extends FormRequest
                 ],
                 'tag_ids' => 'required|array|min:1',
                 'tag_ids.*' => 'uuid|exists:' . AllTag::TABLE . ',id',
-                'admin_ids' => 'sometimes|array',
-                'admin_ids.*' => [
-                    'uuid',
-                    Rule::exists(User::TABLE, 'id')->where('is_active', true),
-                ],
                 'use_owner_address' => 'required|boolean',
             ],
             $this->use_owner_address

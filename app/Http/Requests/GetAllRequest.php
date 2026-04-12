@@ -33,7 +33,7 @@ class GetAllRequest extends FormRequest
             'page' => 'sometimes|integer|min:1',
             'per_page' => 'sometimes|integer|min:1|max:100',
             'type' => 'sometimes|string|max:50',
-            'status' => 'sometimes|string|max:50',
+            'status' => 'sometimes|string|max:50|exists:' . $statusTable . ',name',
             'type_of_animal_id' => 'sometimes|uuid|exists:' . $tagTables . ',id',
             'age' => 'sometimes|string|in:baby,young,adult,senior',
             'tag_personality_id' => 'sometimes|uuid|exists:' . $tagTables . ',id',
