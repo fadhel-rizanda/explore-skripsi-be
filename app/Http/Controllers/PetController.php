@@ -351,18 +351,23 @@ class PetController extends Controller
         $age = $request->query('age');
         $tagPersonalityId = $request->query('tag_personality_id');
 
-        $availableStatus = Status::getCache(StatusTypeEnum::PET->value, PetStatusEnum::AVAILABLE->value);
+        $statusName = $request->query('status');
+        $statusModel = null;
+
+        if ($statusName) {
+            $statusModel = Status::getCache(StatusTypeEnum::PET->value, $statusName);
+        }
 
         return Pet::with('typeOfAnimal:id,name,type,color_code')
-            ->when(! $isAdmin, function ($q) use ($availableStatus, $isOpenToSpecialNeeds) {
+            ->when(! $isAdmin, function ($q) use ($isOpenToSpecialNeeds) {
                 $q->where('is_active', true)
-                    ->where('status_id', $availableStatus->id)
                     ->with('profilePicture:id,public_url');
 
                 if (! $isOpenToSpecialNeeds) {
                     $q->where('special_needs', false);
                 }
             })
+            ->when($statusModel, fn ($q) => $q->where('status_id', $statusModel->id))
             ->when($search, function ($q) use ($search, $isAdmin) {
                 $q->where(function ($query) use ($search, $isAdmin) {
                     $query->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($search) . '%']);
