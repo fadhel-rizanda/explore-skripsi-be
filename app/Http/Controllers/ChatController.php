@@ -182,6 +182,7 @@ class ChatController extends Controller
         $userCount = count($userIds);
 
         $pendingNotification = null;
+        $reactivatedUserIds = [];
 
         try {
             DB::beginTransaction();
@@ -210,48 +211,39 @@ class ChatController extends Controller
 
                 $pendingNotification = $this->notificationService->createBulk(
                     userIds: $userIds,
-                    title: 'New Chat Room Created',
-                    message: 'A new chat room has been created.',
+                    title: 'New Chat Room Initialized',
+                    message: 'A new chat room has been initialized.',
                     referenceType: ModelReferenceEnum::CHAT->value,
                     referenceId: $chatRoom->id,
-                )
-                    ->broadcast()
-                    ->notifyUsers(
-                        new ChatNotification(
-                            action: ActionEnum::CREATED->value,
-                            chat: $chatRoom,
-                            notes: 'A new chat room has been created.'
-                        )
-                    )->getNotifications()->first();
+                )->getNotifications()->first();
             }
 
-            DB::table('tr_chat_room')
+            $reactivatedUserIds = DB::table('tr_chat_room')
                 ->where('chat_id', $chatRoom->id)
-                ->where('user_id', $currentUser->id)
-                ->update([
-                    'is_active' => true,
-                    'updated_at' => now(),
-                ]);
+                ->where('is_active', false)
+                ->pluck('user_id')
+                ->toArray();
+
+            if ($chatRoom->type === ChatTypeEnum::PRIVATE->value && empty($chatRoom->name) && ! empty($reactivatedUserIds)) {
+                DB::table('tr_chat_room')
+                    ->where('chat_id', $chatRoom->id)
+                    ->update([
+                        'is_active' => true,
+                        'updated_at' => now(),
+                        'last_read_at' => now(),
+                    ]);
+
+                $this->notificationService->createBulk(
+                    userIds: $reactivatedUserIds,
+                    title: 'Chat Room Reinitialized',
+                    message: 'A chat room you are part of has been reinitialized.',
+                    referenceType: ModelReferenceEnum::CHAT->value,
+                    referenceId: $chatRoom->id,
+                );
+            }
 
             DB::commit();
 
-            if ($pendingNotification) {
-                broadcast(new ChatUpdated($pendingNotification));
-            }
-
-            $data = [
-                'id' => $chatRoom->id,
-                'type' => $chatRoom->type,
-                'name' => $chatRoom->name,
-                'description' => $chatRoom->description,
-                'created_at' => $chatRoom->created_at,
-                'users' => $chatRoom->users->map(fn ($u) => [
-                    'id' => $u->id,
-                    'name' => $u->name,
-                ])->values(),
-            ];
-
-            return $this->sendSuccess('Chat room initialized successfully', $data);
         } catch (\Exception $exception) {
             DB::rollBack();
             Log::error('createChat failed', [
@@ -261,6 +253,35 @@ class ChatController extends Controller
 
             return $this->sendError('Failed to initialize chat', 500);
         }
+
+        if ($pendingNotification) {
+            $this->notificationService->broadcast()
+                ->notifyUsers(new ChatNotification(
+                    action: ActionEnum::CREATED->value,
+                    chat: $chatRoom,
+                    notes: 'A new chat room has been initialized.'
+                ));
+
+            broadcast(new ChatUpdated($pendingNotification));
+        }
+
+        if (! empty($reactivatedUserIds)) {
+            $this->notificationService->broadcast();
+        }
+
+        $data = [
+            'id' => $chatRoom->id,
+            'type' => $chatRoom->type,
+            'name' => $chatRoom->name,
+            'description' => $chatRoom->description,
+            'created_at' => $chatRoom->created_at,
+            'users' => $chatRoom->users->map(fn ($u) => [
+                'id' => $u->id,
+                'name' => $u->name,
+            ])->values(),
+        ];
+
+        return $this->sendSuccess('Chat room initialized successfully', $data);
     }
 
     public function sendMessage(Chat $chat, SendMessageRequest $request)
@@ -273,7 +294,7 @@ class ChatController extends Controller
             ->count();
 
         if ($activeMemberCount < 2) {
-            return $this->sendError('This conversation is currently unavailable. Please start a new chat.', 400);
+            return $this->sendError('This conversation is currently unavailable. Please try again later.', 400);
         }
 
         try {
