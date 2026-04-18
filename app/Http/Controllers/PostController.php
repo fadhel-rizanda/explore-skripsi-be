@@ -70,13 +70,14 @@ class PostController extends Controller
     public function createPost(CreatePostRequest $request)
     {
         try {
+            $userId = auth('api')->user()->id;
             DB::beginTransaction();
             $post = Post::create([
                 'title' => $request->input('title'),
                 'content' => $request->input('content'),
                 'attachment_id' => $request->input('attachment_id'),
                 'community_id' => $request->input('community_id'),
-                'created_by' => auth('api')->user()->id,
+                'created_by' => $userId,
             ]);
 
             $post->setAttachmentMetadata(
@@ -90,7 +91,12 @@ class PostController extends Controller
 
             DB::commit();
 
-            $usersToNotify = $post->community_id ? $post->community->members()->pluck('user_id')->toArray() : [];
+            $usersToNotify = $post->community_id
+                ? $post->community->members()
+                    ->where('user_id', '!=', $userId)
+                    ->pluck('user_id')
+                    ->toArray()
+                : [];
 
             if (! empty($usersToNotify)) {
                 $notification = $this->notificationService->createBulk(
