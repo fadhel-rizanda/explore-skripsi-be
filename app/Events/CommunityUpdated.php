@@ -14,16 +14,13 @@ class CommunityUpdated implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $notification;
-
     /**
      * Create a new event instance.
      */
     public function __construct(
-        Notification $notification,
-    ) {
-        $this->notification = $notification;
-    }
+        public Notification $notification,
+        public string $communityId
+    ) {}
 
     /**
      * Get the channels the event should broadcast on.
@@ -33,7 +30,7 @@ class CommunityUpdated implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel(ChannelEnum::COMMUNITY->channel($this->notification->reference_id)),
+            new PrivateChannel(ChannelEnum::COMMUNITY->channel($this->communityId)),
         ];
     }
 
