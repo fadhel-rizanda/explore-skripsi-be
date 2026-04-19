@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Enums\ModelReferenceEnum;
+use App\Events\CommunityUpdated;
 use App\Http\Requests\CreatePostRequest;
 use App\Http\Requests\GetAllRequest;
 use App\Http\Requests\UpdatePostRequest;
 use App\Http\Resources\PostResource;
+use App\Http\Services\NotificationService;
 use App\Models\Post;
 use App\Traits\ResponseAPI;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +17,10 @@ use Illuminate\Support\Str;
 class PostController extends Controller
 {
     use ResponseAPI;
+
+    public function __construct(
+        private NotificationService $notificationService
+    ) {}
 
     public function listPosts(GetAllRequest $request)
     {
@@ -64,13 +70,14 @@ class PostController extends Controller
     public function createPost(CreatePostRequest $request)
     {
         try {
+            $userId = auth('api')->user()->id;
             DB::beginTransaction();
             $post = Post::create([
                 'title' => $request->input('title'),
                 'content' => $request->input('content'),
                 'attachment_id' => $request->input('attachment_id'),
                 'community_id' => $request->input('community_id'),
-                'created_by' => auth('api')->user()->id,
+                'created_by' => $userId,
             ]);
 
             $post->setAttachmentMetadata(
@@ -83,6 +90,25 @@ class PostController extends Controller
             }
 
             DB::commit();
+
+            $usersToNotify = $post->community_id
+                ? $post->community->members()
+                    ->where('user_id', '!=', $userId)
+                    ->pluck('user_id')
+                    ->toArray()
+                : [];
+
+            if (! empty($usersToNotify)) {
+                $notification = $this->notificationService->createBulk(
+                    userIds: $usersToNotify,
+                    title: 'New Post: ' . $post->title,
+                    message: 'A new post has been created. Check it out!',
+                    referenceType: ModelReferenceEnum::POST->value,
+                    referenceId: $post->id,
+                )->getNotifications()->first();
+
+                broadcast(new CommunityUpdated($notification, $post->community_id));
+            }
 
             $data = $this->getDataResponse($post);
 
