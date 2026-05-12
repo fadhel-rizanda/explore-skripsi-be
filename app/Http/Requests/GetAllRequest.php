@@ -42,6 +42,7 @@ class GetAllRequest extends FormRequest
             'role_id' => 'sometimes|uuid|exists:' . $roleTable . ',id',
             'sort_by' => 'sometimes|string|max:100',
             'order_by' => 'sometimes|string|in:asc,desc',
+            'sort_direction' => 'sometimes|string|in:asc,desc',
         ];
     }
 }
