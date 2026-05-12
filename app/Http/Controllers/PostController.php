@@ -200,7 +200,7 @@ class PostController extends Controller
         $sortBy = $request->query('sort_by', 'created_at');
         $communityId = $request->query('community_id');
         $tagId = $request->query('tag_id');
-        $orderBy = $request->query('sort_direction', 'desc');
+        $orderBy = $request->query('sort_direction') ?? $request->query('order_by', 'desc');
 
         $allowedSorts = ['title', 'created_at', 'updated_at'];
         if (! in_array($sortBy, $allowedSorts)) {
