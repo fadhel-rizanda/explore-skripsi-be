@@ -39,6 +39,7 @@ class UserController extends Controller
         $search = $request->query('search');
         $roleId = $request->query('role_id');
         $sortBy = $request->query('sort_by', 'created_at');
+        $orderBy = $request->query('sort_direction') ?? $request->query('order_by', 'desc');
 
         $allowedSorts = $isAdmin
             ? ['name', 'email', 'created_at', 'updated_at']
@@ -69,7 +70,7 @@ class UserController extends Controller
                 $roleId,
                 fn ($q, $roleId) => $q->whereHas('roles', fn ($query) => $query->where('id', $roleId))
             )
-            ->orderBy($sortBy, 'desc')
+            ->orderBy($sortBy, $orderBy)
             ->paginate($perPage);
 
         $users->getCollection()->transform(function ($user) use ($isAdmin) {

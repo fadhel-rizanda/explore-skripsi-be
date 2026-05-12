@@ -200,6 +200,7 @@ class PostController extends Controller
         $sortBy = $request->query('sort_by', 'created_at');
         $communityId = $request->query('community_id');
         $tagId = $request->query('tag_id');
+        $orderBy = $request->query('sort_direction') ?? $request->query('order_by', 'desc');
 
         $allowedSorts = ['title', 'created_at', 'updated_at'];
         if (! in_array($sortBy, $allowedSorts)) {
@@ -231,7 +232,7 @@ class PostController extends Controller
                 }
             })
             ->when($tagId, fn ($q) => $q->whereHas('tags', fn ($t) => $t->where('mt_all_tag.id', $tagId)))
-            ->orderBy($sortBy, 'desc')
+            ->orderBy($sortBy, $orderBy)
             ->paginate($perPage);
 
         return $posts;
