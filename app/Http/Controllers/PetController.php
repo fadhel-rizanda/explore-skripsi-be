@@ -233,8 +233,11 @@ class PetController extends Controller
                 'user:id,is_active',
             ]);
 
-            $isAdmin = auth('api')->user()?->hasRole('admin') ?? false;
-            if (! $isAdmin && (! $pet->is_active || ! ($pet->user?->is_active ?? true))) {
+            $user = auth('api')->user();
+            $isAdmin = $user?->hasRole('admin') ?? false;
+            $isOwner = $user && $pet->user_id === $user->id;
+
+            if (! $isAdmin && ! $isOwner && (! $pet->is_active || ! ($pet->user?->is_active ?? true))) {
                 return $this->sendError('Pet not found', 404);
             }
 

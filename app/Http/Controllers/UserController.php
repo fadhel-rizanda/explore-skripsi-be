@@ -269,23 +269,22 @@ class UserController extends Controller
 
     public function deactivateUser(DeleteUserRequest $request)
     {
+        $user = auth('api')->user();
+        $userPassword = $request->input('password');
+
+        if (! password_verify($userPassword, $user->password)) {
+            return $this->sendError('Incorrect password provided.', 422);
+        }
+
         try {
-            DB::beginTransaction();
-            $user = auth('api')->user();
-            $userPassword = $request->input('password');
+            DB::transaction(function () use ($user) {
+                \App\Models\RefreshToken::where('user_id', $user->id)->delete();
 
-            if (! password_verify($userPassword, $user->password)) {
-                return $this->sendError('Incorrect password provided.', 422);
-            }
-
-            \App\Models\RefreshToken::where('user_id', $user->id)->delete();
-
-            $user->update([
-                'is_active' => false,
-                'token_version' => ($user->token_version ?? 0) + 1,
-            ]);
-
-            DB::commit();
+                $user->update([
+                    'is_active' => false,
+                    'token_version' => ($user->token_version ?? 0) + 1,
+                ]);
+            });
 
             return $this->sendSuccess('User deactivated successfully.');
         } catch (\Exception $e) {
