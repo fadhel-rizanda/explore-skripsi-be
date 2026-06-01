@@ -40,6 +40,7 @@ class AdoptionResource extends JsonResource
                 'name' => $this->provider?->name,
                 'email' => $this->provider?->email,
                 'avatar' => $this->provider?->attachment?->public_url ?? $this->provider?->avatar,
+                'is_active' => $this->provider?->is_active,
             ]),
 
             'adopter' => $this->whenLoaded('adopter', fn () => [

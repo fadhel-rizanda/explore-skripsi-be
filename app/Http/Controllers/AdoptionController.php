@@ -55,7 +55,7 @@ class AdoptionController extends Controller
         try {
             $adoption->load([
                 'pet:id,name',
-                'provider:mt_user.id,mt_user.name,mt_user.email,mt_user.avatar',
+                'provider:mt_user.id,mt_user.name,mt_user.email,mt_user.avatar,mt_user.is_active',
                 'provider.attachment:id,public_url',
                 'adopter:mt_user.id,mt_user.name,mt_user.email,mt_user.avatar,mt_user.is_active',
                 'adopter.attachment:id,public_url',

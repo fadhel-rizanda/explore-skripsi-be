@@ -230,7 +230,13 @@ class PetController extends Controller
                 'address.province',
                 'address.regency',
                 'address.district',
+                'user:id,is_active',
             ]);
+
+            $isAdmin = auth('api')->user()?->hasRole('admin') ?? false;
+            if (! $isAdmin && (! $pet->is_active || ! ($pet->user?->is_active ?? true))) {
+                return $this->sendError('Pet not found', 404);
+            }
 
             [$age, $ageUnit] = $this->calculateAgeAndUnit($pet->date_of_birth);
             $data = [
@@ -361,6 +367,7 @@ class PetController extends Controller
         return Pet::with('typeOfAnimal:id,name,type,color_code')
             ->when(! $isAdmin, function ($q) use ($isOpenToSpecialNeeds) {
                 $q->where('is_active', true)
+                    ->whereHas('user', fn ($u) => $u->where('is_active', true))
                     ->with('profilePicture:id,public_url');
 
                 if (! $isOpenToSpecialNeeds) {

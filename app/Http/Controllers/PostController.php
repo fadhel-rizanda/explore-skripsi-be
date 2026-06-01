@@ -51,6 +51,11 @@ class PostController extends Controller
                 'tags:id,name,type,color_code',
             ])->loadCount(['likes', 'comments']);
 
+            $isAdmin = auth('api')->user()?->hasRole('admin') ?? false;
+            if (! $isAdmin && ! ($post->createdBy?->is_active ?? true) && is_null($post->community_id)) {
+                return $this->sendError('Post not found.', 404);
+            }
+
             if ($userId = auth('api')->id()) {
                 $post->loadExists([
                     'likes as is_liked' => fn ($q) => $q->where('user_id', $userId),
@@ -228,7 +233,8 @@ class PostController extends Controller
             ->when(! $isAdmin, function ($q) use ($communityId) {
                 $q->where('is_active', true);
                 if (! $communityId) {
-                    $q->whereNull('community_id');
+                    $q->whereNull('community_id')
+                        ->whereHas('createdBy', fn ($u) => $u->where('is_active', true));
                 }
             })
             ->when($tagId, fn ($q) => $q->whereHas('tags', fn ($t) => $t->where('mt_all_tag.id', $tagId)))
