@@ -105,6 +105,44 @@ class UserApiTest extends TestCase
         $this->assertDatabaseMissing('mt_user', ['id' => $user->id]);
     }
 
+    public function test_deactivate_profile()
+    {
+        $user = User::factory()->create([
+            'is_active' => true,
+            'password' => Hash::make('password12'),
+            'token_version' => 1,
+        ]);
+        $token = auth('api')->login($user);
+
+        $response = $this->withHeaders([
+            'Authorization' => "Bearer {$token}",
+        ])->patchJson('/api/v1/profile/deactivate', [
+            'password' => 'password12',
+        ]);
+
+        $response->assertStatus(200);
+        $this->assertFalse($user->fresh()->is_active);
+    }
+
+    public function test_deactivate_profile_wrong_password()
+    {
+        $user = User::factory()->create([
+            'is_active' => true,
+            'password' => Hash::make('password12'),
+            'token_version' => 1,
+        ]);
+        $token = auth('api')->login($user);
+
+        $response = $this->withHeaders([
+            'Authorization' => "Bearer {$token}",
+        ])->patchJson('/api/v1/profile/deactivate', [
+            'password' => 'wrongpassword',
+        ]);
+
+        $response->assertStatus(422);
+        $this->assertTrue($user->fresh()->is_active);
+    }
+
     public function test_admin_deactivate_user()
     {
         $admin = User::factory()->create(['is_active' => true, 'token_version' => 1]);

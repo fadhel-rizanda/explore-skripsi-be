@@ -36,7 +36,7 @@ class ChatController extends Controller
         $chatRooms = $user->chatRooms()
             ->with([
                 'users' => function ($query) use ($user) {
-                    $query->select('mt_user.id', 'name', 'avatar', 'attachment_id')
+                    $query->select('mt_user.id', 'name', 'avatar', 'attachment_id', 'mt_user.is_active')
                         ->where('mt_user.id', '!=', $user->id);
                 },
                 'users.attachment:id,public_url',
@@ -105,6 +105,7 @@ class ChatController extends Controller
                     'name' => $u->name,
                     'avatar' => $u->attachment?->public_url ?? $u->avatar,
                     'is_active_member' => (bool) ($memberStatus[$u->id] ?? true),
+                    'is_active' => (bool) $u->is_active,
                 ])->values(),
                 'active_member_count' => (int) ($allActiveCounts[$chat->id] ?? 0),
                 'unread_count' => (int) ($allUnreadCounts[$chat->id] ?? 0),

@@ -45,6 +45,11 @@ class CommunityController extends Controller
                 'createdBy',
             ])->loadCount('members');
 
+            $isAdmin = auth('api')->user()?->hasRole('admin') ?? false;
+            if (! $isAdmin && ! $community->is_active) {
+                return $this->sendError('Community not found.', 404);
+            }
+
             if ($userId) {
                 $community->loadExists([
                     'members as is_member' => fn ($q) => $q->where('user_id', $userId),
@@ -67,6 +72,7 @@ class CommunityController extends Controller
                 'created_by' => [
                     'id' => $community->createdBy?->id,
                     'name' => $community->createdBy?->name,
+                    'is_active' => $community->createdBy?->is_active,
                 ],
             ];
 

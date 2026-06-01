@@ -125,6 +125,7 @@ class UserController extends Controller
                 'personality_tags' => $user->personalityTags,
                 'pet_experience_tags' => $user->petExperienceTags,
                 'open_to_special_needs' => $user->open_to_special_needs,
+                'is_active' => $user->is_active,
                 'created_at' => $user->created_at,
                 'updated_at' => $user->updated_at,
             ];
@@ -266,6 +267,35 @@ class UserController extends Controller
         }
     }
 
+    public function deactivateUser(DeleteUserRequest $request)
+    {
+        try {
+            DB::beginTransaction();
+            $user = auth('api')->user();
+            $userPassword = $request->input('password');
+
+            if (! password_verify($userPassword, $user->password)) {
+                return $this->sendError('Incorrect password provided.', 422);
+            }
+
+            \App\Models\RefreshToken::where('user_id', $user->id)->delete();
+
+            $user->update([
+                'is_active' => false,
+                'token_version' => ($user->token_version ?? 0) + 1,
+            ]);
+
+            DB::commit();
+
+            return $this->sendSuccess('User deactivated successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Error deactivating user: ' . $e->getMessage());
+
+            return $this->sendError('Error deactivating user: ' . $e->getMessage());
+        }
+    }
+
     public function userOptions(GetAllRequest $request)
     {
         $search = $request->search;
@@ -280,14 +310,14 @@ class UserController extends Controller
             $users = $query->where(function ($q) use ($search) {
                 $q->where('name', 'ILIKE', "%{$search}%")
                     ->orWhere('email', 'ILIKE', "%{$search}%");
-            })->simplePaginate(15, ['id', 'name', 'email'], 'page', $page);
+            })->simplePaginate(15, ['id', 'name', 'email', 'is_active'], 'page', $page);
         } else {
             $cacheKey = "users:list:page_{$page}";
 
             $users = Cache::remember(
                 $cacheKey,
                 now()->addHours(6),
-                fn () => $query->simplePaginate(15, ['id', 'name', 'email'], 'page', $page)
+                fn () => $query->simplePaginate(15, ['id', 'name', 'email', 'is_active'], 'page', $page)
             );
 
         }
