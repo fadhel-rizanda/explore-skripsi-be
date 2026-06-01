@@ -23,12 +23,8 @@ class CheckTokenVersion
         try {
             $user = auth('api')->user();
 
-            if (! $user) {
+            if (! $user || ! $user->is_active) {
                 return $this->sendError('Unauthorized', 401);
-            }
-
-            if (! $user->is_active) {
-                return $this->sendError('User account is deactivated.', 403);
             }
 
             $payload = JWTAuth::parseToken()->getPayload();

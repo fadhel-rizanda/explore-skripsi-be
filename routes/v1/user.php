@@ -24,4 +24,5 @@ Route::group([
 Route::middleware(['auth:api', 'check.token.version', 'throttle:write'])->group(function () {
     Route::put('/profile', [UserController::class, 'updateProfile']);
     Route::delete('/profile', [UserController::class, 'deleteUser']);
+    Route::patch('/profile/deactivate', [UserController::class, 'deactivateUser']);
 });

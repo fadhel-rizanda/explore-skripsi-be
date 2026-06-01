@@ -60,4 +60,35 @@ class CreateChatRequest extends FormRequest
             'is_create_manually' => 'required|boolean',
         ];
     }
+
+    /**
+     * Get custom messages for validator errors.
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'user_ids.required' => 'The user IDs are required.',
+            'user_ids.array' => 'The user IDs must be an array.',
+            'user_ids.size' => 'You must select exactly one user for a private chat.',
+            'user_ids.min' => 'You must select at least two users for a group chat.',
+            'user_ids.*.exists' => 'The selected user is invalid or deactivated.',
+            'user_ids.*.not_in' => 'You cannot initiate a chat with yourself.',
+            'user_ids.*.distinct' => 'Duplicate user IDs are not allowed.',
+            'user_ids.*.uuid' => 'Each selected user ID must be a valid UUID.',
+        ];
+    }
+
+    /**
+     * Get custom attributes for validator errors.
+     *
+     * @return array<string, string>
+     */
+    public function attributes(): array
+    {
+        return [
+            'user_ids.*' => 'user',
+        ];
+    }
 }

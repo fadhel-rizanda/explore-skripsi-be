@@ -52,6 +52,7 @@ class AuthController extends BaseController
                     'email' => $user->email,
                     'roles' => $user->roles,
                     'avatar' => $user->avatar,
+                    'is_active' => $user->is_active,
                     'channels' => [
                         [
                             'name' => ChannelEnum::NOTIFICATION->channel($user->id),
@@ -259,6 +260,7 @@ class AuthController extends BaseController
                     'name' => $user->name,
                     'email' => $user->email,
                     'avatar' => $user->avatar,
+                    'is_active' => $user->is_active,
                 ],
                 'access_token' => $token,
                 'token_type' => 'bearer',
@@ -592,6 +594,7 @@ class AuthController extends BaseController
                 'channels' => $channels,
                 'email_verified_at' => $user->email_verified_at,
                 'address_street' => $user->address?->street,
+                'is_active' => $user->is_active,
             ],
             'access_token' => $token,
             'refresh_token' => $refreshToken,
